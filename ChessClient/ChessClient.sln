@@ -1,8 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorWASM", "BlazorWASM\BlazorWASM.csproj", "{C7F7A769-E2D4-430F-AC49-E2B3FE186905}"
+	ProjectSection(ProjectDependencies) = postProject
+		{45B76ECF-884A-4E4D-8940-F2126DEFA2C0} = {45B76ECF-884A-4E4D-8940-F2126DEFA2C0}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpClients", "HttpClients\HttpClients.csproj", "{45B76ECF-884A-4E4D-8940-F2126DEFA2C0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{724547AC-58B5-4540-8F54-1C600647C22C} = {724547AC-58B5-4540-8F54-1C600647C22C}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "..\CommunicationServer\Domain\Domain.csproj", "{724547AC-58B5-4540-8F54-1C600647C22C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +26,9 @@ Global
 		{45B76ECF-884A-4E4D-8940-F2126DEFA2C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{45B76ECF-884A-4E4D-8940-F2126DEFA2C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{45B76ECF-884A-4E4D-8940-F2126DEFA2C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{724547AC-58B5-4540-8F54-1C600647C22C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{724547AC-58B5-4540-8F54-1C600647C22C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{724547AC-58B5-4540-8F54-1C600647C22C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{724547AC-58B5-4540-8F54-1C600647C22C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
