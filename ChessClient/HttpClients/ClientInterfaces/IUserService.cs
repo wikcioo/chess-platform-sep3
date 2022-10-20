@@ -1,6 +1,8 @@
-﻿namespace HttpClients.ClientInterfaces;
+﻿using Domain.Models;
 
-public class IUserService
+namespace HttpClients.ClientInterfaces;
+
+public interface IUserService
 {
-    
+    Task<User> CreateAsync(User user);
 }
