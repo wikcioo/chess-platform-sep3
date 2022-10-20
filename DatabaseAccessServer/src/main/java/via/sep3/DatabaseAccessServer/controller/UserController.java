@@ -9,7 +9,6 @@ import via.sep3.DatabaseAccessServer.domain.User;
 import via.sep3.DatabaseAccessServer.repository.UserRepository;
 
 import javax.annotation.Resource;
-import java.util.List;
 
 @RestController
 public class UserController {
@@ -23,13 +22,16 @@ public class UserController {
     @PostMapping(path = "/users",
             produces = MediaType.APPLICATION_JSON_VALUE)
     public User Create(@RequestBody User user) {
+        if (repository.findByEmail(user.getEmail()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This email is already in use");
+        }
         return repository.save(user);
     }
 
     @PostMapping(path = "/login",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean Login(@RequestBody UserLoginDto user) throws Exception {
-        User existing = repository.findByEmail(user.getEmail()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"This user does not exist"));
+    public Boolean Login(@RequestBody UserLoginDto user) {
+        User existing = repository.findByEmail(user.getEmail()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "This user does not exist"));
         return existing.getPassword().equals(user.getPassword());
     }
 
