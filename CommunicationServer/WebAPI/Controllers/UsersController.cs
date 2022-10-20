@@ -32,12 +32,12 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<User>> CreateAsync([FromBody] User user)
+    public async Task<ActionResult<User>> CreateAsync(User user)
     {
         try
         {
-            await _userLogic.CreateAsync(user);
-            return Ok();
+            var created = await _userLogic.CreateAsync(user);
+            return Ok(created);
         }
         catch (Exception e)
         {
