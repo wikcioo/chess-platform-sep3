@@ -17,12 +17,12 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("/login")]
-    public async Task<ActionResult> LoginAsync([FromBody] UserLoginDto dto)
+    public async Task<ActionResult<bool>> LoginAsync([FromBody] UserLoginDto dto)
     {
         try
         {
-            await _userLogic.LoginAsync(dto);
-            return Ok();
+            var isCorrect = await _userLogic.LoginAsync(dto);
+            return Ok(isCorrect);
         }
         catch (Exception e)
         {

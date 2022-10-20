@@ -14,10 +14,9 @@ public class UserLogic : IUserLogic
         _userService = userService;
     }
 
-    public async Task LoginAsync(UserLoginDto dto)
+    public async Task<bool> LoginAsync(UserLoginDto dto)
     {
-        var answer = await _userService.LoginAsync(dto);
-        Console.WriteLine(answer ? "Correct password" : "Incorrect password");
+        return await _userService.LoginAsync(dto);
     }
 
     public async Task<User> CreateAsync(User user)
