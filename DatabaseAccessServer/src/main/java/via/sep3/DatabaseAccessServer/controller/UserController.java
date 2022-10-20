@@ -22,7 +22,7 @@ public class UserController {
     @PostMapping(path = "/users",
             produces = MediaType.APPLICATION_JSON_VALUE)
     public User Create(@RequestBody User user) {
-        if (repository.findByEmail(user.getEmail()).isPresent()) {
+        if (repository.findByEmailIgnoreCase(user.getEmail()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This email is already in use");
         }
         return repository.save(user);
@@ -31,7 +31,7 @@ public class UserController {
     @PostMapping(path = "/login",
             produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean Login(@RequestBody UserLoginDto user) {
-        User existing = repository.findByEmail(user.getEmail()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "This user does not exist"));
+        User existing = repository.findByEmailIgnoreCase(user.getEmail()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "This user does not exist"));
         return existing.getPassword().equals(user.getPassword());
     }
 
