@@ -5,5 +5,5 @@ namespace Application.DaoInterfaces;
 
 public interface IUserService
 {
-    Task LoginAsync(UserLoginDto dto);
+    Task<bool> LoginAsync(UserLoginDto dto);
 }

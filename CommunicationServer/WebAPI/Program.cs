@@ -15,6 +15,13 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IUserLogic, UserLogic>();
 builder.Services.AddScoped<IUserService, UserHttpClient>();
 
+builder.Services.AddScoped(
+    sp => 
+        new HttpClient { 
+            BaseAddress = new Uri("http://localhost:8080") 
+        }
+);
+
 var app = builder.Build();
 
 app.UseCors(x => x

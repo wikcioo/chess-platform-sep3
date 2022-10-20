@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import via.sep3.DatabaseAccessServer.domain.DTOs.UserLoginDto;
 import via.sep3.DatabaseAccessServer.domain.User;
 import via.sep3.DatabaseAccessServer.repository.UserRepository;
 
@@ -27,7 +28,7 @@ public class UserController {
 
     @PostMapping(path = "/login",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean Login(@RequestBody User user) throws Exception {
+    public Boolean Login(@RequestBody UserLoginDto user) throws Exception {
         User existing = repository.findByEmail(user.getEmail()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"This user does not exist"));
         return existing.getPassword().equals(user.getPassword());
     }
