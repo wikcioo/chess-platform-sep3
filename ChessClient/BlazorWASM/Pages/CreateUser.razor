@@ -1,0 +1,63 @@
+@page "/CreateUser"
+@using HttpClients.ClientInterfaces
+@using Domain.Models
+@inject IUserService UserService
+<div class="card">
+    <h3>CreateUser</h3>
+    <div class="form-group field">
+        <div class="form-group field">
+            <label>Username:</label>
+            <input type="text" @bind="_username"/>
+        </div>
+        <div class="form-group field">
+            <label>Email:</label>
+            <input type="email" @bind="_email"/>
+        </div>
+        <div class="form-group field">
+            <label>Password:</label>
+            <input type="password" @bind="_password"/>
+        </div>
+        @if (!string.IsNullOrEmpty(_resultMsg))
+        {
+            <label style="color:@_color">@_resultMsg</label>
+        }
+    </div>
+    <div class="button-row">
+        <button @onclick="CreateAsync" disabled="@(Validate())" class="acceptbtn">Create</button>
+    </div>
+</div>
+
+@code {
+    private string _username = "";
+    private string _email = "";
+    private string _password = "";
+    private string _resultMsg = "";
+    private string _color = "";
+
+    private async Task CreateAsync()
+    {
+        _resultMsg = "";
+
+        try
+        {
+            var user = await UserService.CreateAsync(new User(_username, _email, _password));
+            _username = "";
+            _email = "";
+            _password = "";
+            _resultMsg = $"User with email {user.Email} successfully created";
+            _color = "green";
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            _resultMsg = e.Message;
+            _color = "red";
+        }
+    }
+
+    private bool Validate()
+    {
+        return string.IsNullOrEmpty(_username) || string.IsNullOrEmpty(_email) || string.IsNullOrEmpty(_password);
+    }
+
+}
