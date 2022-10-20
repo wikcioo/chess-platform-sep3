@@ -6,4 +6,6 @@ namespace Application.DaoInterfaces;
 public interface IUserService
 {
     Task<bool> LoginAsync(UserLoginDto dto);
+    Task<User> CreateAsync(User user);
+    
 }
