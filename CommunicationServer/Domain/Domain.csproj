@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Rudzoft.ChessLib" Version="0.0.3" />
+    </ItemGroup>
+
 </Project>
