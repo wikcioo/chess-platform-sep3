@@ -1,0 +1,56 @@
+@using Rudzoft.ChessLib.Types
+@using Domain.DTOs
+@namespace BlazorWASM.Pages.ChessComponents
+
+
+<div class="chess-board">
+
+    
+@{
+    var index = 0;
+    var isBlack = _isFirstSquareBlack;
+    for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
+    {
+        
+        
+        for (var file = Files.FileA; file <= Files.FileH; file++)
+        {
+            isBlack = !isBlack;
+            var squareId = new Square(rank,file).Value;
+            var hasMoveTo = AvailableMoves != null && AvailableMoves.Any(move => move.ToSquare() == squareId);
+                
+            <SquareComponent
+                SquareId="@squareId" 
+                HasMoveTo="@hasMoveTo"
+                IsBlack="@isBlack" 
+                Piece="@Pieces?[index]"
+                OnClick="OnSquareClicked" />
+                
+            index++;
+        }
+        isBlack = !isBlack;
+    }
+}
+    
+    
+</div>
+
+@code {
+
+    [Parameter]
+    public Piece[]? Pieces { get; set; }
+
+    [Parameter] public IEnumerable<Move>? AvailableMoves { get; set; }
+    
+    [Parameter] 
+    public EventCallback<ChessClickDto> OnSquareClick { get; set; }
+
+    private bool _isFirstSquareBlack = true;
+    
+    private void OnSquareClicked(ChessClickDto dto)
+    {
+        OnSquareClick.InvokeAsync(dto);
+    }
+    
+
+}
