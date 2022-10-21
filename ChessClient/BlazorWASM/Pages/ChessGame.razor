@@ -1,12 +1,131 @@
 @page "/ChessGame"
 @using BlazorWASM.Pages.ChessComponents
+@using Domain.DTOs
+@using Rudzoft.ChessLib
+@using Rudzoft.ChessLib.Factories
+@using Rudzoft.ChessLib.Types
+@using System.Diagnostics
 
 <h3>ChessGame</h3>
 
 
-<ChessBoardComponent></ChessBoardComponent>
-
+<ChessBoardComponent 
+    OnSquareClick="OnSquareClicked" 
+    AvailableMoves="@ShowMoves()" 
+    Pieces="@ParseGame()"/>
 
 @code {
+    
+    private IGame? _game;
+
+    private List<Move> _availableMoves = new();
+    
+    public ChessGame()
+    {
+        GameInit();
+    }
+
+    private void GameInit()
+    {
+        Console.WriteLine("Initialization started. Wanna know how unoptimized this game is? Here you go:");
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        var t1 = stopwatch.Elapsed;
+        _game = GameFactory.Create();
+        var t2 = stopwatch.Elapsed;
+        _game.NewGame();
+        var t3 = stopwatch.Elapsed;
+        Console.WriteLine($"Time to create a game instance: {t2-t1}");
+        Console.WriteLine($"Time to init a game: {t3-t2}");
+        Console.WriteLine($"Time total: {t3-t1}");
+    }
+    
+    private IEnumerable<Squares> ShowMoves()
+    {
+        var movableSquares = new List<Squares>();
+        foreach (Move move in _availableMoves)
+        {
+            movableSquares.Add(move.ToSquare().Value);
+        }
+        return movableSquares;
+    }
+
+    private Piece[] ParseGame()
+    {
+        Piece[] chessPieces = new Piece[64];
+
+        if (_game is null)
+            return chessPieces;
+        
+        var index = 0;
+        
+        for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
+        {
+            for (var file = Files.FileA; file <= Files.FileH; file++)
+            {
+                var piece = _game.Pos.GetPiece(new Square(rank, file));
+                
+                chessPieces[index] =  piece;
+                
+                index++;
+            }
+        }
+        return chessPieces;
+    }
+
+    private void OnSquareClicked(ChessClickDto dto)
+    {
+        Console.WriteLine(dto);
+        if (dto.HasMoveTo)
+        {
+            MakeMove(dto.SquareType);
+            return;            
+        }
+        
+        if (dto.PieceType != Pieces.NoPiece)
+        {
+            GenerateMovesForSquare(dto);
+        }
+    }
+    
+    
+    private void GenerateMovesForSquare(ChessClickDto dto)
+    {
+        var availMoves = new List<Move>();
+
+        
+        for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
+        {
+            for (var file = Files.FileA; file <= Files.FileH; file++)
+            {
+
+                var probeSquare = new Square(rank,file);
+                
+                //Debug.Assert in IsPseudoLegal method throws an error if you don't check whether the squares are the same 
+                if(probeSquare == dto.SquareType)
+                    continue;
+                
+                if (_game != null && _game.Pos.IsPseudoLegal(new Move(dto.SquareType, probeSquare)))
+                    availMoves.Add(new Move(dto.SquareType, probeSquare));
+                    
+            }
+        }
+        _availableMoves =  availMoves;
+    }
+
+    //TODO: Make checking for invalid squares
+    private void MakeMove(Squares squareTo)
+    {
+        Move move;
+        move = _availableMoves.Find(m => m.ToSquare() == squareTo);
+        MakeMove(move);
+    }
+    
+    private void MakeMove(Move move)
+    {
+        _game?.Pos.MakeMove(move,_game.Pos.State);
+        _availableMoves = new();
+        StateHasChanged();
+    }
     
 }
