@@ -83,31 +83,12 @@
     
     private void GenerateMovesForSquare(ChessClickDto dto)
     {
-        var availMoves = new List<Move>();
-
-        for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
-        {
-            for (var file = Files.FileA; file <= Files.FileH; file++)
-            {
-
-                var probeSquare = new Square(rank,file);
-                
-                //Debug.Assert in IsPseudoLegal method throws an error if you don't check whether the squares are the same 
-                if(probeSquare == dto.SquareType)
-                    continue;
-                
-                
-                if(_game == null)
-                    return;
-                
-                if (_game.Pos.GenerateMoves().Contains(new Move(dto.SquareType, probeSquare)))
-                    availMoves.Add(new Move(dto.SquareType, probeSquare));
-                
-
-                Console.WriteLine(String.Join(", ",_game.Pos.GenerateMoves().ToList()));
-            }
-        }
-        AvailableMoves =  availMoves;
+        var moves = _game.Pos
+            .GenerateMoves()
+            .ToList()
+            .FindAll(move => move.Move.FromSquare() == dto.SquareType)
+            .Select(move => move.Move).ToList();
+        AvailableMoves = moves;
     }
 
     private void MakeMove(Move move)
