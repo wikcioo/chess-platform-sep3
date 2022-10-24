@@ -10,13 +10,11 @@
 
 .piece {
     font-size: 80px;
-    display:inline;
+    display: inline;
     cursor: pointer;
 }
 
 .piece-icon {
-    width: 80px;
-    height: 80px;
 }
 
 div[class|="square-overlay"] {
@@ -31,7 +29,7 @@ div[class|="square-overlay"] {
 }
 
 .square-overlay-quiet {
-    background-color: rgba(50,150,255,0.5);
+    background-color: rgba(50, 150, 255, 0.5);
     box-sizing: border-box;
     border: 30px solid transparent;
     background-clip: padding-box;
@@ -41,7 +39,7 @@ div[class|="square-overlay"] {
 
 
 .square-overlay-capture {
-    border: 8px solid rgba(255,105,0,0.5);
+    border: 8px solid rgba(255, 105, 0, 0.5);
     background-color: transparent;
     background-clip: padding-box;
     border-radius: 100%;

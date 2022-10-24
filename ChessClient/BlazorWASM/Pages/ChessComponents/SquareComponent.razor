@@ -6,7 +6,7 @@
 background-color: @(IsBlack ? "#C0C0C0" : "#FFFFFF");
 ">
     <div class="@("square-overlay" + RenderOverlayStyle() )" @onclick="OnClicked" ></div>
-    <div class="piece" @onclick="OnClicked">@((MarkupString)RenderPiece(true))
+    <div class="piece" @onclick="OnClicked">@((MarkupString)RenderPiece(false))
     </div>
 </div>
 
@@ -60,19 +60,19 @@ background-color: @(IsBlack ? "#C0C0C0" : "#FFFFFF");
         }
         else
         {
-            string result = "<img class=\"piece-icon\" src=\"icons\\Chess";
+            string result = "<img style=\"height: 100px;\" class=\"piece-icon\" src=\"icons\\Chess";
             //TODO: Add contribution to the creator
             return result + pieceId switch
             {
                 Pieces.NoPiece => "",
                 Pieces.WhitePawn => "_plt45.svg\"/>",
-                Pieces.WhiteKnight => "_klt45.svg\"/>",
+                Pieces.WhiteKnight => "_nlt45.svg\"/>",
                 Pieces.WhiteBishop => "_blt45.svg\"/>",
                 Pieces.WhiteRook => "_rlt45.svg\"/>",
                 Pieces.WhiteQueen => "_qlt45.svg\"/>",
                 Pieces.WhiteKing =>"_klt45.svg\"/>",
                 Pieces.BlackPawn => "_pdt45.svg\"/>",
-                Pieces.BlackKnight => "_kdt45.svg\"/>",
+                Pieces.BlackKnight => "_ndt45.svg\"/>",
                 Pieces.BlackBishop => "_bdt45.svg\"/>",
                 Pieces.BlackRook => "_rdt45.svg\"/>",
                 Pieces.BlackQueen => "_qdt45.svg\"/>",
