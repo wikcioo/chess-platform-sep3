@@ -35,7 +35,7 @@
         var t1 = stopwatch.Elapsed;
         _game = GameFactory.Create();
         var t2 = stopwatch.Elapsed;
-        _game.NewGame("rnb2bnr/5kpp/pq2p3/p7/1pP4P/P1N2P2/1B1PQ3/R3K1R1 w Q - 0 37");
+        _game.NewGame();
         var t3 = stopwatch.Elapsed;
         Console.WriteLine($"Time to create a game instance: {t2-t1}");
         Console.WriteLine($"Time to init a game: {t3-t2}");
@@ -94,10 +94,7 @@
     private void MakeMove(Move move)
     {
         _game?.Pos.MakeMove(move,_game.Pos.State);
-
         Console.WriteLine(move.MoveType());
-        
-        
         AvailableMoves = new();
         StateHasChanged();
         Console.WriteLine(_game.GetFen());
