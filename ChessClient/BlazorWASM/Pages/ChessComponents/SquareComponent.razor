@@ -6,7 +6,7 @@
 background-color: @(IsBlack ? "#C0C0C0" : "#FFFFFF");
 ">
     <div class="@("square-overlay" + RenderOverlayStyle() )" @onclick="OnClicked" ></div>
-    <div class="piece" @onclick="OnClicked">@RenderPiece()
+    <div class="piece" @onclick="OnClicked">@((MarkupString)RenderPiece(true))
     </div>
 </div>
 
@@ -31,31 +31,58 @@ background-color: @(IsBlack ? "#C0C0C0" : "#FFFFFF");
         OnClick.InvokeAsync(new ChessClickDto(Piece?.Value, SquareId, HasMoveTo));
     }
 
-    private string RenderPiece()
+    private string RenderPiece(bool isUnicode)
     {
         if (!Piece.HasValue)
             return "";
 
         var pieceId = Piece.Value.Value;
-        
-        return pieceId switch
+        if (isUnicode)
         {
-            Pieces.NoPiece => "",
-            Pieces.WhitePawn => "\u2659",
-            Pieces.WhiteKnight => "\u2658",
-            Pieces.WhiteBishop => "\u2657",
-            Pieces.WhiteRook => "\u2656",
-            Pieces.WhiteQueen => "\u2655",
-            Pieces.WhiteKing =>"\u2654",
-            Pieces.BlackPawn => "\u265F",
-            Pieces.BlackKnight => "\u265E",
-            Pieces.BlackBishop => "\u265D",
-            Pieces.BlackRook => "\u265C",
-            Pieces.BlackQueen => "\u265B",
-            Pieces.BlackKing => "\u265A",
-            Pieces.PieceNb => "",
-            _ => throw new ArgumentOutOfRangeException()
-            };
+            return pieceId switch
+            {
+                Pieces.NoPiece => "",
+                Pieces.WhitePawn => "\u2659",
+                Pieces.WhiteKnight => "\u2658",
+                Pieces.WhiteBishop => "\u2657",
+                Pieces.WhiteRook => "\u2656",
+                Pieces.WhiteQueen => "\u2655",
+                Pieces.WhiteKing =>"\u2654",
+                Pieces.BlackPawn => "\u265F",
+                Pieces.BlackKnight => "\u265E",
+                Pieces.BlackBishop => "\u265D",
+                Pieces.BlackRook => "\u265C",
+                Pieces.BlackQueen => "\u265B",
+                Pieces.BlackKing => "\u265A",
+                Pieces.PieceNb => "",
+                _ => throw new ArgumentOutOfRangeException()
+                }; 
+        }
+        else
+        {
+            string result = "<img class=\"piece-icon\" src=\"icons\\Chess";
+            //TODO: Add contribution to the creator
+            return result + pieceId switch
+            {
+                Pieces.NoPiece => "",
+                Pieces.WhitePawn => "_plt45.svg\"/>",
+                Pieces.WhiteKnight => "_klt45.svg\"/>",
+                Pieces.WhiteBishop => "_blt45.svg\"/>",
+                Pieces.WhiteRook => "_rlt45.svg\"/>",
+                Pieces.WhiteQueen => "_qlt45.svg\"/>",
+                Pieces.WhiteKing =>"_klt45.svg\"/>",
+                Pieces.BlackPawn => "_pdt45.svg\"/>",
+                Pieces.BlackKnight => "_kdt45.svg\"/>",
+                Pieces.BlackBishop => "_bdt45.svg\"/>",
+                Pieces.BlackRook => "_rdt45.svg\"/>",
+                Pieces.BlackQueen => "_qdt45.svg\"/>",
+                Pieces.BlackKing => "_kdt45.svg\"/>",
+                Pieces.PieceNb => "",
+                _ => throw new ArgumentOutOfRangeException()
+                }; 
+        }
+        
+        
     }
 
     private string RenderOverlayStyle()
