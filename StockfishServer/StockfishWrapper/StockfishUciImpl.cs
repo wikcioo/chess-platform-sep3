@@ -83,6 +83,17 @@ public class StockfishUciImpl : IStockfishUci
         RunCmd("ponderhit");
     }
 
+    public async Task<bool> SetOptions(StockfishSettingsDto settings)
+    {
+        SetOption("Threads", settings.Threads.ToString());
+        SetOption("Hash", settings.Hash.ToString());
+        SetOption("Ponder", settings.Ponder.ToString());
+        SetOption("MultiPV", settings.MultiPv.ToString());
+        SetOption("Skill Level", settings.SkillLevel.ToString());
+
+        return await IsReady();
+    }
+
     public void Quit()
     {
         RunCmd("quit");
