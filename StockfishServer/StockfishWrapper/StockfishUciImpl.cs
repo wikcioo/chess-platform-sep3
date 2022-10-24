@@ -34,9 +34,9 @@ public class StockfishUciImpl : IStockfishUci
 
     public void SetOption(string name, string? value = null)
     {
-        var command = new StringBuilder($"setoption name ${name}");
+        var command = new StringBuilder($"setoption name {name}");
         if (value != null)
-            command.Append($" value ${value}");
+            command.Append($" value {value}");
 
         RunCmd(command.ToString());
     }
