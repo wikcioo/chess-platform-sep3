@@ -14,5 +14,6 @@ public interface IStockfishUci
         int? mate = null, int? moveTime = null, bool infinite = false);
     Task<string?> Stop();
     void PonderHit();
+    Task<bool> SetOptions(StockfishSettingsDto settings);
     void Quit();
 }
