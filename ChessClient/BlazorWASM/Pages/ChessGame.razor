@@ -1,0 +1,103 @@
+@page "/ChessGame"
+@using BlazorWASM.Pages.ChessComponents
+@using Domain.DTOs
+@using Rudzoft.ChessLib
+@using Rudzoft.ChessLib.Factories
+@using Rudzoft.ChessLib.Types
+@using System.Diagnostics
+@using Rudzoft.ChessLib.MoveGeneration
+
+<h3>ChessGame</h3>
+
+
+<ChessBoardComponent 
+    OnSquareClick="OnSquareClicked" 
+    AvailableMoves="@AvailableMoves" 
+    Pieces="@ParseGame()"/>
+
+@code {
+    
+    private IGame? _game;
+
+    public List<Move> AvailableMoves {get; set;}
+    
+    public ChessGame()
+    {
+        GameInit();
+        AvailableMoves = new();
+    }
+
+    private void GameInit()
+    {
+        Console.WriteLine("Initialization started. Wanna know how unoptimized this game is? Here you go:");
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        var t1 = stopwatch.Elapsed;
+        _game = GameFactory.Create();
+        var t2 = stopwatch.Elapsed;
+        _game.NewGame();
+        var t3 = stopwatch.Elapsed;
+        Console.WriteLine($"Time to create a game instance: {t2-t1}");
+        Console.WriteLine($"Time to init a game: {t3-t2}");
+        Console.WriteLine($"Time total: {t3-t1}");
+    }
+
+    private Piece[] ParseGame()
+    {
+        Piece[] chessPieces = new Piece[64];
+
+        if (_game is null)
+            return chessPieces;
+        
+        var index = 0;
+        
+        for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
+        {
+            for (var file = Files.FileA; file <= Files.FileH; file++)
+            {
+                var piece = _game.Pos.GetPiece(new Square(rank, file));
+                
+                chessPieces[index] =  piece;
+                
+                index++;
+            }
+        }
+        return chessPieces;
+    }
+
+    private void OnSquareClicked(ChessClickDto dto)
+    {
+        Console.WriteLine(dto);
+        if (dto.HasMoveTo)
+        {
+            MakeMove(AvailableMoves.Find((move) => move.ToSquare() == dto.SquareType));
+            return;            
+        }
+        
+        if (dto.PieceType != Pieces.NoPiece)
+        {
+            GenerateMovesForSquare(dto);
+        }
+    }
+    
+    
+    private void GenerateMovesForSquare(ChessClickDto dto)
+    {
+        var moves = _game.Pos
+            .GenerateMoves()
+            .ToList()
+            .FindAll(move => move.Move.FromSquare() == dto.SquareType)
+            .Select(move => move.Move).ToList();
+        AvailableMoves = moves;
+    }
+
+    private void MakeMove(Move move)
+    {
+        _game?.Pos.MakeMove(move,_game.Pos.State);
+        Console.WriteLine(move.MoveType());
+        AvailableMoves = new();
+        StateHasChanged();
+        Console.WriteLine(_game.GetFen());
+    }
+    
+}
