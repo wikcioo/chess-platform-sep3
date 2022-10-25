@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using BlazorWASM;
 using HttpClients.ClientInterfaces;
 using HttpClients.Implementations;
+using BlazorBootstrap;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -18,4 +19,6 @@ builder.Services.AddScoped(
 );
 
 builder.Services.AddScoped<IUserService, UserHttpClient>();
+// Added BootstrapBlazor Services (1)         
+builder.Services.AddBlazorBootstrap();
 await builder.Build().RunAsync();
