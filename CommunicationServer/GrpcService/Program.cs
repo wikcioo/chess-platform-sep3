@@ -15,6 +15,7 @@ builder.Services.AddCors(o => o.AddPolicy("AllowAll", builder =>
         .AllowAnyHeader()
         .WithExposedHeaders("Grpc-Status", "Grpc-Message", "Grpc-Encoding", "Grpc-Accept-Encoding");
 }));
+builder.Services.AddSingleton(new ChatRoomService());
 var app = builder.Build();
 app.UseResponseCompression();
 
