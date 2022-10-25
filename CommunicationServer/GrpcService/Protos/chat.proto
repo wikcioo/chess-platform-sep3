@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcService";
+
+package chat;
+
+// The request message containing the user's name.
+message Message {
+  string username = 1;
+  string body = 2;
+  string receiver = 3;
+}
+message Empty{}
+
+message RequestGame{
+  string username = 1;
+  string receiver = 2;
+}
+service Chat {
+  rpc Write(Message) returns (Empty) {}
+  rpc StartGame(RequestGame) returns (stream Message){}
+}
