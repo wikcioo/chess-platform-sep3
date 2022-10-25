@@ -143,7 +143,7 @@ public class StockfishUciImpl : IStockfishUci
     {
         if (System.OperatingSystem.IsWindows())
         {
-            return "..\\..\\..\\..\\StockfishBinaries\\Windows\\stockfish_15_x64_avx2.exe";
+            return "..\\StockfishBinaries\\Windows\\stockfish_15_x64_avx2.exe";
         }
         
         if (System.OperatingSystem.IsLinux())
