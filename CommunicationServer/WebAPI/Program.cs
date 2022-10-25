@@ -1,3 +1,4 @@
+using Application.ClientInterfaces;
 using Application.DaoInterfaces;
 using Application.Logic;
 using Application.LogicInterfaces;
@@ -14,6 +15,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IUserLogic, UserLogic>();
 builder.Services.AddScoped<IUserService, UserHttpClient>();
+
+builder.Services.AddScoped<IStockfishLogic, StockfishLogic>();
+builder.Services.AddScoped<IStockfishService, StockfishHttpClient>();
 
 builder.Services.AddScoped(
     sp => 
