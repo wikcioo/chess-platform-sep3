@@ -4,7 +4,7 @@ using StockfishWrapper;
 namespace StockfishWebAPI.Controllers;
 
 [ApiController]
-[Route("api")]
+[Route("[controller]")]
 public class StockfishController : ControllerBase
 {
     private readonly IStockfishUci _stockfish;
@@ -14,7 +14,7 @@ public class StockfishController : ControllerBase
         _stockfish = stockfish;
     }
     
-    [HttpGet("isReady")]
+    [HttpGet("/ready")]
     public async Task<ActionResult<bool>> GetStockfishReadyAsync()
     {
         try
@@ -29,15 +29,15 @@ public class StockfishController : ControllerBase
         }
     }
 
-    [HttpGet("bestMove")]
-    public async Task<ActionResult<string>> GetBestMoveAsync(string fen, int depth)
+    [HttpPost("/bestMove")]
+    public async Task<ActionResult<string>> GetBestMoveAsync([FromBody] StockfishBestMoveDto dto)
     {
         try
         {
             // TODO(Wiktor): Add validation for fen and depth value
             _stockfish.UciNewGame();
-            _stockfish.Position(fen, PositionType.Fen);
-            var bestMove = await _stockfish.Go(depth: depth);
+            _stockfish.Position(dto.Fen, PositionType.Fen);
+            var bestMove = await _stockfish.Go(depth: dto.Depth);
             return Ok(bestMove);
         }
         catch (Exception e)
