@@ -3,6 +3,8 @@ using Domain.Models;
 
 namespace WebAPI.Services;
 
+//2 validate user, how do i fix this?
+
 public class AuthLogic:IAuthLogic
 {
     private readonly IList<User> users = new List<User>
@@ -71,6 +73,11 @@ public class AuthLogic:IAuthLogic
         users.Add(user);
         
         return Task.CompletedTask;
+    }
+
+    public Task<User> ValidateUser(object username, string password)
+    {
+        throw new NotImplementedException();
     }
 
     public Task<User> GetUser(string username, string password)
