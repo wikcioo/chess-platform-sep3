@@ -1,56 +1,108 @@
 @using Rudzoft.ChessLib.Types
 @using Domain.DTOs
+@using Rudzoft.ChessLib
+@using Rudzoft.ChessLib.MoveGeneration
 @namespace BlazorWASM.Pages.ChessComponents
 
 
 <div class="chess-board">
-
     
 @{
     var index = 0;
     var isBlack = _isFirstSquareBlack;
+    _currentPieces = ParsePositionToPieces();
+
     for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
     {
-        
-        
         for (var file = Files.FileA; file <= Files.FileH; file++)
         {
             isBlack = !isBlack;
             var squareId = new Square(rank,file).Value;
-            var hasMoveTo = AvailableMoves != null && AvailableMoves.Any(move => move.ToSquare() == squareId);
-                
+            var hasMoveTo = _currentMoves.Any(move => move.ToSquare() == squareId && move.IsValidMove());
             <SquareComponent
-                SquareId="@squareId" 
+                SquareId="@squareId"
                 HasMoveTo="@hasMoveTo"
-                IsBlack="@isBlack" 
-                Piece="@Pieces?[index]"
-                OnClick="OnSquareClicked" />
-                
+                IsBlack="@isBlack"
+                Piece="@_currentPieces[index]"
+                OnClick="@OnSquareClicked"/>
+
             index++;
         }
         isBlack = !isBlack;
     }
 }
-    
-    
+
 </div>
 
 @code {
 
-    [Parameter]
-    public Piece[]? Pieces { get; set; }
-
-    [Parameter] public IEnumerable<Move>? AvailableMoves { get; set; }
-    
     [Parameter] 
-    public EventCallback<ChessClickDto> OnSquareClick { get; set; }
+    public IPosition? Position { get; set; }
 
+    [Parameter] 
+    public EventCallback<Move> OnMoveMade { get; set; }
+
+    private List<Piece> _currentPieces = EmptyList<Piece>();
+    private List<Move> _currentMoves = EmptyList<Move>();
     private bool _isFirstSquareBlack = true;
+
+    // Lists need to have values initialized to null to avoid Index out of bounds exception while rendering the chessboard. 
+    private static List<T> EmptyList<T>(int initialSize = 64)
+    {
+        return new List<T>(new T[initialSize]);
+    }
+
+    private List<Piece> ParsePositionToPieces()
+    {
+        List<Piece> chessPieces = EmptyList<Piece>();
+     
+        if (Position == null)
+            return chessPieces;
+        
+        var index = 0;
+        
+        for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
+        {
+            for (var file = Files.FileA; file <= Files.FileH; file++)
+            {
+                var piece = Position.GetPiece(new Square(rank, file));
+                
+                chessPieces[index] =  piece;
+                
+                index++;
+            }
+        }
+        return chessPieces;
+    }
+    
+    private List<Move> GenerateMovesForSquare(ChessClickDto dto)
+    {
+        return Position
+            .GenerateMoves()
+            .ToList()
+            .FindAll(move => move.Move.FromSquare() == dto.SquareType)
+            .Select(move => move.Move).ToList();
+    }
     
     private void OnSquareClicked(ChessClickDto dto)
     {
-        OnSquareClick.InvokeAsync(dto);
+        if (dto.HasMoveTo)
+        {
+            MakeMove(dto);
+            return;            
+        }
+        
+        if (dto.PieceType != Pieces.NoPiece)
+        {
+            _currentMoves = GenerateMovesForSquare(dto);
+        }
     }
     
+    private void MakeMove(ChessClickDto dto)
+    {
+        var move = _currentMoves.Find(move => move.ToSquare() == dto.SquareType);
+        OnMoveMade.InvokeAsync(move);
+        _currentMoves = EmptyList<Move>();
+    }
 
 }
