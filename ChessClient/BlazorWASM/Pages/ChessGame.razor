@@ -78,7 +78,6 @@
     {
         Game = GameFactory.Create();
         Game.NewGame();
-
     }
 
     public async void MakeMove(Move move)
@@ -96,20 +95,61 @@
         CheckIfEndGame();
     }
 
-    private static Move UciMoveToRudzoftMove(string uci)
+    private Move UciMoveToRudzoftMove(string uci)
     {
-        if (uci.Length != 4) throw new Exception("UCI move does not have 4 characters!");
+        if (uci.Length < 4) throw new Exception("UCI move does not have 4 characters!");
         
         var from = uci[..2];
         var to = uci[2..];
 
-        var fromSqNum = (from[1] - '1') * 8 + (from[0] - 'a');
-        var toSqNum = (to[1] - '1') * 8 + (to[0] - 'a');
-        var fromSq = new Square(fromSqNum);
-        var toSq = new Square(toSqNum);
+        var fromSq = UciToSquare(from);
+        var toSq = UciToSquare(to);
 
-        var move = new Move(fromSq, toSq);
+        var moveType = MoveTypes.Normal;
+        var promotionPiece = PieceTypes.Knight;
+
+        if ((from is "e1" or "e8") && (to is "c1" or "g1" or "c8" or "g8"))
+        {
+            to = from switch
+            {
+                "e1" when to is "c1" => "a1",
+                "e1" when to is "g1" => "h1",
+                "e8" when to is "c8" => "a8",
+                "e8" when to is "g8" => "h8",
+                _ => to
+                };
+            moveType = MoveTypes.Castling;
+            toSq = UciToSquare(to);
+        }
+        else if (uci.Length == 5)
+        {
+            moveType = MoveTypes.Promotion;
+            promotionPiece = GetPromotionPiece(uci[4]);
+        }
+        else if (Game.Pos.EnPassantSquare.RankChar != '9')
+            moveType = MoveTypes.Enpassant;
+
+
+        var move = new Move(fromSq, toSq, moveType, promotionPiece);
         return move;
+    }
+
+    private static Square UciToSquare(string uci)
+    {
+        var sqNum = (uci[1] - '1') * 8 + (uci[0] - 'a');
+        return new Square(sqNum);
+    }
+
+    private static PieceTypes GetPromotionPiece(char letter)
+    {
+        return letter switch
+        {
+            'q' => PieceTypes.Queen,
+            'k' => PieceTypes.Knight,
+            'b' => PieceTypes.Bishop,
+            'r' => PieceTypes.Rook,
+            _ => PieceTypes.Knight
+        };
     }
 
     public void CheckIfEndGame()
