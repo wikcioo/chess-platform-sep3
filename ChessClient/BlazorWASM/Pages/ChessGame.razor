@@ -1,19 +1,79 @@
 @page "/ChessGame"
 @using BlazorWASM.Pages.ChessComponents
+@using Domain.DTOs
+@using HttpClients.ClientInterfaces
+@using HttpClients.Implementations
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
+@using Rudzoft.ChessLib.Extensions
 @using Rudzoft.ChessLib.Factories
+@using Rudzoft.ChessLib.Protocol.UCI
 @using Rudzoft.ChessLib.Types
 
-<h3>ChessGame</h3>
+<h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
 
-
-<ChessBoardComponent
-    OnMoveMade="MakeMove"
-    Position="@Game.Pos"/>
-
+<div class="chess-board">
+    <ul style="list-style-type: none; list-style-image: none">
+        <li style="float: left; margin: 0 50px">
+            <ChessBoardComponent OnMoveMade="MakeMove" Position="@Game.Pos" />
+        </li>
+        <li style="float: left">
+            <div class="stockfish-levels">
+                <label for="stockfish_levels">Choose a Stockfish Level:</label>
+                <select id="stockfish_levels" class="stockfish-levels" @bind="@_selectedLevel">
+                     @foreach (var level in _levels)
+                     { 
+                         <option value=@level.Key>Level: @level.Key, Skill: @level.Value.Item1/20, Depth: @level.Value.Item2, @level.Value.Item3 ms</option>
+                     }
+                </select>
+            </div>
+            <button disabled="@(_stockfishActivated)" @onclick="PlayStockfish">Play</button>
+        </li>
+    </ul>
+</div>
 
 @code {
+    private readonly IStockfishService _stockfish = new StockfishHttpClient(new HttpClient());
+    
+    private readonly Dictionary<int, Tuple<int, int, int>> _levels = new()
+    {
+        {
+            1,
+            new Tuple<int, int, int>(3, 1, 50)
+        },
+        {
+            2,
+            new Tuple<int, int, int>(6, 2, 100)
+        },
+        {
+            3,
+            new Tuple<int, int, int>(9, 3, 150)
+        },
+        {
+            4,
+            new Tuple<int, int, int>(11, 4, 200)
+        },
+        {
+            5,
+            new Tuple<int, int, int>(14, 6, 250)
+        },
+        {
+            6,
+            new Tuple<int, int, int>(17, 8, 300)
+        },
+        {
+            7,
+            new Tuple<int, int, int>(20, 10, 350)
+        },
+        {
+            8,
+            new Tuple<int, int, int>(20, 12, 400)
+        },
+    };
+    
+    private int _selectedLevel = 1;
+    private bool _stockfishActivated;
+
     public IGame Game { get; set; }
     
     public ChessGame()
@@ -22,10 +82,80 @@
         Game.NewGame();
     }
 
-    public void MakeMove(Move move)
+    public async void MakeMove(Move move)
     {
         Game.Pos.MakeMove(move, Game.Pos.State);
+
+        if (_stockfishActivated)
+        {
+            var bestMove = await GetStockfishBestMove(Game.Pos.FenNotation);
+            Console.WriteLine("MakeMove: bestMove = " + bestMove);
+            Game.Pos.MakeMove(UciMoveToRudzoftMove(bestMove), Game.Pos.State);
+            StateHasChanged();
+        }
+        
         CheckIfEndGame();
+    }
+
+    private Move UciMoveToRudzoftMove(string uci)
+    {
+        if (uci.Length < 4) throw new Exception("UCI move does not have 4 characters!");
+        
+        var from = uci[..2];
+        var to = uci[2..];
+
+        var fromSq = UciToSquare(from);
+        var toSq = UciToSquare(to);
+
+        var moveType = MoveTypes.Normal;
+        var promotionPiece = PieceTypes.Knight;
+
+        if ((from is "e1" or "e8") && (to is "c1" or "g1" or "c8" or "g8"))
+        {
+            var pieceNum = Game.Pos.GetPiece(UciToSquare(from)).AsInt();
+            if (pieceNum == Pieces.WhiteKing.AsInt() || pieceNum == Pieces.BlackKing.AsInt())
+            {
+                to = from switch
+                {
+                    "e1" when to is "c1" => "a1",
+                    "e1" when to is "g1" => "h1",
+                    "e8" when to is "c8" => "a8",
+                    "e8" when to is "g8" => "h8",
+                    _ => to
+                    };
+                moveType = MoveTypes.Castling;
+                toSq = UciToSquare(to);
+            }
+        }
+        else if (uci.Length == 5)
+        {
+            moveType = MoveTypes.Promotion;
+            promotionPiece = GetPromotionPiece(uci[4]);
+        }
+        else if (Game.Pos.EnPassantSquare.RankChar != '9')
+            moveType = MoveTypes.Enpassant;
+
+
+        var move = new Move(fromSq, toSq, moveType, promotionPiece);
+        return move;
+    }
+
+    private static Square UciToSquare(string uci)
+    {
+        var sqNum = (uci[1] - '1') * 8 + (uci[0] - 'a');
+        return new Square(sqNum);
+    }
+
+    private static PieceTypes GetPromotionPiece(char letter)
+    {
+        return letter switch
+        {
+            'q' => PieceTypes.Queen,
+            'k' => PieceTypes.Knight,
+            'b' => PieceTypes.Bishop,
+            'r' => PieceTypes.Rook,
+            _ => PieceTypes.Knight
+        };
     }
 
     public void CheckIfEndGame()
@@ -34,6 +164,17 @@
         if (Game.GameEndType == GameEndTypes.None && Game.Pos.IsMate)
             Game.GameEndType = GameEndTypes.CheckMate;
 
-        Console.WriteLine(Game.GameEndType);
+        Console.WriteLine("Game end type = " + Game.GameEndType);
+    }
+
+    public void PlayStockfish()
+    {
+        if (_selectedLevel is > 0 and < 9)
+            _stockfishActivated = true;
+    }
+
+    public async Task<string> GetStockfishBestMove(string fen)
+    {
+        return await _stockfish.GetBestMoveAsync(new StockfishBestMoveDto(fen, _levels[_selectedLevel].Item2));
     }
 }
