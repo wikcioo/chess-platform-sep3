@@ -6,6 +6,7 @@ using Grpc.Net.Client.Web;
 using HttpClients.ClientInterfaces;
 using HttpClients.Implementations;
 using Microsoft.AspNetCore.Components;
+using BlazorBootstrap;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -26,4 +27,6 @@ builder.Services.AddSingleton(services => GrpcChannel.ForAddress("https://localh
 }));
 
 builder.Services.AddScoped<IUserService, UserHttpClient>();
+// Added BootstrapBlazor Services (1)         
+builder.Services.AddBlazorBootstrap();
 await builder.Build().RunAsync();
