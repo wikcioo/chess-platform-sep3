@@ -3,6 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorWASM", "BlazorWASM\BlazorWASM.csproj", "{C7F7A769-E2D4-430F-AC49-E2B3FE186905}"
 	ProjectSection(ProjectDependencies) = postProject
 		{45B76ECF-884A-4E4D-8940-F2126DEFA2C0} = {45B76ECF-884A-4E4D-8940-F2126DEFA2C0}
+		{7CA0526F-C71C-4D68-8628-A11F3A94F212} = {7CA0526F-C71C-4D68-8628-A11F3A94F212}
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpClients", "HttpClients\HttpClients.csproj", "{45B76ECF-884A-4E4D-8940-F2126DEFA2C0}"
