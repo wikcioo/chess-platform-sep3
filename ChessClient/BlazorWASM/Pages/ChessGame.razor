@@ -5,7 +5,9 @@
 @using HttpClients.Implementations
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
+@using Rudzoft.ChessLib.Extensions
 @using Rudzoft.ChessLib.Factories
+@using Rudzoft.ChessLib.Protocol.UCI
 @using Rudzoft.ChessLib.Types
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
@@ -110,16 +112,20 @@
 
         if ((from is "e1" or "e8") && (to is "c1" or "g1" or "c8" or "g8"))
         {
-            to = from switch
+            var pieceNum = Game.Pos.GetPiece(UciToSquare(from)).AsInt();
+            if (pieceNum == Pieces.WhiteKing.AsInt() || pieceNum == Pieces.BlackKing.AsInt())
             {
-                "e1" when to is "c1" => "a1",
-                "e1" when to is "g1" => "h1",
-                "e8" when to is "c8" => "a8",
-                "e8" when to is "g8" => "h8",
-                _ => to
-                };
-            moveType = MoveTypes.Castling;
-            toSq = UciToSquare(to);
+                to = from switch
+                {
+                    "e1" when to is "c1" => "a1",
+                    "e1" when to is "g1" => "h1",
+                    "e8" when to is "c8" => "a8",
+                    "e8" when to is "g8" => "h8",
+                    _ => to
+                    };
+                moveType = MoveTypes.Castling;
+                toSq = UciToSquare(to);
+            }
         }
         else if (uci.Length == 5)
         {
