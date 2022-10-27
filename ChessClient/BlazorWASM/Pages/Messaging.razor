@@ -1,0 +1,67 @@
+﻿@page "/messaging"
+@using Grpc.Net.Client
+@using GrpcService
+@using Grpc.Core
+@inject GrpcChannel Channel
+
+<PageTitle>Counter</PageTitle>
+
+<div class="card">
+    <h3>CreateUser</h3>
+    <div class="form-group field">
+        <div class="form-group field">
+            <label>Username:</label>
+            <input type="text" @bind="_username"/>
+        </div>
+        <div class="form-group field">
+            <label>Message body:</label>
+            <input type="text" @bind="_messageBody"/>
+        </div>
+        <div class="form-group field">
+            <label>Send to:</label>
+            <input type="text" @bind="_sendTo"/>
+        </div>
+    </div>
+    <div class="button-row">
+        <button @onclick="WriteMessageAsync" disabled="@(IsValid())" class="acceptbtn">Create</button>
+    </div>
+    <span>@_resultMsg</span>
+</div>
+
+@code {
+    private string _username = "";
+    private string _messageBody = "";
+    private string _sendTo = "";
+    private Chat.ChatClient _client;
+    private AsyncServerStreamingCall<Message> _call;
+    private string _resultMsg = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _client = new Chat.ChatClient(Channel);
+        _call = _client.StartGame(new RequestGame
+        {
+            Username = "John",
+            Receiver = "Bob"
+        });
+        while (await _call.ResponseStream.MoveNext())
+        {
+            var message = _call.ResponseStream.Current;
+            _resultMsg += $"{message.Username}:{message.Body}\n";
+            StateHasChanged();
+            Console.WriteLine(message);
+        }
+    }
+
+    private async void WriteMessageAsync()
+    {
+        await _client.WriteAsync(
+            new Message() {Username = "John", Body = _messageBody, Receiver = "Bob"});
+    }
+
+    private bool IsValid()
+    {
+        return string.IsNullOrEmpty(_username) || string.IsNullOrEmpty(_messageBody) || string.IsNullOrEmpty(_sendTo);
+    }
+
+}
