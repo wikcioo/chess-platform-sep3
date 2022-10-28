@@ -1,4 +1,3 @@
-
 .chess-board {
     display: grid;
     width: 800px;
@@ -6,4 +5,9 @@
     grid-template-columns: repeat(8, 100px);
     grid-auto-rows: 100px;
     border: 10px solid black;
+}
+
+.black-side
+{
+    rotate: 180deg;
 }
