@@ -7,7 +7,6 @@
 @using Rudzoft.ChessLib.Enums
 @using Rudzoft.ChessLib.Extensions
 @using Rudzoft.ChessLib.Factories
-@using Rudzoft.ChessLib.Protocol.UCI
 @using Rudzoft.ChessLib.Types
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
@@ -15,7 +14,7 @@
 <div class="chess-board">
     <ul style="list-style-type: none; list-style-image: none">
         <li style="float: left; margin: 0 50px">
-            <ChessBoardComponent OnMoveMade="MakeMove" Position="@Game.Pos" />
+            <ChessBoardComponent OnMoveMade="MakeMove" Position="@Game.Pos" IsWhiteSide="@_isWhiteSide"/>
         </li>
         <li style="float: left">
             <div class="stockfish-levels">
@@ -27,7 +26,17 @@
                      }
                 </select>
             </div>
-            <button disabled="@(_stockfishActivated)" @onclick="PlayStockfish">Play</button>
+            <button style="margin: 20px" disabled="@(_stockfishActivated)" @onclick="PlayStockfish">Play</button>
+            <div>
+                <input type="radio" name="play-side" id="white" value="White"
+                       @onchange="() => _isWhiteSide = true"
+                       checked="@(_isWhiteSide)"/>
+                <label for="white">White</label>
+                <input type="radio" name="play-side" id="black" value="Black"
+                       @onchange="() => _isWhiteSide = false"
+                       checked="@(!_isWhiteSide)"/>
+                <label for="black">Black</label>
+            </div>
         </li>
     </ul>
 </div>
@@ -73,6 +82,8 @@
     
     private int _selectedLevel = 1;
     private bool _stockfishActivated;
+
+    private bool _isWhiteSide = true;
 
     public IGame Game { get; set; }
     

@@ -14,6 +14,10 @@
     cursor: pointer;
 }
 
+.black-side {
+    rotate: 180deg;
+}
+
 .piece-icon {
 }
 
@@ -45,5 +49,4 @@ div[class|="square-overlay"] {
     border-radius: 100%;
     display: block !important;
     outline: 5px solid transparent;
-
 }
