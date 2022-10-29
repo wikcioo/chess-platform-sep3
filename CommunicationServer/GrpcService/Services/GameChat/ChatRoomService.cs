@@ -23,7 +23,7 @@ public class ChatRoomService
         }
     }
 
-    public IObservable<Message> GetMessagesAsObservable(RequestGame request)
+    public IObservable<Message> GetMessagesAsObservable(RequestMessage request)
     {
         string key = GenerateKey(request.Username, request.Receiver);
         if (_chatRooms.ContainsKey(key))
