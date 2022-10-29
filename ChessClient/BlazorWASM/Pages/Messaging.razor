@@ -39,7 +39,7 @@
     protected override async Task OnInitializedAsync()
     {
         _client = new Chat.ChatClient(Channel);
-        _call = _client.StartGame(new RequestGame
+        _call = _client.StartGame(new RequestMessage
         {
             Username = "John",
             Receiver = "Bob"

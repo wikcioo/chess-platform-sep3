@@ -12,11 +12,11 @@ message Message {
 }
 message Empty{}
 
-message RequestGame{
+message RequestMessage {
   string username = 1;
   string receiver = 2;
 }
 service Chat {
   rpc Write(Message) returns (Empty) {}
-  rpc StartGame(RequestGame) returns (stream Message){}
+  rpc StartGame(RequestMessage) returns (stream Message){}
 }

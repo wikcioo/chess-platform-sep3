@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcService";
+
+package game;
+
+message RequestGame {
+  string username  = 1;
+  string game_type = 2;
+  string opponent  = 3;
+  uint32 seconds   = 4;
+  uint32 increment = 5;
+  bool   is_white  = 6;
+}
+
+message ResponseGame {
+  bool   success   = 1;
+  uint64 game_room = 2;
+  string opponent  = 3;
+  string fen       = 4;
+  bool   is_white  = 5;
+}
+
+message RequestMakeMove {
+  uint64 game_room   = 1;
+  string to_square   = 2;
+  string from_square = 3;
+  uint32 move_type   = 4;
+  uint32 promotion   = 5;
+  string username    = 6;
+}
+
+message OpponentMove {
+  string fen            = 1;
+  string game_end_type  = 2;
+  uint64 move_made_time = 3;
+  uint64 time_left      = 4;
+}
+
+message RequestJoinGame {
+  uint64 game_room = 1;
+  string username  = 2;
+}
+
+message Acknowledge {
+  uint32 status = 1;
+}
+
+service Game {
+  rpc StartGame(RequestGame) returns (ResponseGame) {}
+  rpc JoinGame(RequestJoinGame) returns (stream OpponentMove) {}
+  rpc MakeMove(RequestMakeMove) returns (Acknowledge) {}
+}
