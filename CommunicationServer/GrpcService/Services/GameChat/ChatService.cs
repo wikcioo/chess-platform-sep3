@@ -12,7 +12,7 @@ public class ChatService : Chat.ChatBase
         _service = chatRoomService;
     }
 
-    public override async Task StartGame(RequestMessage request, IServerStreamWriter<Message> responseStream, ServerCallContext context)
+    public override async Task StartMessaging(RequestMessage request, IServerStreamWriter<Message> responseStream, ServerCallContext context)
     {
         
         //Add listen here

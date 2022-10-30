@@ -18,5 +18,5 @@ message RequestMessage {
 }
 service Chat {
   rpc Write(Message) returns (Empty) {}
-  rpc StartGame(RequestMessage) returns (stream Message){}
+  rpc StartMessaging(RequestMessage) returns (stream Message){}
 }
