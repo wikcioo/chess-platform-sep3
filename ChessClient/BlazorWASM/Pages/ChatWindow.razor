@@ -1,0 +1,67 @@
+@using GrpcService
+@using Grpc.Core
+@using Grpc.Net.Client
+@inject GrpcChannel Channel
+
+
+<div class="chat-window">
+    <div class="message-history">@((MarkupString) _resultMsg)</div>
+    <div class="message-body">
+        <input oninput="(this.dispatchEvent(new CustomEvent('change', { bubbles: true })))" class="message-input" type="text" placeholder="Enter message" @bind="_messageBody" @onkeydown="OnKeyPress "/>
+        <button @onclick="WriteMessageAsync" enabled="@(IsValid())" class="acceptbtn">Send</button>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public string Username { get; set; }
+
+    private string _messageBody = "";
+
+    [Parameter]
+    public string Receiver { get; set; }
+
+    private Chat.ChatClient _client;
+    private AsyncServerStreamingCall<Message> _call;
+    private string _resultMsg = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _client = new Chat.ChatClient(Channel);
+        _call = _client.StartMessaging(new RequestMessage
+        {
+            Username = Username,
+            Receiver = Receiver
+        });
+        while (await _call.ResponseStream.MoveNext())
+        {
+            var message = _call.ResponseStream.Current;
+            _resultMsg += $"<div>{message.Username}:{message.Body}\n</div>";
+            StateHasChanged();
+        }
+    }
+
+    private async Task WriteMessageAsync()
+    {
+        await _client.WriteAsync(
+            new Message {Username = Username, Body = _messageBody, Receiver = Receiver});
+        _messageBody = "";
+        StateHasChanged();
+    }
+
+    private bool IsValid()
+    {
+        return !string.IsNullOrEmpty(_messageBody);
+    }
+
+    private async void OnKeyPress (KeyboardEventArgs e)
+    {
+        if (e.Code is not ("Enter" or "NumpadEnter")) return;
+        if (IsValid())
+        {
+            await WriteMessageAsync();
+        }
+    }
+
+}
