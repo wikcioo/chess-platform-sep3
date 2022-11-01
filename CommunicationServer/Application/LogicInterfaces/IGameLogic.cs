@@ -6,6 +6,6 @@ namespace Application.LogicInterfaces;
 public interface IGameLogic
 {
     Task<ResponseGameDto> StartGame(RequestGameDto dto);
-    IObservable<MoveMadeDto> JoinGame(RequestJoinGameDto dto);    
+    IObservable<JoinedGameStreamDto> JoinGame(RequestJoinGameDto dto);    
     Task<AckTypes> MakeMove(MakeMoveDto dto);
 }

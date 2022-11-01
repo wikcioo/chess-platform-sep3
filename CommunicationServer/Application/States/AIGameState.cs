@@ -1,6 +1,6 @@
 using Domain.Enums;
 
-namespace Domain.Models.GameRoomStates;
+namespace Application.States;
 
 public class AiGameState : IGameState
 {
