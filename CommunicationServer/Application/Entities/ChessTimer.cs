@@ -8,8 +8,8 @@ public class ChessTimer
 {
     private readonly PausableTimer _whiteTimer = new(1000.0);
     private readonly PausableTimer _blackTimer = new(1000.0);
-    private readonly uint _timeControlSeconds;
-    private readonly uint _timeControlIncrement;
+    private readonly uint _timeControlBaseMs;
+    private readonly uint _timeControlIncrementMs;
     private readonly ValueWrapper<bool> _whitePlaying;
     public double WhiteRemainingTimeMs { get; private set; }
     public double BlackRemainingTimeMs { get; private set; }
@@ -20,12 +20,11 @@ public class ChessTimer
     public ChessTimer(ref ValueWrapper<bool> whitePlaying, uint timeControlSeconds, uint timeControlIncrement)
     {
         _whitePlaying = whitePlaying;
-        
-        _timeControlSeconds = timeControlSeconds;
-        _timeControlIncrement = timeControlIncrement;
+        _timeControlBaseMs = timeControlSeconds * 1000;
+        _timeControlIncrementMs = timeControlIncrement * 1000;
 
-        WhiteRemainingTimeMs = timeControlSeconds * 1000;
-        BlackRemainingTimeMs = timeControlSeconds * 1000;
+        WhiteRemainingTimeMs = _timeControlBaseMs;
+        BlackRemainingTimeMs = _timeControlBaseMs;
         
         _whiteTimer.Elapsed += OnOneSecElapsed;
         _blackTimer.Elapsed += OnOneSecElapsed;
@@ -42,14 +41,14 @@ public class ChessTimer
         if (_whitePlaying.Value)
         {
             _whitePlaying.Value = false;
-            WhiteRemainingTimeMs += _timeControlIncrement * 1000;
+            WhiteRemainingTimeMs += _timeControlIncrementMs;
             WhiteRemainingTimeMs -= _whiteTimer.Pause();
             _blackTimer.Resume();
         }
         else
         {
             _whitePlaying.Value = true;
-            BlackRemainingTimeMs += _timeControlIncrement * 1000;
+            BlackRemainingTimeMs += _timeControlIncrementMs;
             BlackRemainingTimeMs -= _blackTimer.Pause();
             _whiteTimer.Resume();
         }
