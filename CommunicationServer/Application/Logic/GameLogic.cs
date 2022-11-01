@@ -1,7 +1,7 @@
+using Application.Entities;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.Enums;
-using Domain.Models;
 using Rudzoft.ChessLib.Fen;
 
 namespace Application.Logic;
@@ -27,16 +27,13 @@ public class GameLogic : IGameLogic
             _ => throw new Exception("Invalid Game type exception") 
         };
 
-        GameRoom gameRoom = new(gameType){
-            Seconds = dto.Seconds,
-            Increment = dto.Increment
-        };
-        
+        GameRoom gameRoom = new(gameType, dto.Seconds, dto.Increment);
         _gameRooms.Add(_nextGameId++, gameRoom);
+        
         return Task.FromResult(responseDto);
     }
 
-    public IObservable<MoveMadeDto> JoinGame(RequestJoinGameDto dto){
+    public IObservable<ResponseJoinedGameDto> JoinGame(RequestJoinGameDto dto){
         
         if(_gameRooms.ContainsKey(dto.GameRoom))
         {
