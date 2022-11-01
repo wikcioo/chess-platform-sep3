@@ -25,7 +25,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="wwwroot\icons" />
         <ProjectReference Include="..\HttpClients\HttpClients.csproj" />
         <Protobuf Include="..\..\CommunicationServer\GrpcService\Protos\chat.proto" GrpcServices="Client" />
         <Protobuf Include="..\..\CommunicationServer\GrpcService\Protos\game.proto" GrpcServices="Client" />
