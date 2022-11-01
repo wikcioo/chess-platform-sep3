@@ -2,11 +2,9 @@
 @using Domain.DTOs
 @namespace BlazorWASM.Pages.ChessComponents
 
-<div class="square" style="
-background-color: @(IsBlack ? "#C0C0C0" : "#FFFFFF");
-">
+<div class="square" style="background-color: @(IsBlackSquare ? "#C0C0C0" : "#FFFFFF")">
     <div class="@("square-overlay" + RenderOverlayStyle() )" @onclick="OnClicked" ></div>
-    <div class="piece" @onclick="OnClicked">@((MarkupString)RenderPiece(false))
+    <div class="piece @(!IsWhiteSide ? "black-side" : "")" @onclick="OnClicked">@((MarkupString)RenderPiece(false))
     </div>
 </div>
 
@@ -15,7 +13,7 @@ background-color: @(IsBlack ? "#C0C0C0" : "#FFFFFF");
     public Squares SquareId { get; set; }
 
     [Parameter] 
-    public bool IsBlack { get; set; }
+    public bool IsBlackSquare { get; set; }
     
     [Parameter] 
     public bool HasMoveTo { get; set; }
@@ -26,6 +24,9 @@ background-color: @(IsBlack ? "#C0C0C0" : "#FFFFFF");
     [Parameter] 
     public EventCallback<ChessClickDto> OnClick { get; set; }
     
+    [Parameter]
+    public bool IsWhiteSide { get; set; }
+
     private void OnClicked()
     {
         OnClick.InvokeAsync(new ChessClickDto(Piece?.Value, SquareId, HasMoveTo));
@@ -81,8 +82,6 @@ background-color: @(IsBlack ? "#C0C0C0" : "#FFFFFF");
                 _ => throw new ArgumentOutOfRangeException()
                 }; 
         }
-        
-        
     }
 
     private string RenderOverlayStyle()
@@ -96,7 +95,5 @@ background-color: @(IsBlack ? "#C0C0C0" : "#FFFFFF");
             return "-quiet";
 
         return "-capture";
-
     }
-
 }

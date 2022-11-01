@@ -1,6 +1,6 @@
 ﻿using Grpc.Core;
 
-namespace GrpcService.Services;
+namespace GrpcService.Services.GameChat;
 
 public class ChatService : Chat.ChatBase
 {
@@ -12,7 +12,7 @@ public class ChatService : Chat.ChatBase
         _service = chatRoomService;
     }
 
-    public override async Task StartGame(RequestGame request, IServerStreamWriter<Message> responseStream, ServerCallContext context)
+    public override async Task StartMessaging(RequestMessage request, IServerStreamWriter<Message> responseStream, ServerCallContext context)
     {
         
         //Add listen here

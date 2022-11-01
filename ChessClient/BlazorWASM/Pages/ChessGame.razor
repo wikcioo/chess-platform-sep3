@@ -1,40 +1,62 @@
 @page "/ChessGame"
 @using BlazorWASM.Pages.ChessComponents
-@using Domain.DTOs
+@using Domain.Enums
+@using Grpc.Net.Client
+@using GrpcService
 @using HttpClients.ClientInterfaces
 @using HttpClients.Implementations
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
-@using Rudzoft.ChessLib.Extensions
 @using Rudzoft.ChessLib.Factories
-@using Rudzoft.ChessLib.Protocol.UCI
+@using Rudzoft.ChessLib.Fen
 @using Rudzoft.ChessLib.Types
+@using Game = GrpcService.Game
+@inject GrpcChannel Channel
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
 
 <div class="chess-board">
     <ul style="list-style-type: none; list-style-image: none">
         <li style="float: left; margin: 0 50px">
-            <ChessBoardComponent OnMoveMade="MakeMove" Position="@Game.Pos" />
+            <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@_isWhiteSide"/>
         </li>
         <li style="float: left">
             <div class="stockfish-levels">
                 <label for="stockfish_levels">Choose a Stockfish Level:</label>
                 <select id="stockfish_levels" class="stockfish-levels" @bind="@_selectedLevel">
-                     @foreach (var level in _levels)
-                     { 
-                         <option value=@level.Key>Level: @level.Key, Skill: @level.Value.Item1/20, Depth: @level.Value.Item2, @level.Value.Item3 ms</option>
-                     }
+                    @foreach (var level in _levels)
+                    {
+                        <option value=@level.Key>Level: @level.Key, Skill: @level.Value.Item1/20, Depth: @level.Value.Item2, @level.Value.Item3 ms</option>
+                    }
                 </select>
             </div>
-            <button disabled="@(_stockfishActivated)" @onclick="PlayStockfish">Play</button>
+            <button style="margin: 20px" disabled="@(_stockfishActivated)" @onclick="PlayStockfish">Play</button>
+            <div>
+                <input type="radio" name="play-side" id="white" value="White"
+                       @onchange="() => _isWhiteSide = true"
+                       checked="@(_isWhiteSide)"/>
+                <label for="white">White</label>
+                <input type="radio" name="play-side" id="black" value="Black"
+                       @onchange="() => _isWhiteSide = false"
+                       checked="@(!_isWhiteSide)"/>
+                <label for="black">Black</label>
+            </div>
+            <div>
+                <label>Game room:</label>
+                <input type="text" @bind="_gameRoomInt"/>
+                <button @onclick="JoinGame">Join</button>
+            </div>
         </li>
     </ul>
 </div>
 
 @code {
+
+    private Game.GameClient _client;
+    private IPosition _position = new Position(new Board(),new PieceValue());
+
     private readonly IStockfishService _stockfish = new StockfishHttpClient(new HttpClient());
-    
+
     private readonly Dictionary<int, Tuple<int, int, int>> _levels = new()
     {
         {
@@ -70,101 +92,81 @@
             new Tuple<int, int, int>(20, 12, 400)
         },
     };
-    
+
     private int _selectedLevel = 1;
     private bool _stockfishActivated;
 
-    public IGame Game { get; set; }
-    
+    private bool _isWhiteSide = true;
+    private ulong _gameRoomInt = 0;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _client = new Game.GameClient(Channel);
+        await CreateGame();
+    }
+
     public ChessGame()
     {
-        Game = GameFactory.Create();
-        Game.NewGame();
+    // Game = GameFactory.Create();
+    // Game.NewGame();
+        
+        SetFenPosition(Fen.StartPositionFen);
     }
 
-    public async void MakeMove(Move move)
+    private async Task CreateGame()
     {
-        Game.Pos.MakeMove(move, Game.Pos.State);
-
-        if (_stockfishActivated)
+        var responseGame = await _client.StartGameAsync(new RequestGame()
         {
-            var bestMove = await GetStockfishBestMove(Game.Pos.FenNotation);
-            Console.WriteLine("MakeMove: bestMove = " + bestMove);
-            Game.Pos.MakeMove(UciMoveToRudzoftMove(bestMove), Game.Pos.State);
+            GameType = "AI",
+            Increment = 0,
+            IsWhite = false,
+            Opponent = "",
+            Seconds = 500,
+            Username = "Bob"
+        });
+        _gameRoomInt = responseGame.GameRoom;
+
+    // SetFenPosition(responseGame.Fen);
+        Console.WriteLine(responseGame.GameRoom);
+        Console.WriteLine(responseGame.Success);
+    }
+
+    private async Task JoinGame()
+    {
+        var call = _client.JoinGame(new RequestJoinGame()
+        {
+            GameRoom = _gameRoomInt,
+            Username = "Bob"
+        });
+        
+        while (await call.ResponseStream.MoveNext(CancellationToken.None))
+        {
+            var message = call.ResponseStream.Current;
+            SetFenPosition(message.Fen);
+            Console.WriteLine(message.Fen);
             StateHasChanged();
         }
-        
-        CheckIfEndGame();
     }
 
-    private Move UciMoveToRudzoftMove(string uci)
+    private void SetFenPosition(string fen)
     {
-        if (uci.Length < 4) throw new Exception("UCI move does not have 4 characters!");
-        
-        var from = uci[..2];
-        var to = uci[2..];
+        FenData fenData = new FenData(fen);
+        State state = new State();
+        _position.Set(in fenData, ChessMode.Normal, state);
+    }
 
-        var fromSq = UciToSquare(from);
-        var toSq = UciToSquare(to);
-
-        var moveType = MoveTypes.Normal;
-        var promotionPiece = PieceTypes.Knight;
-
-        if ((from is "e1" or "e8") && (to is "c1" or "g1" or "c8" or "g8"))
+    public async Task<int> MakeMove(Move move)
+    {
+        var _call = await _client.MakeMoveAsync(new RequestMakeMove()
         {
-            var pieceNum = Game.Pos.GetPiece(UciToSquare(from)).AsInt();
-            if (pieceNum == Pieces.WhiteKing.AsInt() || pieceNum == Pieces.BlackKing.AsInt())
-            {
-                to = from switch
-                {
-                    "e1" when to is "c1" => "a1",
-                    "e1" when to is "g1" => "h1",
-                    "e8" when to is "c8" => "a8",
-                    "e8" when to is "g8" => "h8",
-                    _ => to
-                    };
-                moveType = MoveTypes.Castling;
-                toSq = UciToSquare(to);
-            }
-        }
-        else if (uci.Length == 5)
-        {
-            moveType = MoveTypes.Promotion;
-            promotionPiece = GetPromotionPiece(uci[4]);
-        }
-        else if (Game.Pos.EnPassantSquare.RankChar != '9')
-            moveType = MoveTypes.Enpassant;
-
-
-        var move = new Move(fromSq, toSq, moveType, promotionPiece);
-        return move;
-    }
-
-    private static Square UciToSquare(string uci)
-    {
-        var sqNum = (uci[1] - '1') * 8 + (uci[0] - 'a');
-        return new Square(sqNum);
-    }
-
-    private static PieceTypes GetPromotionPiece(char letter)
-    {
-        return letter switch
-        {
-            'q' => PieceTypes.Queen,
-            'k' => PieceTypes.Knight,
-            'b' => PieceTypes.Bishop,
-            'r' => PieceTypes.Rook,
-            _ => PieceTypes.Knight
-        };
-    }
-
-    public void CheckIfEndGame()
-    {
-        Game.UpdateDrawTypes();
-        if (Game.GameEndType == GameEndTypes.None && Game.Pos.IsMate)
-            Game.GameEndType = GameEndTypes.CheckMate;
-
-        Console.WriteLine("Game end type = " + Game.GameEndType);
+            FromSquare = move.FromSquare().ToString(),
+            ToSquare = move.ToSquare().ToString(),
+            GameRoom = _gameRoomInt,
+            MoveType = (uint) move.MoveType(),
+            Promotion = (uint) move.PromotedPieceType().AsInt()
+        });
+        return (int) _call.Status;
     }
 
     public void PlayStockfish()
@@ -173,8 +175,4 @@
             _stockfishActivated = true;
     }
 
-    public async Task<string> GetStockfishBestMove(string fen)
-    {
-        return await _stockfish.GetBestMoveAsync(new StockfishBestMoveDto(fen, _levels[_selectedLevel].Item2));
-    }
 }

@@ -4,43 +4,45 @@
 @using Rudzoft.ChessLib.MoveGeneration
 @namespace BlazorWASM.Pages.ChessComponents
 
-
-<div class="chess-board">
+<div class="chess-board @(!IsWhiteSide ? "black-side" : "")">
     
 @{
     var index = 0;
-    var isBlack = _isFirstSquareBlack;
+    var isBlackSquare = _isFirstSquareBlack;
     _currentPieces = ParsePositionToPieces();
 
     for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
     {
         for (var file = Files.FileA; file <= Files.FileH; file++)
         {
-            isBlack = !isBlack;
+            isBlackSquare = !isBlackSquare;
             var squareId = new Square(rank,file).Value;
             var hasMoveTo = _currentMoves.Any(move => move.ToSquare() == squareId && move.IsValidMove());
             <SquareComponent
                 SquareId="@squareId"
                 HasMoveTo="@hasMoveTo"
-                IsBlack="@isBlack"
+                IsBlackSquare="@isBlackSquare"
                 Piece="@_currentPieces[index]"
-                OnClick="@OnSquareClicked"/>
+                OnClick="@OnSquareClicked"
+                IsWhiteSide="@IsWhiteSide"/>
 
             index++;
         }
-        isBlack = !isBlack;
+        isBlackSquare = !isBlackSquare;
     }
 }
 
 </div>
 
 @code {
-
     [Parameter] 
     public IPosition? Position { get; set; }
 
     [Parameter] 
     public EventCallback<Move> OnMoveMade { get; set; }
+    
+    [Parameter]
+    public bool IsWhiteSide { get; set; }
 
     private List<Piece> _currentPieces = EmptyList<Piece>();
     private List<Move> _currentMoves = EmptyList<Move>();
@@ -104,5 +106,4 @@
         OnMoveMade.InvokeAsync(move);
         _currentMoves = EmptyList<Move>();
     }
-
 }

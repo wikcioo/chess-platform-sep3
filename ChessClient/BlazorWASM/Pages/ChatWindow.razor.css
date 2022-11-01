@@ -1,0 +1,19 @@
+.message-body {
+    margin-top: 1em;
+    display: flex;
+}
+
+.message-input {
+    width: 100%;
+}
+
+.chat-window {
+    border: black solid 1px;
+    width: 20%;
+    padding: 1rem;
+}
+
+.message-history {
+    height: 400px;
+    overflow: auto;
+}
