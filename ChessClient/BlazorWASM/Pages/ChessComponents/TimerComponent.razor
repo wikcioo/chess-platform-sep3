@@ -1,0 +1,27 @@
+@using System.Text
+@namespace BlazorWASM.Pages.ChessComponents
+
+<div class="timer" style="color: @(Active ? "magenta" : "black")">
+    <h1>@PrintFormattedTime(Seconds)</h1>
+</div>
+
+@code {
+    [Parameter]
+    public bool Active { get; set; }
+    
+    [Parameter]
+    public double Seconds { get; set; }
+
+    private string PrintFormattedTime(double secs)
+    {
+        var sb = new StringBuilder();
+
+        var minutes = Math.Floor(secs / 60);
+        var seconds = secs % 60;
+
+        sb.Append($"{minutes:00}");
+        sb.Append($":{Math.Round(seconds, 2)}");
+
+        return sb.ToString();
+    }
+}
