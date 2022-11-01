@@ -1,0 +1,111 @@
+﻿
+
+@namespace ModalComponent
+
+@if (ShowRepetitionModal)
+{
+    <div class="modal-background" style="display:block; height: 100%">
+        <div class="modal-box">
+            
+            @RepetitionModal
+            
+
+        </div>
+    </div>
+}
+
+@if (ShowPatModal)
+{
+    <div class="modal-background" style="display:block; height: 100%">
+        <div class="modal-box">
+            
+            @PatModal
+            
+
+        </div>
+    </div>
+}
+
+@if (ShowFiftyMoveModal)
+{
+    <div class="modal-background" style="display:block; height: 100%">
+        <div class="modal-box">
+            
+            @FiftyMoveModal
+            
+
+        </div>
+    </div>
+}
+
+@if (ShowMaterialDrawnModal)
+{
+    <div class="modal-background" style="display:block; height: 100%">
+        <div class="modal-box">
+            
+            @MaterialDrawnModal
+            
+
+        </div>
+    </div>
+}
+
+@if (ShowCheckMateModal)
+{
+    <div class="modal-background" style="display:block; height: 100%">
+        <div class="modal-box">
+            
+            @CheckMateModal
+            
+
+        </div>
+    </div>
+}
+
+@if (ShowTimeIsUpModal)
+{
+    <div class="modal-background" style="display:block; height: 100%">
+        <div class="modal-box">
+            
+            @TimeIsUpModal
+            
+
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public RenderFragment RepetitionModal { get; set; } = null!;
+    
+    [Parameter]
+    public RenderFragment PatModal { get; set; } = null!;
+    [Parameter]
+    public RenderFragment FiftyMoveModal { get; set; } = null!;
+    [Parameter]
+    public RenderFragment MaterialDrawnModal { get; set; } = null!;
+    [Parameter]
+    public RenderFragment CheckMateModal { get; set; } = null!;
+    [Parameter]
+    public RenderFragment TimeIsUpModal { get; set; } = null!;
+    
+    [Parameter]
+    public bool ShowRepetitionModal { get; set; }
+    
+    [Parameter]
+    public bool ShowPatModal { get; set; }
+    
+    [Parameter]
+    public bool ShowFiftyMoveModal { get; set; }
+    
+    [Parameter]
+    public bool ShowMaterialDrawnModal { get; set; }
+    
+    [Parameter]
+    public bool ShowCheckMateModal { get; set; }
+    
+    [Parameter]
+    public bool ShowTimeIsUpModal { get; set; }
+
+}
