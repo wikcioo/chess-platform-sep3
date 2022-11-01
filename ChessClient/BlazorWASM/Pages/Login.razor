@@ -7,8 +7,8 @@
         <div class="card">
             <h3>Please login</h3>
             <div class="field">
-                <label>User name:</label>
-                <input type="text" @bind="_userName"/>
+                <label>Email:</label>
+                <input type="text" @bind="_email"/>
             </div>
             <div class="field">
                 <label style="text-align: center">Password:</label>
@@ -34,7 +34,7 @@
     </Authorized>
 </AuthorizeView>
 @code {
-    private string _userName;
+    private string _email;
     private string _password;
     private string _errorLabel;
 
@@ -43,7 +43,7 @@
         _errorLabel = "";
         try
         {
-            await AuthService.LoginAsync(_userName, _password);
+            await AuthService.LoginAsync(_email, _password);
             NavMgr.NavigateTo("/");
         }
         catch (Exception e)
