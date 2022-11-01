@@ -26,7 +26,7 @@ message RequestJoinGame {
   string username  = 2;
 }
 
-message ResponseJoinedGame {
+message JoinedGameStream {
   string fen            = 1;
   uint32 game_end_type  = 2;
   double time_left_ms   = 3;
@@ -48,6 +48,6 @@ message Acknowledge {
 
 service Game {
   rpc StartGame(RequestGame) returns (ResponseGame) {}
-  rpc JoinGame(RequestJoinGame) returns (stream ResponseJoinedGame) {}
+  rpc JoinGame(RequestJoinGame) returns (stream JoinedGameStream) {}
   rpc MakeMove(RequestMakeMove) returns (Acknowledge) {}
 }

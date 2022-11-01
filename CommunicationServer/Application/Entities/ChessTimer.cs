@@ -14,7 +14,7 @@ public class ChessTimer
     public double WhiteRemainingTimeMs { get; private set; }
     public double BlackRemainingTimeMs { get; private set; }
     
-    public delegate void EventHandler(object sender, EventArgs args, ResponseJoinedGameDto dto);
+    public delegate void EventHandler(object sender, EventArgs args, JoinedGameStreamDto dto);
     public event EventHandler ThrowEvent = delegate{};
 
     public ChessTimer(ref ValueWrapper<bool> whitePlaying, uint timeControlSeconds, uint timeControlIncrement)
@@ -65,7 +65,7 @@ public class ChessTimer
         if (WhiteRemainingTimeMs <= 0 || BlackRemainingTimeMs <= 0)
         {
             StopTimers();
-            ThrowEvent(this, EventArgs.Empty, new ResponseJoinedGameDto()
+            ThrowEvent(this, EventArgs.Empty, new JoinedGameStreamDto()
             {
                 FenString = "",
                 IsWhite = _whitePlaying.Value,
@@ -75,7 +75,7 @@ public class ChessTimer
         }
         else
         {
-            ThrowEvent(this, EventArgs.Empty, new ResponseJoinedGameDto()
+            ThrowEvent(this, EventArgs.Empty, new JoinedGameStreamDto()
             {
                 FenString = "",
                 IsWhite = _whitePlaying.Value,

@@ -33,7 +33,7 @@ public class GameLogic : IGameLogic
         return Task.FromResult(responseDto);
     }
 
-    public IObservable<ResponseJoinedGameDto> JoinGame(RequestJoinGameDto dto){
+    public IObservable<JoinedGameStreamDto> JoinGame(RequestJoinGameDto dto){
         
         if(_gameRooms.ContainsKey(dto.GameRoom))
         {

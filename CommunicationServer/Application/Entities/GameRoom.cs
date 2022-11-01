@@ -16,12 +16,12 @@ public class GameRoom
 {
     private readonly IGame _game;
     private readonly IGameState _state;
-    private readonly List<ResponseJoinedGameDto> _gameData = new();
+    private readonly List<JoinedGameStreamDto> _gameData = new();
     private readonly ChessTimer _chessTimer;
     private readonly ValueWrapper<bool> _whitePlaying = new(true);
     private bool _firstMovePlayed;
     private bool _gameIsActive = true;
-    public event Action<ResponseJoinedGameDto> GameJoined = delegate{};
+    public event Action<JoinedGameStreamDto> GameJoined = delegate{};
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
 
@@ -65,7 +65,7 @@ public class GameRoom
         
         _chessTimer.UpdateTimers();
         
-        var responseJoinedGameDto = new ResponseJoinedGameDto()
+        var responseJoinedGameDto = new JoinedGameStreamDto()
         {
             FenString = _game.Pos.FenNotation,
             TimeLeftMs = !_whitePlaying.Value ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
@@ -158,9 +158,9 @@ public class GameRoom
         };
     }
 
-    public IObservable<ResponseJoinedGameDto> GetMovesAsObservable()
+    public IObservable<JoinedGameStreamDto> GetMovesAsObservable()
     {
-        var newMoves = Observable.FromEvent<ResponseJoinedGameDto>(
+        var newMoves = Observable.FromEvent<JoinedGameStreamDto>(
             x => GameJoined += x,
             x => GameJoined -= x);
         return _gameData.ToObservable().Concat(newMoves);

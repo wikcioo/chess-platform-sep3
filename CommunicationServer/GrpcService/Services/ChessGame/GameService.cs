@@ -37,7 +37,7 @@ public class GameService : Game.GameBase
         return response;
     }
 
-    public override async Task JoinGame(RequestJoinGame request, IServerStreamWriter<ResponseJoinedGame> responseStream,
+    public override async Task JoinGame(RequestJoinGame request, IServerStreamWriter<JoinedGameStream> responseStream,
         ServerCallContext context)
     {
         //Add listen here
@@ -52,7 +52,7 @@ public class GameService : Game.GameBase
                 };
                 await _gameLogic.JoinGame(dto)
                     .ToAsyncEnumerable()
-                    .ForEachAwaitAsync(async (x) => await responseStream.WriteAsync(new ResponseJoinedGame
+                    .ForEachAwaitAsync(async (x) => await responseStream.WriteAsync(new JoinedGameStream()
                     {
                         Fen = x.FenString,
                         GameEndType = x.GameEndType,
