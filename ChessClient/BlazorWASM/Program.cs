@@ -6,6 +6,9 @@ using Grpc.Net.Client.Web;
 using HttpClients.ClientInterfaces;
 using HttpClients.Implementations;
 // using BlazorBootstrap;
+using BlazorWASM.Auth;
+using Domain.Auth;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -25,6 +28,13 @@ builder.Services.AddSingleton(services => GrpcChannel.ForAddress("https://localh
     HttpHandler = new GrpcWebHandler(new HttpClientHandler())
 }));
 
+AuthorizationPolicies.AddPolicies(builder.Services);
+
 builder.Services.AddScoped<IUserService, UserHttpClient>();
 // builder.Services.AddBlazorBootstrap();
+builder.Services.AddScoped<IAuthService, JwtAuthService>();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthProvider>();
+
+builder.Services.AddAuthorizationCore();
+
 await builder.Build().RunAsync();
