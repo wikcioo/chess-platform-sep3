@@ -1,24 +1,33 @@
 using System.Reactive.Linq;
+using Application.States;
+using Application.Utils;
 using Domain.DTOs;
 using Domain.Enums;
-using Domain.Models.GameRoomStates;
 using Rudzoft.ChessLib;
+using Rudzoft.ChessLib.Enums;
 using Rudzoft.ChessLib.Factories;
 using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.MoveGeneration;
 using Rudzoft.ChessLib.Types;
 
-namespace Domain.Models;
+namespace Application.Entities;
 
 public class GameRoom
 {
     private readonly IGame _game;
-    private readonly IGameState State;
-    private readonly List<MoveMadeDto> _moves = new();
+    private readonly IGameState _state;
+    private readonly List<JoinedGameStreamDto> _gameData = new();
+    private readonly ChessTimer _chessTimer;
+    private readonly ValueWrapper<bool> _whitePlaying = new(true);
+    private bool _firstMovePlayed;
+    private bool _gameIsActive = true;
+    public event Action<JoinedGameStreamDto> GameJoined = delegate{};
+    public string? PlayerWhite { get; set; }
+    public string? PlayerBlack { get; set; }
 
-    public GameRoom(GameStateTypes gameType, string? fen = null)
+    public GameRoom(GameStateTypes gameType, uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
     {
-        State = gameType switch
+        _state = gameType switch
         {
             GameStateTypes.Ai => new AiGameState(),
             GameStateTypes.Friend => new FriendGameState(),
@@ -28,31 +37,44 @@ public class GameRoom
 
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
+
+        _chessTimer = new ChessTimer(ref _whitePlaying, timeControlSeconds, timeControlIncrement);
+        _chessTimer.ThrowEvent += (_, _, dto) =>
+        {
+            if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp) _gameIsActive = false;
+            GameJoined.Invoke(dto);
+        };
     }
-
-    public string? PlayerWhite { get; set; }
-    public string? PlayerBlack { get; set; }
-
-    public uint Seconds { get; set; }
-    public uint Increment { get; set; }
-    public event Action<MoveMadeDto> MoveReceived;
 
     public AckTypes MakeMove(MakeMoveDto dto)
     {
+        if (!_gameIsActive) return AckTypes.GameHasFinished;
+        
         var move = ParseMove(dto);
 
         if(!IsValidMove(move))
             return AckTypes.InvalidMove;
 
+        if (!_firstMovePlayed)
+        {
+            _chessTimer.StartTimers();
+            _firstMovePlayed = true;
+        }
 
         _game.Pos.MakeMove(move, _game.Pos.State);
-        var moveMadeDto = new MoveMadeDto
+        
+        _chessTimer.UpdateTimers();
+        
+        var responseJoinedGameDto = new JoinedGameStreamDto()
         {
-            FenString = _game.Pos.FenNotation
+            FenString = _game.Pos.FenNotation,
+            TimeLeftMs = !_whitePlaying.Value ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
+            GameEndType = (uint)_game.GameEndType,
+            IsWhite = !_whitePlaying.Value
         };
 
-        _moves.Add(moveMadeDto);
-        MoveReceived.Invoke(moveMadeDto);
+        _gameData.Add(responseJoinedGameDto);
+        GameJoined.Invoke(responseJoinedGameDto);
 
         return AckTypes.Success;
     }
@@ -136,11 +158,11 @@ public class GameRoom
         };
     }
 
-    public IObservable<MoveMadeDto> GetMovesAsObservable()
+    public IObservable<JoinedGameStreamDto> GetMovesAsObservable()
     {
-        var newMoves = Observable.FromEvent<MoveMadeDto>(
-            x => MoveReceived += x,
-            x => MoveReceived -= x);
-        return _moves.ToObservable().Concat(newMoves);
+        var newMoves = Observable.FromEvent<JoinedGameStreamDto>(
+            x => GameJoined += x,
+            x => GameJoined -= x);
+        return _gameData.ToObservable().Concat(newMoves);
     }
 }

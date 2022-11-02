@@ -1,13 +1,11 @@
 @page "/ChessGame"
 @using BlazorWASM.Pages.ChessComponents
-@using Domain.Enums
 @using Grpc.Net.Client
 @using GrpcService
 @using HttpClients.ClientInterfaces
 @using HttpClients.Implementations
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
-@using Rudzoft.ChessLib.Factories
 @using Rudzoft.ChessLib.Fen
 @using Rudzoft.ChessLib.Types
 @using Game = GrpcService.Game
@@ -17,8 +15,14 @@
 
 <div class="chess-board">
     <ul style="list-style-type: none; list-style-image: none">
-        <li style="float: left; margin: 0 50px">
+        <li>
+            <TimerComponent Active="@(_isWhiteSide ? !_whiteTimerActive : _whiteTimerActive)" Seconds="@(_isWhiteSide ? _blackSeconds : _whiteSeconds)"/>
+        </li>
+        <li style="margin: 10px 50px">
             <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@_isWhiteSide"/>
+        </li>
+        <li>
+            <TimerComponent Active="@(_isWhiteSide ? _whiteTimerActive : !_whiteTimerActive)" Seconds="@(_isWhiteSide ? _whiteSeconds : _blackSeconds)"/>
         </li>
         <li style="float: left">
             <div class="stockfish-levels">
@@ -99,6 +103,10 @@
     private bool _isWhiteSide = true;
     private ulong _gameRoomInt = 0;
 
+    private double _whiteSeconds;
+    private double _blackSeconds;
+
+    private bool _whiteTimerActive = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -108,28 +116,23 @@
 
     public ChessGame()
     {
-    // Game = GameFactory.Create();
-    // Game.NewGame();
-        
         SetFenPosition(Fen.StartPositionFen);
     }
 
     private async Task CreateGame()
     {
+        _whiteSeconds = 20;
+        _blackSeconds = 20;
         var responseGame = await _client.StartGameAsync(new RequestGame()
         {
             GameType = "AI",
-            Increment = 0,
+            Increment = 3,
             IsWhite = false,
             Opponent = "",
-            Seconds = 500,
+            Seconds = 20,
             Username = "Bob"
         });
         _gameRoomInt = responseGame.GameRoom;
-
-    // SetFenPosition(responseGame.Fen);
-        Console.WriteLine(responseGame.GameRoom);
-        Console.WriteLine(responseGame.Success);
     }
 
     private async Task JoinGame()
@@ -143,10 +146,26 @@
         while (await call.ResponseStream.MoveNext(CancellationToken.None))
         {
             var message = call.ResponseStream.Current;
-            SetFenPosition(message.Fen);
-            Console.WriteLine(message.Fen);
+
+            if (!message.Fen.Equals(""))
+            {
+                _whiteTimerActive = !_whiteTimerActive;
+                SetFenPosition(message.Fen);
+            }
+            
+            if (message.GameEndType != (uint)GameEndTypes.TimeIsUp)
+            {
+                UpdateTimers(message.IsWhite, message.TimeLeftMs);
+            }
+            
             StateHasChanged();
         }
+    }
+
+    private void UpdateTimers(bool white, double seconds)
+    {
+        if (white) _whiteSeconds = seconds / 1000;
+        else _blackSeconds = seconds / 1000;
     }
 
     private void SetFenPosition(string fen)
