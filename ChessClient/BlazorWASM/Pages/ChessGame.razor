@@ -50,39 +50,14 @@
         </li>
     </ul>
   
-    @* *@
-    @* <Modal ShowPatModal="showPatModal"> *@
-    @*     <p>No legal moves left. You have reached stalemate. </p> *@
-    @*     <button @onclick="@Proceed">Close</button> *@
-    @* </Modal> *@
-    @* *@
-    @* <Modal ShowFiftyMoveModal="showFiftyMoveModal"> *@
-    @*     <p>Entered Fifty Move Rule. Do you want to offer a draw?.</p> *@
-    @*     <button @onclick="@Proceed">Yes</button> *@
-    @* </Modal> *@
-    @* *@
-    @* <Modal ShowMaterialDrawnModal="showMaterialDrawnModal"> *@
-    @*     <p>Game has finished to Insufficient Mating Material. The result is a draw. </p> *@
-    @*     <button @onclick="@Proceed">Close</button> *@
-    @* </Modal> *@
-    @* *@
-    @* <Modal ShowCheckMateModal="showCheckMateModal"> *@
-    @*     <p>Game has finished due to Check Mate.</p> *@
-    @*     <button @onclick="@Proceed">Close</button> *@
-    @* </Modal> *@
-    @* *@
-    @* *@
-    @* <Modal ShowTimeIsUpModal="showTimeIsUpModal"> *@
-    @*     <p>Time is up. Game has finished.</p> *@
-    @*     <button @onclick="@Proceed">Close</button> *@
-    @* </Modal> *@
+    
 
 </div>
 
-  <ModalComponent ShowRepetitionModal="showRepetitionModal">
-        <p>Game has finished in a draw due to repetition.</p>
+  <FinishedGameModalComponent ShowFinishedGameModal="showFinishedGameModal">
+        <p>Game has finished.</p>
         <button @onclick="@Proceed">Close</button>
-    </ModalComponent>
+    </FinishedGameModalComponent>
 
 @code {
 
@@ -133,23 +108,12 @@
     private bool _isWhiteSide = true;
     private ulong _gameRoomInt = 0;
     
-    private bool showRepetitionModal = false;
-    private bool showPatModal = false;
-    private bool showFiftyMoveModal = false;
-    private bool showMaterialDrawnModal = false;
-    private bool showCheckMateModal;
-    private bool showTimeIsUpModal;
+    private bool showFinishedGameModal = true;
 
 
     private void Proceed()
     {
-        showPatModal = false;
-        showRepetitionModal = false;
-        showFiftyMoveModal = false;
-        showMaterialDrawnModal = false;
-        showCheckMateModal = false;
-        showTimeIsUpModal = false;
-        
+        showFinishedGameModal = false;
         //todo what page do we navigate to?
         navMgr.NavigateTo("/ChessGame");
     }
@@ -184,7 +148,7 @@
     // SetFenPosition(responseGame.Fen);
         Console.WriteLine(responseGame.GameRoom);
         Console.WriteLine(responseGame.Success);
-        showRepetitionModal = true;
+        showFinishedGameModal = true;
     }
 
     private async Task JoinGame()
@@ -230,32 +194,12 @@
             _stockfishActivated = true;
     }
 
-    private async Task ShowModalWhenGameFinishes()
-    {
-        if (GameEndTypes.Repetition != GameEndTypes.None)
-        {
-            showRepetitionModal = true;
-        }
-        if (GameEndTypes.FiftyMove != GameEndTypes.None)
-        {
-            showFiftyMoveModal = true;
-        }
-        if (GameEndTypes.MaterialDrawn != GameEndTypes.None)
-        {
-            showMaterialDrawnModal = true;
-        }
-        if (GameEndTypes.CheckMate != GameEndTypes.None)
-        {
-            showCheckMateModal = true;
-        }
-        if (GameEndTypes.TimeIsUp != GameEndTypes.None)
-        {
-            showTimeIsUpModal = true;
-        }
-         if (GameEndTypes.Pat != GameEndTypes.None)
-        {
-            showPatModal = true;
-        }
-    }
+    // private async Task ShowModalWhenGameFinishes()
+    // {
+    //     if (GameEndTypes. != GameEndTypes.None)
+    //     {
+    //         showFinishedGameModal = true;
+    //     }
+    // }
 
 }
