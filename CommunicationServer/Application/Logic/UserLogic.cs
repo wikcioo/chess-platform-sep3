@@ -14,7 +14,7 @@ public class UserLogic : IUserLogic
         _userService = userService;
     }
 
-    public async Task<bool> LoginAsync(UserLoginDto dto)
+    public async Task<User> LoginAsync(UserLoginDto dto)
     {
         return await _userService.LoginAsync(dto);
     }

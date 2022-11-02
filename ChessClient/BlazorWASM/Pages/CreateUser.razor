@@ -33,6 +33,7 @@
     private string _password = "";
     private string _resultMsg = "";
     private string _color = "";
+    private string _role = "";
 
     private async Task CreateAsync()
     {
@@ -40,10 +41,11 @@
 
         try
         {
-            var user = await UserService.CreateAsync(new User(_username, _email, _password));
+            var user = await UserService.CreateAsync(new User(_username, _email, _password, _role));
             _username = "";
             _email = "";
             _password = "";
+            _role = "";
             _resultMsg = $"User with email {user.Email} successfully created";
             _color = "green";
         }

@@ -15,7 +15,7 @@ public class UserHttpClient : IUserService
         _client = client;
     }
 
-    public async Task<bool> LoginAsync(UserLoginDto dto)
+    public async Task<User> LoginAsync(UserLoginDto dto)
     {
         var response = await _client.PostAsJsonAsync("/login", dto);
         var result = await response.Content.ReadAsStringAsync();
@@ -23,8 +23,11 @@ public class UserHttpClient : IUserService
         {
             throw new Exception(result);
         }
-
-        return Boolean.Parse(result);
+        var existing = JsonSerializer.Deserialize<User>(result, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        })!;
+        return existing;
     }
 
     public async Task<User> CreateAsync(User user)

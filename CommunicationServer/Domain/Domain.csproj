@@ -8,12 +8,8 @@
 
     <ItemGroup>
         <PackageReference Include="Rudzoft.ChessLib" Version="0.0.3" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Reference Include="System.Reactive">
-            <HintPath>..\..\..\..\.nuget\packages\system.reactive\5.0.0\lib\net5.0\System.Reactive.dll</HintPath>
-        </Reference>
+        <PackageReference Include="System.Reactive" Version="5.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="6.0.10" />
     </ItemGroup>
 
 </Project>

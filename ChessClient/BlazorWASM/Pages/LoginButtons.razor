@@ -1,0 +1,28 @@
+﻿@using HttpClients.ClientInterfaces
+@inject NavigationManager NavMgr
+@inject IAuthService AuthService
+@namespace Login
+
+<AuthorizeView>
+    <Authorized>
+        <img class="icon" src="icons/Logout.png" @onclick="Logout"/>
+    </Authorized>
+    <NotAuthorized>
+        <img class="icon" src="icons/Login.png" @onclick="Login"/>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+
+    private void Login()
+    {
+        NavMgr.NavigateTo("/Login");
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        NavMgr.NavigateTo("/",true);
+    }
+
+}

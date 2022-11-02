@@ -30,9 +30,13 @@ public class UserController {
 
     @PostMapping(path = "/login",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean Login(@RequestBody UserLoginDto user) {
+    public User Login(@RequestBody UserLoginDto user) {
         User existing = repository.findByEmailIgnoreCase(user.getEmail()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "This user does not exist"));
-        return existing.getPassword().equals(user.getPassword());
+        if(existing.getPassword().equals(user.getPassword())){
+            return existing;
+        } else{
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect credentials");
+        }
     }
 
     @GetMapping(path = "/users",
