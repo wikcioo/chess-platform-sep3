@@ -23,7 +23,7 @@ builder.Services.AddScoped(
         }
 );
 
-builder.Services.AddSingleton(services => GrpcChannel.ForAddress("https://localhost:7289", new GrpcChannelOptions
+builder.Services.AddSingleton(services => GrpcChannel.ForAddress("http://localhost:5231", new GrpcChannelOptions
 {
     HttpHandler = new GrpcWebHandler(new HttpClientHandler())
 }));
