@@ -10,6 +10,7 @@
     var index = 0;
     var isBlackSquare = _isFirstSquareBlack;
     _currentPieces = ParsePositionToPieces();
+    var kingSquareInCheck = KingSquareInCheck();
 
     for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
     {
@@ -24,7 +25,9 @@
                 IsBlackSquare="@isBlackSquare"
                 Piece="@_currentPieces[index]"
                 OnClick="@OnSquareClicked"
-                IsWhiteSide="@IsWhiteSide"/>
+                IsWhiteSide="@IsWhiteSide"
+                IsKingCheck="@(kingSquareInCheck == squareId)"
+            />
 
             index++;
         }
@@ -53,6 +56,15 @@
     {
         return new List<T>(new T[initialSize]);
     }
+
+    private Square KingSquareInCheck()
+    {
+        if (Position is {InCheck: true })
+            return Position.GetKingSquare(Position.SideToMove);
+        
+        return Square.None;
+    }
+    
 
     private List<Piece> ParsePositionToPieces()
     {
