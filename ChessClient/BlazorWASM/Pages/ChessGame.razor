@@ -50,6 +50,13 @@
                 <input type="text" @bind="_gameRoomInt"/>
                 <button @onclick="JoinGame">Join</button>
             </div>
+            <div>
+                <label>Base time:</label>
+                <input type="number" @bind="_timeControlBase"/>
+                <label>Increment time:</label>
+                <input type="number" @bind="_timeControlIncrement"/>
+            </div>
+            <button @onclick="CreateGame">Create the game</button>
         </li>
     </ul>
 </div>
@@ -107,11 +114,11 @@
     private double _blackSeconds;
 
     private bool _whiteTimerActive = true;
+    private uint _timeControlBase, _timeControlIncrement;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         _client = new Game.GameClient(Channel);
-        await CreateGame();
     }
 
     public ChessGame()
@@ -121,15 +128,15 @@
 
     private async Task CreateGame()
     {
-        _whiteSeconds = 20;
-        _blackSeconds = 20;
+        _whiteSeconds = _timeControlBase;
+        _blackSeconds = _timeControlBase;
         var responseGame = await _client.StartGameAsync(new RequestGame()
         {
             GameType = "AI",
-            Increment = 3,
+            Increment = _timeControlIncrement,
             IsWhite = false,
             Opponent = "",
-            Seconds = 20,
+            Seconds = _timeControlBase,
             Username = "Bob"
         });
         _gameRoomInt = responseGame.GameRoom;
@@ -147,11 +154,17 @@
         {
             var message = call.ResponseStream.Current;
 
-            if (!message.Fen.Equals(""))
+            if (message.Fen.Equals("initial"))
+            {
+                _whiteSeconds = message.TimeLeftMs / 1000;
+                _blackSeconds = message.TimeLeftMs / 1000;
+            }
+            else if (!message.Fen.Equals(""))
             {
                 _whiteTimerActive = !_whiteTimerActive;
                 SetFenPosition(message.Fen);
             }
+
             
             if (message.GameEndType != (uint)GameEndTypes.TimeIsUp)
             {
