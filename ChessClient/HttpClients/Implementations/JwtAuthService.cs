@@ -8,7 +8,7 @@ using HttpClients.ClientInterfaces;
 
 namespace HttpClients.Implementations;
 
-public class JwtAuthService :IAuthService
+public class JwtAuthService : IAuthService
 {
     private readonly HttpClient _client;
 
@@ -18,7 +18,7 @@ public class JwtAuthService :IAuthService
     }
 
     // this private variable for simple caching
-    public static string? Jwt { get; private set; } = "";
+    private static string Jwt { get; set; } = "";
 
     public Task<ClaimsPrincipal> GetAuthAsync()
     {
@@ -85,7 +85,6 @@ public class JwtAuthService :IAuthService
 
         var token = responseContent;
         Jwt = token;
-        Console.WriteLine(Jwt);
         var principal = CreateClaimsPrincipal();
 
         OnAuthStateChanged.Invoke(principal);
@@ -93,14 +92,15 @@ public class JwtAuthService :IAuthService
 
     public Task LogoutAsync()
     {
-        Jwt = null;
+        Jwt = "";
         ClaimsPrincipal principal = new();
         OnAuthStateChanged.Invoke(principal);
         return Task.CompletedTask;
     }
 
-    public Task RegisterAsync(User user)
+    public string GetJwtToken()
     {
-        throw new NotImplementedException();
+        return Jwt;
     }
+
 }
