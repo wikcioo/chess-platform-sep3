@@ -37,6 +37,12 @@ public class GameRoom
 
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
+        
+        _gameData.Add(new JoinedGameStreamDto()
+        {
+            FenString = "initial",
+            TimeLeftMs = timeControlSeconds * 1000
+        });
 
         _chessTimer = new ChessTimer(ref _whitePlaying, timeControlSeconds, timeControlIncrement);
         _chessTimer.ThrowEvent += (_, _, dto) =>
