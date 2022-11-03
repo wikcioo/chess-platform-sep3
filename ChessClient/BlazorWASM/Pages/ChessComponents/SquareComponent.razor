@@ -2,8 +2,8 @@
 @using Domain.DTOs
 @namespace BlazorWASM.Pages.ChessComponents
 
-<div class="square" style="background-color: @(IsBlackSquare ? "#C0C0C0" : "#FFFFFF")">
-    <div class="@("square-overlay" + RenderOverlayStyle() )" @onclick="OnClicked" ></div>
+<div class=@($"square {SquareStyle()}")>
+    <div class="@($"square-overlay{RenderOverlayStyle()}")" @onclick="OnClicked" ></div>
     <div class="piece @(!IsWhiteSide ? "black-side" : "")" @onclick="OnClicked">@((MarkupString)RenderPiece(false))
     </div>
 </div>
@@ -15,6 +15,9 @@
     [Parameter] 
     public bool IsBlackSquare { get; set; }
     
+    [Parameter] 
+    public bool IsKingCheck { get; set; }
+
     [Parameter] 
     public bool HasMoveTo { get; set; }
     
@@ -95,5 +98,16 @@
             return "-quiet";
 
         return "-capture";
+    }
+    
+    private string SquareStyle()
+    {
+        var classes = (IsBlackSquare) ? "dark" : "white";
+
+        if (IsKingCheck)
+        {
+            classes += " check";
+        }
+        return classes;
     }
 }
