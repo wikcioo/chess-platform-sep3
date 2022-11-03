@@ -50,6 +50,7 @@
                 <input type="text" @bind="_gameRoomInt"/>
                 <button @onclick="JoinGame">Join</button>
             </div>
+            <button @onclick="CreateGame">Create the game</button>
         </li>
     </ul>
 </div>
@@ -108,10 +109,9 @@
 
     private bool _whiteTimerActive = true;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         _client = new Game.GameClient(Channel);
-        await CreateGame();
     }
 
     public ChessGame()
