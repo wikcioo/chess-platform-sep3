@@ -18,6 +18,18 @@
     rotate: 180deg;
 }
 
+.check {
+    border: 5px groove red;
+}
+
+.dark {
+    background-color: #C0C0C0;
+}
+
+.white {
+    background-color: white;
+}
+
 .piece-icon {
 }
 

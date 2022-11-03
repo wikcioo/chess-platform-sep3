@@ -11,6 +11,7 @@
 <!--        <PackageReference Include="Blazor.Bootstrap" Version="0.5.1" />-->
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.8" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.8" PrivateAssets="all" />
+        <PackageReference Include="MudBlazor" Version="6.0.17" />
         <PackageReference Include="Rudzoft.ChessLib" Version="0.0.3" />
     </ItemGroup>
 

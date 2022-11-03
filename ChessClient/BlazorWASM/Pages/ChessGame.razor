@@ -4,14 +4,35 @@
 @using GrpcService
 @using HttpClients.ClientInterfaces
 @using HttpClients.Implementations
+@using MudBlazor
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
 @using Rudzoft.ChessLib.Fen
 @using Rudzoft.ChessLib.Types
 @using Game = GrpcService.Game
+@using Position = Rudzoft.ChessLib.Position
 @inject GrpcChannel Channel
+@inject IDialogService DialogService
+@using MudBlazor
+
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
+
+
+
+<MudButton @onclick="OpenDialog" Variant="Variant.Filled" Color="Color.Primary">
+Resign</MudButton>
+@code {
+
+    private void OpenDialog()
+    {
+        Console.WriteLine("Tried to open dialog");
+		var options = new DialogOptions { CloseOnEscapeKey = true };
+        DialogService.Show<DialogComponent>("Simple Dialog", options);
+    }
+}
+
+
 
 <div class="chess-board">
     <ul style="list-style-type: none; list-style-image: none">
