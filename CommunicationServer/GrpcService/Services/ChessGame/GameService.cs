@@ -1,7 +1,12 @@
+using System.Security.Claims;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.Enums;
+using Domain.Models;
 using Grpc.Core;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 
 namespace GrpcService.Services.ChessGame;
 
@@ -71,13 +76,23 @@ public class GameService : Game.GameBase
 
     public override async Task<Acknowledge> MakeMove(RequestMakeMove request, ServerCallContext context)
     {
+        var claim = context.GetHttpContext().User.Claims.FirstOrDefault(claim => claim.Type.Equals(ClaimTypes.Name));
+        if (claim == null)
+        {
+            return new Acknowledge()
+            {
+                Status = (uint) AckTypes.IncorrectUser
+            };
+        }
+
         AckTypes ack = await _gameLogic.MakeMove(new MakeMoveDto()
         {
             GameRoom = request.GameRoom,
             FromSquare = request.FromSquare,
             ToSquare = request.ToSquare,
             MoveType = request.MoveType,
-            Promotion = request.Promotion
+            Promotion = request.Promotion,
+            Username = claim.Value
         });
         return new Acknowledge()
         {

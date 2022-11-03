@@ -6,5 +6,6 @@ public enum AckTypes
     GameNotFound = 1,
     InvalidMove = 2,
     ConnectionFailure = 3,
-    GameHasFinished = 4
+    GameHasFinished = 4,
+    IncorrectUser = 5
 }

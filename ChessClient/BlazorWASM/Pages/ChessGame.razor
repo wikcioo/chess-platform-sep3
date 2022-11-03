@@ -1,5 +1,6 @@
 @page "/ChessGame"
 @using BlazorWASM.Pages.ChessComponents
+@using Grpc.Core
 @using Grpc.Net.Client
 @using GrpcService
 @using HttpClients.ClientInterfaces
@@ -10,11 +11,12 @@
 @using Rudzoft.ChessLib.Fen
 @using Rudzoft.ChessLib.Types
 @using Game = GrpcService.Game
-@using Position = Rudzoft.ChessLib.Position
+@using System.Security.Claims
 @inject GrpcChannel Channel
+@inject IAuthService AuthService
+@using Position = Rudzoft.ChessLib.Position
 @inject IDialogService DialogService
 @using MudBlazor
-
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
 
@@ -85,7 +87,7 @@ Resign</MudButton>
 @code {
 
     private Game.GameClient _client;
-    private IPosition _position = new Position(new Board(),new PieceValue());
+    private IPosition _position = new Position(new Board(), new PieceValue());
 
     private readonly IStockfishService _stockfish = new StockfishHttpClient(new HttpClient());
 
@@ -149,6 +151,11 @@ Resign</MudButton>
 
     private async Task CreateGame()
     {
+        ClaimsPrincipal user = await AuthService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!isLoggedIn) return;
+
         _whiteSeconds = _timeControlBase;
         _blackSeconds = _timeControlBase;
         var responseGame = await _client.StartGameAsync(new RequestGame()
@@ -156,9 +163,9 @@ Resign</MudButton>
             GameType = "AI",
             Increment = _timeControlIncrement,
             IsWhite = false,
-            Opponent = "",
+            Opponent = "Jim",
             Seconds = _timeControlBase,
-            Username = "Bob"
+            Username = user.Identity!.Name!
         });
         _gameRoomInt = responseGame.GameRoom;
     }
@@ -170,7 +177,7 @@ Resign</MudButton>
             GameRoom = _gameRoomInt,
             Username = "Bob"
         });
-        
+
         while (await call.ResponseStream.MoveNext(CancellationToken.None))
         {
             var message = call.ResponseStream.Current;
@@ -186,12 +193,12 @@ Resign</MudButton>
                 SetFenPosition(message.Fen);
             }
 
-            
-            if (message.GameEndType != (uint)GameEndTypes.TimeIsUp)
+
+            if (message.GameEndType != (uint) GameEndTypes.TimeIsUp)
             {
                 UpdateTimers(message.IsWhite, message.TimeLeftMs);
             }
-            
+
             StateHasChanged();
         }
     }
@@ -211,15 +218,17 @@ Resign</MudButton>
 
     public async Task<int> MakeMove(Move move)
     {
-        var _call = await _client.MakeMoveAsync(new RequestMakeMove()
+        var token = AuthService.GetJwtToken();
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var call = await _client.MakeMoveAsync(new RequestMakeMove()
         {
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
             GameRoom = _gameRoomInt,
             MoveType = (uint) move.MoveType(),
             Promotion = (uint) move.PromotedPieceType().AsInt()
-        });
-        return (int) _call.Status;
+        }, headers);
+        return (int) call.Status;
     }
 
     public void PlayStockfish()
