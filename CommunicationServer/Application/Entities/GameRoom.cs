@@ -21,7 +21,7 @@ public class GameRoom
     private readonly ValueWrapper<bool> _whitePlaying = new(true);
     private bool _firstMovePlayed;
     private bool _gameIsActive = true;
-    public event Action<JoinedGameStreamDto> GameJoined = delegate{};
+    public event Action<JoinedGameStreamDto> GameJoined = delegate { };
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
 
@@ -47,7 +47,7 @@ public class GameRoom
         _chessTimer = new ChessTimer(ref _whitePlaying, timeControlSeconds, timeControlIncrement);
         _chessTimer.ThrowEvent += (_, _, dto) =>
         {
-            if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp) _gameIsActive = false;
+            if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) _gameIsActive = false;
             GameJoined.Invoke(dto);
         };
     }
@@ -55,10 +55,10 @@ public class GameRoom
     public AckTypes MakeMove(MakeMoveDto dto)
     {
         if (!_gameIsActive) return AckTypes.GameHasFinished;
-        
+
         var move = ParseMove(dto);
 
-        if(!IsValidMove(move))
+        if (!IsValidMove(move))
             return AckTypes.InvalidMove;
 
         if (!_firstMovePlayed)
@@ -67,15 +67,25 @@ public class GameRoom
             _firstMovePlayed = true;
         }
 
+        if (!_whitePlaying.Value && !dto.Username.Equals(PlayerBlack))
+        {
+            return AckTypes.IncorrectUser;
+        }
+
+        if (_whitePlaying.Value && !dto.Username.Equals(PlayerWhite))
+        {
+            return AckTypes.IncorrectUser;
+        }
+
         _game.Pos.MakeMove(move, _game.Pos.State);
-        
+
         _chessTimer.UpdateTimers();
-        
+
         var responseJoinedGameDto = new JoinedGameStreamDto()
         {
             FenString = _game.Pos.FenNotation,
             TimeLeftMs = !_whitePlaying.Value ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
-            GameEndType = (uint)_game.GameEndType,
+            GameEndType = (uint) _game.GameEndType,
             IsWhite = !_whitePlaying.Value
         };
 
@@ -85,8 +95,9 @@ public class GameRoom
         return AckTypes.Success;
     }
 
-    private bool IsValidMove(Move move) {
-         return _game.Pos.GenerateMoves().ToList().Any(valid => move.Equals(valid));
+    private bool IsValidMove(Move move)
+    {
+        return _game.Pos.GenerateMoves().ToList().Any(valid => move.Equals(valid));
     }
 
     private Move UciMoveToRudzoftMove(string uci)
@@ -151,8 +162,8 @@ public class GameRoom
     {
         var fromSquare = UciToSquare(dto.FromSquare);
         var toSquare = UciToSquare(dto.ToSquare);
-        var moveType = (MoveTypes)(dto.MoveType ?? 0);
-        var promotionPiece = (PieceTypes?)dto.Promotion;
+        var moveType = (MoveTypes) (dto.MoveType ?? 0);
+        var promotionPiece = (PieceTypes?) dto.Promotion;
 
         return moveType switch
         {
