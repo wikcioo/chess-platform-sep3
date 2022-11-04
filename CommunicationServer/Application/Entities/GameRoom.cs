@@ -46,7 +46,7 @@ public class GameRoom
         _whitePlaying = _game.CurrentPlayer().IsWhite;
         _gameData.Add(new JoinedGameStreamDto()
         {
-            FenString = "initial",
+            Event = "InitialTime",
             TimeLeftMs = timeControlSeconds * 1000
         });
         
@@ -89,6 +89,7 @@ public class GameRoom
 
         var responseJoinedGameDto = new JoinedGameStreamDto()
         {
+            Event = "NewFenPosition",
             FenString = _game.Pos.FenNotation,
             TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             GameEndType = (uint) _game.GameEndType,
