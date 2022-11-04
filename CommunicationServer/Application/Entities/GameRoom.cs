@@ -20,6 +20,13 @@ public class GameRoom
     private bool _whitePlaying;
     private bool _firstMovePlayed;
     private bool _gameIsActive = true;
+    
+    // Offer draw related fields
+    private bool _isDrawOffered = false;
+    private bool _isDrawOfferAccepted = false;
+    private bool _drawResponseWithinTimespan = false;
+    private CancellationTokenSource _drawCts;
+    
     public event Action<JoinedGameStreamDto> GameJoined = delegate { };
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
@@ -39,7 +46,7 @@ public class GameRoom
         _whitePlaying = _game.CurrentPlayer().IsWhite;
         _gameData.Add(new JoinedGameStreamDto()
         {
-            FenString = "initial",
+            Event = "InitialTime",
             TimeLeftMs = timeControlSeconds * 1000
         });
         
@@ -82,6 +89,7 @@ public class GameRoom
 
         var responseJoinedGameDto = new JoinedGameStreamDto()
         {
+            Event = "NewFenPosition",
             FenString = _game.Pos.FenNotation,
             TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             GameEndType = (uint) _game.GameEndType,
@@ -102,9 +110,73 @@ public class GameRoom
         GameJoined.Invoke(new JoinedGameStreamDto()
         {
             Event = "Resignation",
-            FenString = "",
             IsWhite = PlayerWhite!.Equals(dto.Username)
         });
+
+        return AckTypes.Success;
+    }
+
+    public async Task<AckTypes> OfferDraw(RequestDrawDto dto)
+    {
+        _isDrawOffered = true;
+        
+        GameJoined.Invoke(new JoinedGameStreamDto()
+        {
+            Event = "DrawOffer",
+            IsWhite = PlayerWhite!.Equals(dto.Username)
+        });
+        
+        _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        while (true)
+        {
+            if (_drawCts.Token.IsCancellationRequested)
+            {
+                break;
+            }
+            
+            await Task.Delay(50);
+        }
+
+        if (!_drawResponseWithinTimespan)
+        {
+            GameJoined.Invoke(new JoinedGameStreamDto()
+            {
+                Event = "DrawOfferTimeout",
+                IsWhite = PlayerWhite!.Equals(dto.Username)
+            });
+            return AckTypes.DrawOfferExpired;
+        }
+        if (!_isDrawOfferAccepted && _drawResponseWithinTimespan) return AckTypes.DrawOfferDeclined;
+
+        GameJoined.Invoke(new JoinedGameStreamDto()
+        {
+            Event = "DrawOfferAccepted",
+            IsWhite = PlayerWhite!.Equals(dto.Username)
+        });
+                
+        return AckTypes.Success;
+    }
+
+    public AckTypes DrawOfferResponse(ResponseDrawDto dto)
+    {
+        if (!_isDrawOffered) return AckTypes.DrawNotOffered;
+
+        _drawResponseWithinTimespan = true;
+        if (dto.Accept)
+        {
+            _isDrawOfferAccepted = dto.Accept;
+            _chessTimer.StopTimers();
+            _gameIsActive = false;
+        }
+
+        try
+        {
+            _drawCts.Cancel();
+        }
+        catch (Exception e)
+        {
+            // ignored
+        }
 
         return AckTypes.Success;
     }

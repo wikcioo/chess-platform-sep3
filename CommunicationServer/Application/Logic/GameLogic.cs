@@ -65,4 +65,20 @@ public class GameLogic : IGameLogic
 
         return Task.FromResult(_gameRooms[dto.GameRoom].Resign(dto));
     }
+
+    public async Task<AckTypes> OfferDraw(RequestDrawDto dto)
+    {
+        if (!_gameRooms.ContainsKey(dto.GameRoom))
+            return await Task.FromResult(AckTypes.GameNotFound);
+
+        return await _gameRooms[dto.GameRoom].OfferDraw(dto);
+    }
+
+    public Task<AckTypes> DrawOfferResponse(ResponseDrawDto dto)
+    {
+        if (!_gameRooms.ContainsKey(dto.GameRoom))
+            return Task.FromResult(AckTypes.GameNotFound);
+        
+        return Task.FromResult(_gameRooms[dto.GameRoom].DrawOfferResponse(dto));
+    }
 }

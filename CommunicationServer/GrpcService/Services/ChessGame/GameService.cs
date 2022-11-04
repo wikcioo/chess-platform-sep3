@@ -118,4 +118,49 @@ public class GameService : Game.GameBase
             Status = (uint)ack
         };
     }
+
+    public override async Task<Acknowledge> OfferDraw(RequestDraw request, ServerCallContext context)
+    {
+        var claim = context.GetHttpContext().User.Claims.FirstOrDefault(claim => claim.Type.Equals(ClaimTypes.Name));
+        if (claim == null)
+        {
+            return new Acknowledge()
+            {
+                Status = (uint) AckTypes.IncorrectUser
+            };
+        }
+        
+        AckTypes ack = await _gameLogic.OfferDraw(new RequestDrawDto()
+        {
+            GameRoom = request.GameRoom,
+            Username = request.Username
+        });
+        return new Acknowledge()
+        {
+            Status = (uint)ack
+        };
+    }
+
+    public override async Task<Acknowledge> DrawOfferResponse(ResponseDraw request, ServerCallContext context)
+    {
+        var claim = context.GetHttpContext().User.Claims.FirstOrDefault(claim => claim.Type.Equals(ClaimTypes.Name));
+        if (claim == null)
+        {
+            return new Acknowledge()
+            {
+                Status = (uint) AckTypes.IncorrectUser
+            };
+        }
+        
+        AckTypes ack = await _gameLogic.DrawOfferResponse(new ResponseDrawDto()
+        {
+            GameRoom = request.GameRoom,
+            Username = request.Username,
+            Accept = request.Accept
+        });
+        return new Acknowledge()
+        {
+            Status = (uint)ack
+        };
+    }
 }
