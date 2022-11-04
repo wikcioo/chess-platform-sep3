@@ -75,12 +75,12 @@ public class GameRoom
 
         if (!_whitePlaying && !dto.Username.Equals(PlayerBlack))
         {
-            return AckTypes.IncorrectUser;
+            return AckTypes.NotUserTurn;
         }
 
         if (_whitePlaying && !dto.Username.Equals(PlayerWhite))
         {
-            return AckTypes.IncorrectUser;
+            return AckTypes.NotUserTurn;
         }
 
         _game.Pos.MakeMove(move, _game.Pos.State);

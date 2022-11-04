@@ -27,7 +27,8 @@ public class GameLogic : IGameLogic
             "AI" => GameStateTypes.Ai,
             "Friend" => GameStateTypes.Friend,
             "Random" => GameStateTypes.Random,
-            _ => throw new Exception("Invalid Game type exception")
+            _ => throw new Exception(
+                "Invalid Game type exception")
         };
 
         GameRoom gameRoom = new(gameType, dto.Seconds, dto.Increment);
