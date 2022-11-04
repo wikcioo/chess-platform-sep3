@@ -1,5 +1,4 @@
 using System.Reactive.Linq;
-using Application.States;
 using Domain.DTOs;
 using Domain.Enums;
 using Rudzoft.ChessLib;
@@ -29,6 +28,8 @@ public class GameRoom
     public event Action<JoinedGameStreamDto> GameJoined = delegate { };
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
+
+    public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);  
 
     public GameRoom(GameStateTypes gameType, uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
     {
@@ -64,15 +65,8 @@ public class GameRoom
             _firstMovePlayed = true;
         }
 
-        if (!_whitePlaying && !dto.Username.Equals(PlayerBlack))
-        {
+        if (!dto.Username.Equals(CurrentPlayer))
             return AckTypes.NotUserTurn;
-        }
-
-        if (_whitePlaying && !dto.Username.Equals(PlayerWhite))
-        {
-            return AckTypes.NotUserTurn;
-        }
 
         _game.Pos.MakeMove(move, _game.Pos.State);
         _whitePlaying = _game.CurrentPlayer().IsWhite;
