@@ -44,8 +44,19 @@ message RequestMakeMove {
 }
 
 message RequestResign {
-  uint64 game_room   = 1;
-  string username    = 2;
+  uint64 game_room = 1;
+  string username  = 2;
+}
+
+message RequestDraw {
+  uint64 game_room = 1;
+  string username  = 2;
+}
+
+message ResponseDraw {
+  uint64 game_room = 1;
+  string username  = 2;
+  bool accept      = 3;
 }
 
 message Acknowledge {
@@ -57,4 +68,6 @@ service Game {
   rpc JoinGame(RequestJoinGame) returns (stream JoinedGameStream) {}
   rpc MakeMove(RequestMakeMove) returns (Acknowledge) {}
   rpc Resign(RequestResign) returns (Acknowledge) {}
+  rpc OfferDraw(RequestDraw) returns (Acknowledge) {}
+  rpc DrawOfferResponse(ResponseDraw) returns (Acknowledge) {}
 }
