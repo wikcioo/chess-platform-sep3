@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebAPI", "WebAPI\WebAPI.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrpcService", "GrpcService\GrpcService.csproj", "{FF4FCD54-8E8A-4177-8E73-CD18F34FDFA1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorkerService", "WorkerService\WorkerService.csproj", "{BFA54BE4-A1A1-41F5-83A7-4309709DF8CC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{FF4FCD54-8E8A-4177-8E73-CD18F34FDFA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF4FCD54-8E8A-4177-8E73-CD18F34FDFA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FF4FCD54-8E8A-4177-8E73-CD18F34FDFA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BFA54BE4-A1A1-41F5-83A7-4309709DF8CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFA54BE4-A1A1-41F5-83A7-4309709DF8CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFA54BE4-A1A1-41F5-83A7-4309709DF8CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFA54BE4-A1A1-41F5-83A7-4309709DF8CC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
