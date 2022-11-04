@@ -17,6 +17,10 @@
             <label>Password:</label>
             <input type="password" @bind="_password"/>
         </div>
+        <div class="form-group field">
+            <label>Role:</label>
+            <input type="text" @bind="_role"/>
+        </div>
         @if (!string.IsNullOrEmpty(_resultMsg))
         {
             <label style="color:@_color">@_resultMsg</label>
@@ -59,7 +63,7 @@
 
     private bool IsValid()
     {
-        return string.IsNullOrEmpty(_username) || string.IsNullOrEmpty(_email) || string.IsNullOrEmpty(_password);
+        return string.IsNullOrEmpty(_username) || string.IsNullOrEmpty(_email) || string.IsNullOrEmpty(_password) || string.IsNullOrEmpty(_role);
     }
 
 }

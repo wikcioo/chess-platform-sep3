@@ -22,7 +22,7 @@ public class UserController {
     @PostMapping(path = "/users",
             produces = MediaType.APPLICATION_JSON_VALUE)
     public User Create(@RequestBody User user) {
-        if (user.getUsername().substring(0, 11).toLowerCase().contains("stockfishai")) {
+        if (user.getUsername().toLowerCase().contains("stockfishai")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usernames starting with stockfish are not allowed");
         }
         if (repository.findByEmailIgnoreCase(user.getEmail()).isPresent()) {
