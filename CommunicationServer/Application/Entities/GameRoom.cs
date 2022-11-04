@@ -87,6 +87,11 @@ public class GameRoom
         return AckTypes.Success;
     }
 
+    public FenData getFen()
+    {
+        return _game.GetFen();
+    }
+
     public AckTypes Resign(RequestResignDto dto)
     {
         _chessTimer.StopTimers();
@@ -171,7 +176,7 @@ public class GameRoom
         return _game.Pos.GenerateMoves().ToList().Any(valid => move.Equals(valid));
     }
 
-    private Move UciMoveToRudzoftMove(string uci)
+    public Move UciMoveToRudzoftMove(string uci)
     {
         if (uci.Length < 4) throw new Exception("UCI move does not have 4 characters!");
 
