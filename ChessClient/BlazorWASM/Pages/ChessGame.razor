@@ -4,7 +4,6 @@
 @using Grpc.Net.Client
 @using GrpcService
 @using HttpClients.ClientInterfaces
-@using HttpClients.Implementations
 @using MudBlazor
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
@@ -17,7 +16,6 @@
 @inject IAuthService AuthService
 @using Position = Rudzoft.ChessLib.Position
 @inject IDialogService DialogService
-@using MudBlazor
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
 
@@ -107,96 +105,39 @@
     }
 }
 
-<div class="chess-board">
-    <ul style="list-style-type: none; list-style-image: none">
-        <li>
-            <TimerComponent Active="@(_isWhiteSide ? !_whiteTimerActive : _whiteTimerActive)" Seconds="@(_isWhiteSide ? _blackSeconds : _whiteSeconds)"/>
-        </li>
-        <li style="margin: 10px 50px">
-            <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@_isWhiteSide"/>
-        </li>
-        <li>
-            <TimerComponent Active="@(_isWhiteSide ? _whiteTimerActive : !_whiteTimerActive)" Seconds="@(_isWhiteSide ? _whiteSeconds : _blackSeconds)"/>
-        </li>
-        <li style="float: left">
-            <div class="stockfish-levels">
-                <label for="stockfish_levels">Choose a Stockfish Level:</label>
-                <select id="stockfish_levels" class="stockfish-levels" @bind="@_selectedLevel">
-                    @foreach (var level in _levels)
-                    {
-                        <option value=@level.Key>Level: @level.Key, Skill: @level.Value.Item1/20, Depth: @level.Value.Item2, @level.Value.Item3 ms</option>
-                    }
-                </select>
-            </div>
-            <button style="margin: 20px" disabled="@(_stockfishActivated)" @onclick="PlayStockfish">Play</button>
-            <div>
-                <input type="radio" name="play-side" id="white" value="White"
-                       @onchange="() => _isWhiteSide = true"
-                       checked="@(_isWhiteSide)"/>
-                <label for="white">White</label>
-                <input type="radio" name="play-side" id="black" value="Black"
-                       @onchange="() => _isWhiteSide = false"
-                       checked="@(!_isWhiteSide)"/>
-                <label for="black">Black</label>
-            </div>
-            <div>
-                <label>Game room:</label>
-                <input type="text" @bind="_gameRoomInt"/>
-                <button @onclick="JoinGame">Join</button>
-            </div>
-            <div>
-                <label>Base time:</label>
-                <input type="number" @bind="_timeControlBase"/>
-                <label>Increment time:</label>
-                <input type="number" @bind="_timeControlIncrement"/>
-            </div>
-            <button @onclick="CreateGame">Create the game</button>
-        </li>
-    </ul>
-</div>
-
+<MudGrid>
+    <MudItem md="12" lg="6" Class="chess-board">
+        <TimerComponent Active="@(_isWhiteSide ? !_whiteTimerActive : _whiteTimerActive)" Seconds="@(_isWhiteSide ? _blackSeconds : _whiteSeconds)"/>
+        <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@_isWhiteSide"/>
+        <TimerComponent Active="@(_isWhiteSide ? _whiteTimerActive : !_whiteTimerActive)" Seconds="@(_isWhiteSide ? _whiteSeconds : _blackSeconds)"/>
+    </MudItem>
+    <MudItem md="12" lg="6">
+    <MudSelect Dense="true" T="int" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
+        <MudSelectItem T="int" Value="1">Level 1</MudSelectItem>
+        <MudSelectItem T="int" Value="2">Level 2</MudSelectItem>
+        <MudSelectItem T="int" Value="3">Level 3</MudSelectItem>
+        <MudSelectItem T="int" Value="4">Level 4</MudSelectItem>
+        <MudSelectItem T="int" Value="5">Level 5</MudSelectItem>
+        <MudSelectItem T="int" Value="6">Level 6</MudSelectItem>
+        <MudSelectItem T="int" Value="7">Level 7</MudSelectItem>
+    </MudSelect>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_stockfishActivated)" @onclick="PlayStockfish">Play</MudButton>
+    <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
+        <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
+        <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
+    </MudRadioGroup>
+    <MudNumericField  T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
+    <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
+    <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
+    <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
+    </MudItem>
+</MudGrid>
 @code {
 
     private Game.GameClient _client;
     private IPosition _position = new Position(new Board(), new PieceValue());
-
-    private readonly IStockfishService _stockfish = new StockfishHttpClient(new HttpClient());
-
-    private readonly Dictionary<int, Tuple<int, int, int>> _levels = new()
-    {
-        {
-            1,
-            new Tuple<int, int, int>(3, 1, 50)
-        },
-        {
-            2,
-            new Tuple<int, int, int>(6, 2, 100)
-        },
-        {
-            3,
-            new Tuple<int, int, int>(9, 3, 150)
-        },
-        {
-            4,
-            new Tuple<int, int, int>(11, 4, 200)
-        },
-        {
-            5,
-            new Tuple<int, int, int>(14, 6, 250)
-        },
-        {
-            6,
-            new Tuple<int, int, int>(17, 8, 300)
-        },
-        {
-            7,
-            new Tuple<int, int, int>(20, 10, 350)
-        },
-        {
-            8,
-            new Tuple<int, int, int>(20, 12, 400)
-        },
-    };
 
     private int _selectedLevel = 1;
     private bool _stockfishActivated;
@@ -207,8 +148,10 @@
     private double _whiteSeconds;
     private double _blackSeconds;
 
+    private string _opponent = "StockfishAi";
+
     private bool _whiteTimerActive = true;
-    private uint _timeControlBase, _timeControlIncrement;
+    private uint _timeControlBase = 60, _timeControlIncrement = 0;
 
     private bool _isDrawOfferPending = false;
 
@@ -235,8 +178,8 @@
         {
             GameType = "AI",
             Increment = _timeControlIncrement,
-            IsWhite = false,
-            Opponent = "Jim",
+            IsWhite = _isWhiteSide,
+            Opponent = _opponent,
             Seconds = _timeControlBase,
             Username = user.Identity!.Name!
         });
