@@ -1,6 +1,5 @@
 using System.Reactive.Linq;
 using Application.States;
-using Application.Utils;
 using Domain.DTOs;
 using Domain.Enums;
 using Rudzoft.ChessLib;
@@ -18,7 +17,7 @@ public class GameRoom
     private readonly IGameState _state;
     private readonly List<JoinedGameStreamDto> _gameData = new();
     private readonly ChessTimer _chessTimer;
-    private readonly ValueWrapper<bool> _whitePlaying = new(true);
+    private bool _whitePlaying;
     private bool _firstMovePlayed;
     private bool _gameIsActive = true;
     public event Action<JoinedGameStreamDto> GameJoined = delegate { };
@@ -37,14 +36,14 @@ public class GameRoom
 
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
-        
+        _whitePlaying = _game.CurrentPlayer().IsWhite;
         _gameData.Add(new JoinedGameStreamDto()
         {
             FenString = "initial",
             TimeLeftMs = timeControlSeconds * 1000
         });
-
-        _chessTimer = new ChessTimer(ref _whitePlaying, timeControlSeconds, timeControlIncrement);
+        
+        _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
         _chessTimer.ThrowEvent += (_, _, dto) =>
         {
             if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) _gameIsActive = false;
@@ -67,26 +66,26 @@ public class GameRoom
             _firstMovePlayed = true;
         }
 
-        if (!_whitePlaying.Value && !dto.Username.Equals(PlayerBlack))
+        if (!_whitePlaying && !dto.Username.Equals(PlayerBlack))
         {
             return AckTypes.IncorrectUser;
         }
 
-        if (_whitePlaying.Value && !dto.Username.Equals(PlayerWhite))
+        if (_whitePlaying && !dto.Username.Equals(PlayerWhite))
         {
             return AckTypes.IncorrectUser;
         }
 
         _game.Pos.MakeMove(move, _game.Pos.State);
-
-        _chessTimer.UpdateTimers();
+        _whitePlaying = _game.CurrentPlayer().IsWhite;
+        _chessTimer.UpdateTimers(_whitePlaying);
 
         var responseJoinedGameDto = new JoinedGameStreamDto()
         {
             FenString = _game.Pos.FenNotation,
-            TimeLeftMs = !_whitePlaying.Value ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
+            TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             GameEndType = (uint) _game.GameEndType,
-            IsWhite = !_whitePlaying.Value
+            IsWhite = !_whitePlaying
         };
 
         _gameData.Add(responseJoinedGameDto);
