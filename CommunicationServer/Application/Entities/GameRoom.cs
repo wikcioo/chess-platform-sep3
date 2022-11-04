@@ -84,8 +84,8 @@ public class GameRoom
         }
 
         _game.Pos.MakeMove(move, _game.Pos.State);
-        _whitePlaying = _game.CurrentPlayer().IsWhite;
         _chessTimer.UpdateTimers(_whitePlaying);
+        _whitePlaying = _game.CurrentPlayer().IsWhite;
 
         var responseJoinedGameDto = new JoinedGameStreamDto()
         {
