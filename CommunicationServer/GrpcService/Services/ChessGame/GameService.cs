@@ -2,11 +2,7 @@ using System.Security.Claims;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.Enums;
-using Domain.Models;
 using Grpc.Core;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Options;
 
 namespace GrpcService.Services.ChessGame;
 
@@ -62,7 +58,8 @@ public class GameService : Game.GameBase
                         Fen = x.FenString,
                         GameEndType = x.GameEndType,
                         TimeLeftMs = x.TimeLeftMs,
-                        IsWhite = x.IsWhite
+                        IsWhite = x.IsWhite,
+                        Event = x.Event
                     }), context.CancellationToken)
                     .ConfigureAwait(false);
             }
@@ -97,6 +94,28 @@ public class GameService : Game.GameBase
         return new Acknowledge()
         {
             Status = (uint) ack
+        };
+    }
+
+    public override async Task<Acknowledge> Resign(RequestResign request, ServerCallContext context)
+    {
+        var claim = context.GetHttpContext().User.Claims.FirstOrDefault(claim => claim.Type.Equals(ClaimTypes.Name));
+        if (claim == null)
+        {
+            return new Acknowledge()
+            {
+                Status = (uint) AckTypes.IncorrectUser
+            };
+        }
+
+        AckTypes ack = await _gameLogic.Resign(new RequestResignDto()
+        {
+            GameRoom = request.GameRoom,
+            Username = request.Username
+        });
+        return new Acknowledge()
+        {
+            Status = (uint)ack
         };
     }
 }
