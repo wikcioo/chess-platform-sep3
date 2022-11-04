@@ -95,6 +95,21 @@ public class GameRoom
         return AckTypes.Success;
     }
 
+    public AckTypes Resign(RequestResignDto dto)
+    {
+        _chessTimer.StopTimers();
+        _gameIsActive = false;
+        
+        GameJoined.Invoke(new JoinedGameStreamDto()
+        {
+            Event = "Resignation",
+            FenString = "",
+            IsWhite = PlayerWhite!.Equals(dto.Username)
+        });
+
+        return AckTypes.Success;
+    }
+
     private bool IsValidMove(Move move)
     {
         return _game.Pos.GenerateMoves().ToList().Any(valid => move.Equals(valid));
