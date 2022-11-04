@@ -71,7 +71,7 @@ public class ChessTimer
             StopTimers();
             ThrowEvent(this, EventArgs.Empty, new JoinedGameStreamDto()
             {
-                FenString = "",
+                Event = "TimeUpdate",
                 IsWhite = _whitePlaying,
                 TimeLeftMs = WhiteRemainingTimeMs <= 0 ? BlackRemainingTimeMs : WhiteRemainingTimeMs,
                 GameEndType = (uint)GameEndTypes.TimeIsUp
@@ -81,7 +81,7 @@ public class ChessTimer
         {
             ThrowEvent(this, EventArgs.Empty, new JoinedGameStreamDto()
             {
-                FenString = "",
+                Event = "TimeUpdate",
                 IsWhite = _whitePlaying,
                 TimeLeftMs = _whitePlaying ? WhiteRemainingTimeMs : BlackRemainingTimeMs,
                 GameEndType = (uint)GameEndTypes.None
