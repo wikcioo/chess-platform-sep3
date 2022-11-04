@@ -1,7 +1,7 @@
 .square {
     position: relative;
-    width: 100px;
-    height: 100px;
+    width: 50px;
+    height: 50px;
     display: flex;
     text-align: center;
     justify-content: center;
@@ -9,7 +9,7 @@
 }
 
 .piece {
-    font-size: 80px;
+    font-size: 40px;
     display: inline;
     cursor: pointer;
 }
@@ -19,7 +19,7 @@
 }
 
 .check {
-    border: 5px groove red;
+    background-color: #b32121 !important;
 }
 
 .dark {
@@ -47,7 +47,7 @@ div[class|="square-overlay"] {
 .square-overlay-quiet {
     background-color: rgba(50, 150, 255, 0.5);
     box-sizing: border-box;
-    border: 30px solid transparent;
+    border: 10px solid transparent;
     background-clip: padding-box;
     border-radius: 100%;
     display: block !important;
@@ -55,7 +55,7 @@ div[class|="square-overlay"] {
 
 
 .square-overlay-capture {
-    border: 8px solid rgba(255, 105, 0, 0.5);
+    border: 5px solid rgba(255, 105, 0, 0.5);
     background-color: transparent;
     background-clip: padding-box;
     border-radius: 100%;
