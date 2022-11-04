@@ -254,35 +254,49 @@
         while (await call.ResponseStream.MoveNext(CancellationToken.None))
         {
             var message = call.ResponseStream.Current;
+            Console.WriteLine("Event: " + message.Event);
 
-            if (message.Event.Equals("Resignation"))
+            switch (message.Event)
             {
-                var options = new DialogOptions { CloseOnEscapeKey = true };
-                if ((message.IsWhite && _isWhiteSide) || (!message.IsWhite && !_isWhiteSide))
+                case "TimeUpdate":
+                    if (message.GameEndType != (uint)GameEndTypes.TimeIsUp)
+                    {
+                        UpdateTimers(message.IsWhite, message.TimeLeftMs);
+                    }
+                    break;
+                case "NewFenPosition":
+                    _whiteTimerActive = !_whiteTimerActive;
+                    SetFenPosition(message.Fen);
+                    break;
+                case "Resignation":
                 {
-                    DialogService.Show<InformDialogComponent>("You resigned the game!", options);
+                    var options = new DialogOptions { CloseOnEscapeKey = true };
+                    if ((message.IsWhite && _isWhiteSide) || (!message.IsWhite && !_isWhiteSide))
+                    {
+                        DialogService.Show<InformDialogComponent>("You resigned the game!", options);
+                    }
+                    else
+                    {
+                        DialogService.Show<InformDialogComponent>("Your opponent resigned the game!", options);
+                    }
+                    break;
                 }
-                else
-                {
-                    DialogService.Show<InformDialogComponent>("Your opponent resigned the game!", options);
-                }
-            }
-
-            if (message.Fen.Equals("initial"))
-            {
-                _whiteSeconds = message.TimeLeftMs / 1000;
-                _blackSeconds = message.TimeLeftMs / 1000;
-            }
-            else if (!message.Fen.Equals(""))
-            {
-                _whiteTimerActive = !_whiteTimerActive;
-                SetFenPosition(message.Fen);
-            }
-
-
-            if (message.GameEndType != (uint) GameEndTypes.TimeIsUp)
-            {
-                UpdateTimers(message.IsWhite, message.TimeLeftMs);
+                case "DrawOffer":
+                    if (!(message.IsWhite && _isWhiteSide) && !(!message.IsWhite && !_isWhiteSide))
+                        _isDrawOfferPending = true;
+                    break;
+                case "DrawOfferTimeout":
+                    _isDrawOfferPending = false;
+                    break;
+                case "DrawOfferAccepted":
+                    _isDrawOfferPending = false;
+                    var opt = new DialogOptions { CloseOnEscapeKey = true };
+                    DialogService.Show<InformDialogComponent>("The game finished in a draw!", opt);
+                    break;
+                case "InitialTime":
+                    _whiteSeconds = message.TimeLeftMs / 1000;
+                    _blackSeconds = message.TimeLeftMs / 1000;
+                    break;
             }
 
             StateHasChanged();
