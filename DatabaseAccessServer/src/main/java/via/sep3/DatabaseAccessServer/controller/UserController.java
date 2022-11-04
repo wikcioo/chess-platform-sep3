@@ -22,6 +22,9 @@ public class UserController {
     @PostMapping(path = "/users",
             produces = MediaType.APPLICATION_JSON_VALUE)
     public User Create(@RequestBody User user) {
+        if (user.getUsername().substring(0, 11).toLowerCase().contains("stockfishai")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usernames starting with stockfish are not allowed");
+        }
         if (repository.findByEmailIgnoreCase(user.getEmail()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This email is already in use");
         }
@@ -32,9 +35,9 @@ public class UserController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public User Login(@RequestBody UserLoginDto user) {
         User existing = repository.findByEmailIgnoreCase(user.getEmail()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "This user does not exist"));
-        if(existing.getPassword().equals(user.getPassword())){
+        if (existing.getPassword().equals(user.getPassword())) {
             return existing;
-        } else{
+        } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect credentials");
         }
     }
