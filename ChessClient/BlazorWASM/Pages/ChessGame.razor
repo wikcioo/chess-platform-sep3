@@ -12,6 +12,7 @@
 @using Rudzoft.ChessLib.Types
 @using Game = GrpcService.Game
 @using System.Security.Claims
+@using Domain.Enums
 @inject GrpcChannel Channel
 @inject IAuthService AuthService
 @using Position = Rudzoft.ChessLib.Position
@@ -20,21 +21,24 @@
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
 
-
-
-<MudButton @onclick="OpenDialog" Variant="Variant.Filled" Color="Color.Primary">
-Resign</MudButton>
+<MudButton @onclick="Resign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
 @code {
 
-    private void OpenDialog()
+    private async void Resign()
     {
-        Console.WriteLine("Tried to open dialog");
-		var options = new DialogOptions { CloseOnEscapeKey = true };
-        DialogService.Show<DialogComponent>("Simple Dialog", options);
+        var user = await AuthService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!isLoggedIn) return;
+
+        var token = AuthService.GetJwtToken();
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var ack = await _client.ResignAsync(new RequestResign() { Username = user.Identity!.Name, GameRoom = _gameRoomInt }, headers);
+
+        if (ack.Status == (uint)AckTypes.Success) return;
+        DialogService.Show<InformDialogComponent>("Failed to resign", new DialogOptions() { CloseOnEscapeKey = true });
     }
 }
-
-
 
 <div class="chess-board">
     <ul style="list-style-type: none; list-style-image: none">
@@ -181,6 +185,19 @@ Resign</MudButton>
         while (await call.ResponseStream.MoveNext(CancellationToken.None))
         {
             var message = call.ResponseStream.Current;
+
+            if (message.Event.Equals("Resignation"))
+            {
+                var options = new DialogOptions { CloseOnEscapeKey = true };
+                if ((message.IsWhite && _isWhiteSide) || (!message.IsWhite && !_isWhiteSide))
+                {
+                    DialogService.Show<InformDialogComponent>("You resigned the game!", options);
+                }
+                else
+                {
+                    DialogService.Show<InformDialogComponent>("Your opponent resigned the game!", options);
+                }
+            }
 
             if (message.Fen.Equals("initial"))
             {

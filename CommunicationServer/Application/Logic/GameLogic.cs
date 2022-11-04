@@ -57,4 +57,12 @@ public class GameLogic : IGameLogic
 
         return Task.FromResult(_gameRooms[dto.GameRoom].MakeMove(dto));
     }
+
+    public Task<AckTypes> Resign(RequestResignDto dto)
+    {
+        if (!_gameRooms.ContainsKey(dto.GameRoom))
+            return Task.FromResult(AckTypes.GameNotFound);
+
+        return Task.FromResult(_gameRooms[dto.GameRoom].Resign(dto));
+    }
 }

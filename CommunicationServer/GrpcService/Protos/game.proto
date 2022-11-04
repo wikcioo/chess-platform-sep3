@@ -31,6 +31,7 @@ message JoinedGameStream {
   uint32 game_end_type  = 2;
   double time_left_ms   = 3;
   bool   is_white       = 4;
+  string event          = 5;
 }
 
 message RequestMakeMove {
@@ -42,6 +43,11 @@ message RequestMakeMove {
   string username    = 6;
 }
 
+message RequestResign {
+  uint64 game_room   = 1;
+  string username    = 2;
+}
+
 message Acknowledge {
   uint32 status = 1;
 }
@@ -50,4 +56,5 @@ service Game {
   rpc StartGame(RequestGame) returns (ResponseGame) {}
   rpc JoinGame(RequestJoinGame) returns (stream JoinedGameStream) {}
   rpc MakeMove(RequestMakeMove) returns (Acknowledge) {}
+  rpc Resign(RequestResign) returns (Acknowledge) {}
 }

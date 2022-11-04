@@ -35,6 +35,12 @@ public class ChessTimer
         _whiteTimer.Start();
         _blackTimer.Start();
     }
+
+    public void StopTimers()
+    {
+        _whiteTimer.Stop();
+        _blackTimer.Stop();
+    }
     
     public void UpdateTimers()
     {
@@ -82,11 +88,5 @@ public class ChessTimer
                 GameEndType = (uint)GameEndTypes.None
             });
         }
-    }
-
-    private void StopTimers()
-    {
-        _whiteTimer.Stop();
-        _blackTimer.Stop();
     }
 }
