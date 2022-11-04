@@ -21,10 +21,24 @@
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
 
-<MudButton @onclick="Resign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
-@code {
+<MudButton @onclick="OnResign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
+<MudButton @onclick="OnOfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
+<label>@(_drawResult)</label>
+@if (_isDrawOfferPending)
+{
+    <div>
+        <h3>You have a draw offer</h3>
+        <MudButton @onclick="() => OnSendDrawResponse(true)" Variant="Variant.Filled" Color="Color.Success">Accept</MudButton>
+        <MudButton @onclick="() => OnSendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
+    </div>
+}
+<label>@(_drawResponseError)</label>
 
-    private async void Resign()
+@code {
+    private string _drawResult = string.Empty;
+    private string _drawResponseError = string.Empty;
+
+    private async void OnResign()
     {
         var user = await AuthService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
@@ -37,6 +51,59 @@
 
         if (ack.Status == (uint)AckTypes.Success) return;
         DialogService.Show<InformDialogComponent>("Failed to resign", new DialogOptions() { CloseOnEscapeKey = true });
+    }
+
+    private async void OnOfferDraw()
+    {
+        var user = await AuthService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!isLoggedIn) return;
+
+        var token = AuthService.GetJwtToken();
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var ack = await _client.OfferDrawAsync(new RequestDraw()
+        {
+            Username = user.Identity!.Name, GameRoom = _gameRoomInt
+        }, headers);
+
+        switch (ack.Status)
+        {
+            case (uint)AckTypes.Success:
+                _drawResult = "Draw Offer Successful!";
+                return;
+            case (uint)AckTypes.DrawOfferExpired:
+                _drawResult = "Draw Offer Expired!";
+                break;
+            case (uint)AckTypes.DrawOfferDeclined:
+                _drawResult = "Draw Offer Declined!";
+                break;
+        }
+    }
+
+    private async void OnSendDrawResponse(bool accepted)
+    {
+        var user = await AuthService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!isLoggedIn) return;
+
+        var token = AuthService.GetJwtToken();
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var ack = await _client.DrawOfferResponseAsync(new ResponseDraw()
+        {
+            Username = user.Identity!.Name, GameRoom = _gameRoomInt, Accept = accepted
+        
+        }, headers);
+
+        if (ack.Status == (uint)AckTypes.Success)
+        {
+            _isDrawOfferPending = false;
+        }
+        else
+        {
+            _drawResponseError = "Failed to send draw response! AckType = " + ack.Status;
+        }
     }
 }
 
@@ -142,6 +209,8 @@
 
     private bool _whiteTimerActive = true;
     private uint _timeControlBase, _timeControlIncrement;
+
+    private bool _isDrawOfferPending = false;
 
     protected override void OnInitialized()
     {
