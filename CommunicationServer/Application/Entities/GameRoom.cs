@@ -14,7 +14,6 @@ namespace Application.Entities;
 public class GameRoom
 {
     private readonly IGame _game;
-    private readonly IGameState _state;
     private readonly List<JoinedGameStreamDto> _gameData = new();
     private readonly ChessTimer _chessTimer;
     private bool _whitePlaying;
@@ -33,14 +32,6 @@ public class GameRoom
 
     public GameRoom(GameStateTypes gameType, uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
     {
-        _state = gameType switch
-        {
-            GameStateTypes.Ai => new AiGameState(),
-            GameStateTypes.Friend => new FriendGameState(),
-            GameStateTypes.Random => new RandomGameState(),
-            _ => throw new Exception("Invalid game type.")
-        };
-
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
         _whitePlaying = _game.CurrentPlayer().IsWhite;
