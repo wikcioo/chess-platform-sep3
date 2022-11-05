@@ -20,13 +20,13 @@ public class GameRoom
     private bool _whitePlaying;
     private bool _firstMovePlayed;
     private bool _gameIsActive = true;
-    
+
     // Offer draw related fields
     private bool _isDrawOffered = false;
     private bool _isDrawOfferAccepted = false;
     private bool _drawResponseWithinTimespan = false;
     private CancellationTokenSource _drawCts;
-    
+
     public event Action<JoinedGameStreamDto> GameJoined = delegate { };
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
@@ -49,7 +49,7 @@ public class GameRoom
             Event = "InitialTime",
             TimeLeftMs = timeControlSeconds * 1000
         });
-        
+
         _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
         _chessTimer.ThrowEvent += (_, _, dto) =>
         {
@@ -104,9 +104,13 @@ public class GameRoom
 
     public AckTypes Resign(RequestResignDto dto)
     {
+        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        {
+            return AckTypes.IncorrectUser;
+        }
         _chessTimer.StopTimers();
         _gameIsActive = false;
-        
+
         GameJoined.Invoke(new JoinedGameStreamDto()
         {
             Event = "Resignation",
@@ -118,14 +122,19 @@ public class GameRoom
 
     public async Task<AckTypes> OfferDraw(RequestDrawDto dto)
     {
+        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        {
+            return AckTypes.IncorrectUser;
+        }
+
         _isDrawOffered = true;
-        
+
         GameJoined.Invoke(new JoinedGameStreamDto()
         {
             Event = "DrawOffer",
             IsWhite = PlayerWhite!.Equals(dto.Username)
         });
-        
+
         _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (true)
         {
@@ -133,7 +142,7 @@ public class GameRoom
             {
                 break;
             }
-            
+
             await Task.Delay(50);
         }
 
@@ -146,6 +155,7 @@ public class GameRoom
             });
             return AckTypes.DrawOfferExpired;
         }
+
         if (!_isDrawOfferAccepted && _drawResponseWithinTimespan) return AckTypes.DrawOfferDeclined;
 
         GameJoined.Invoke(new JoinedGameStreamDto()
@@ -153,7 +163,7 @@ public class GameRoom
             Event = "DrawOfferAccepted",
             IsWhite = PlayerWhite!.Equals(dto.Username)
         });
-                
+
         return AckTypes.Success;
     }
 
