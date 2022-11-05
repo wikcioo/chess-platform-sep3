@@ -1,6 +1,7 @@
 @using Rudzoft.ChessLib.Types
 @using Domain.DTOs
 @using Rudzoft.ChessLib
+@using Rudzoft.ChessLib.Extensions
 @using Rudzoft.ChessLib.MoveGeneration
 @namespace BlazorWASM.Pages.ChessComponents
 
@@ -108,7 +109,12 @@
         
         if (dto.PieceType != Pieces.NoPiece)
         {
-            _currentMoves = GenerateMovesForSquare(dto);
+            if ((dto.PieceType.Value.AsInt() <= 6 && IsWhiteSide) || (dto.PieceType.Value.AsInt() >= 9 && !IsWhiteSide))
+                _currentMoves = GenerateMovesForSquare(dto);
+        }
+        else
+        {
+            _currentMoves = EmptyList<Move>();
         }
     }
     
