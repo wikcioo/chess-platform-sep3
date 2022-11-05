@@ -2,9 +2,9 @@
 @using Domain.DTOs
 @namespace BlazorWASM.Pages.ChessComponents
 
-<div class=@($"square {SquareStyle()}") @onclick="OnClicked">
-    <div class="@($"square-overlay{RenderOverlayStyle()}")" @onclick="OnClicked" ></div>
-    <div class="piece @(!IsWhiteSide ? "black-side" : "")" @onclick="OnClicked">@((MarkupString)RenderPiece(false))
+<div class="@($"square {SquareStyle()}")" @onclick="OnClicked">
+    <div class="@($"square-overlay{RenderOverlayStyle()}")"></div>
+    <div class="piece @(!IsWhiteSide ? "black-side" : "")">@((MarkupString)RenderPiece(false))
     </div>
 </div>
 
