@@ -16,8 +16,12 @@
 @inject IAuthService AuthService
 @using Position = Rudzoft.ChessLib.Position
 @inject IDialogService DialogService
+@inject IJSRuntime Js
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
+
+<audio id="move" src="sounds/move.mp3"></audio>
+<audio id="notify" src="sounds/notify.mp3"></audio>
 
 <MudButton @onclick="OnResign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
 <MudButton @onclick="OnOfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
@@ -137,7 +141,7 @@
 @code {
 
     private Game.GameClient _client;
-    private IPosition _position = new Position(new Board(), new PieceValue());
+    private readonly IPosition _position = new Position(new Board(), new PieceValue());
 
     private int _selectedLevel = 1;
     private bool _stockfishActivated;
@@ -210,9 +214,11 @@
                 case "NewFenPosition":
                     _whiteTimerActive = !_whiteTimerActive;
                     SetFenPosition(message.Fen);
+                    PlaySound("move");
                     break;
                 case "Resignation":
                 {
+                    PlaySound("notify");
                     var options = new DialogOptions { CloseOnEscapeKey = true };
                     if ((message.IsWhite && _isWhiteSide) || (!message.IsWhite && !_isWhiteSide))
                     {
@@ -233,10 +239,12 @@
                     break;
                 case "DrawOfferAccepted":
                     _isDrawOfferPending = false;
+                    PlaySound("notify");
                     var opt = new DialogOptions { CloseOnEscapeKey = true };
                     DialogService.Show<InformDialogComponent>("The game finished in a draw!", opt);
                     break;
                 case "InitialTime":
+                    PlaySound("notify");
                     _whiteSeconds = message.TimeLeftMs / 1000;
                     _blackSeconds = message.TimeLeftMs / 1000;
                     break;
@@ -272,6 +280,11 @@
             Promotion = (uint) move.PromotedPieceType().AsInt()
         }, headers);
         return (int) call.Status;
+    }
+
+    private void PlaySound(string sound)
+    {
+        Js.InvokeAsync<string>("PlaySound", new object[] { sound });
     }
 
     public void PlayStockfish()
