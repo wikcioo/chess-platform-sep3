@@ -29,7 +29,7 @@ public class GameRoom
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
 
-    public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);  
+    public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
 
     public GameRoom(GameStateTypes gameType, uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
     {
