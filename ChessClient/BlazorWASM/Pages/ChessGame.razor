@@ -151,7 +151,7 @@
 
     private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
     private bool _stockfishActivated;
-    private string _chosenGameType; 
+    private string _chosenGameType;
 
     private bool _isWhiteSide = true;
     private ulong _gameRoomInt = 0;
@@ -192,7 +192,7 @@
             "Friend" => _opponent,
             "Random" => String.Empty,
             _ => throw new ArgumentOutOfRangeException()};
-        
+
         var responseGame = await _client.StartGameAsync(new RequestGame()
         {
             GameType = _chosenGameType,
@@ -285,27 +285,21 @@
     public async Task<int> MakeMove(Move move)
     {
         var token = AuthService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
         var call = await _client.MakeMoveAsync(new RequestMakeMove()
         {
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
             GameRoom = _gameRoomInt,
-            MoveType = (uint) move.MoveType(),
-            Promotion = (uint) move.PromotedPieceType().AsInt()
+            MoveType = (uint)move.MoveType(),
+            Promotion = (uint)move.PromotedPieceType().AsInt()
         }, headers);
-        return (int) call.Status;
+        return (int)call.Status;
     }
 
     private void PlaySound(string sound)
     {
         Js.InvokeAsync<string>("PlaySound", new object[] { sound });
-    }
-
-    public void PlayStockfish()
-    {
-        if (_selectedLevel is > 0 and < 9)
-            _stockfishActivated = true;
     }
 
 }
