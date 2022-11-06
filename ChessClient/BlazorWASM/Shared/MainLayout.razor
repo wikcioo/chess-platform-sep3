@@ -14,7 +14,15 @@
         <LoginButtons/>
     </MudAppBar>
     <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
-        @*NavMenu*@
+  <MudNavMenu>
+      <MudNavLink Href="/" Match="NavLinkMatch.All">Home</MudNavLink>
+          <MudNavLink Href="CreateUser" Match="NavLinkMatch.Prefix">Create User</MudNavLink>
+      <MudNavGroup Title="Play" Expanded="true">
+          <MudNavLink Href="ChessGame"  Match="NavLinkMatch.Prefix">Computer</MudNavLink>
+          <MudNavLink Href="ChessGame"  Match="NavLinkMatch.Prefix">Online</MudNavLink>
+      </MudNavGroup>
+      <MudNavLink Href="/"  Match="NavLinkMatch.Prefix">About</MudNavLink>
+  </MudNavMenu>
     </MudDrawer>
     <MudMainContent>
         @*Body*@
@@ -25,14 +33,11 @@
 <MudSnackbarProvider/>
 
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu/>
-    </div>
+
     <article class="content px-4">
             @Body
         </article>
-</div>
+
 
 @code {
     
