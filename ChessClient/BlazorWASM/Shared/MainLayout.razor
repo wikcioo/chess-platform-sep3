@@ -2,13 +2,15 @@
 @using Login
 @using MudBlazor
 @inject NavigationManager NavMgr
-<MudThemeProvider Theme="MyCustomTheme"/>
+<MudThemeProvider Theme="MyCustomTheme" @ref="@_mudThemeProvider" @bind-IsDarkMode="@_isDarkMode"/>
 
 <MudLayout>
     <MudAppBar Elevation="1">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">VIA Chess</MudText>
         <MudSpacer />
+        <MudIcon Icon="@Icons.Filled.Lightbulb" Color="Color.Secondary"></MudIcon>
+        <MudSwitch @bind-Checked="@_isDarkMode" Color="Color.Primary" T="bool"/>
         <LoginButtons/>
     </MudAppBar>
     <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
@@ -52,10 +54,6 @@
             Secondary = Colors.Green.Accent4,
             AppbarBackground = Colors.BlueGrey.Darken3,
         },
-        PaletteDark = new Palette()
-        {
-            AppbarBackground = Colors.BlueGrey.Darken4,
-        },
 
         LayoutProperties = new LayoutProperties()
         {
@@ -63,4 +61,17 @@
             DrawerWidthRight = "300px"
         }
     };
+    
+    // for a dark mode switch and memorization
+    private bool _isDarkMode;
+    private MudThemeProvider _mudThemeProvider;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isDarkMode = await _mudThemeProvider.GetSystemPreference();
+            StateHasChanged();
+        }
+    }
 }
