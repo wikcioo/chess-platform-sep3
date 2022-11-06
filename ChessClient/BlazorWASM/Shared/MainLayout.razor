@@ -14,29 +14,23 @@
         <LoginButtons/>
     </MudAppBar>
     <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
-  <MudNavMenu>
-      <MudNavLink Href="/" Match="NavLinkMatch.All">Home</MudNavLink>
-          <MudNavLink Href="CreateUser" Match="NavLinkMatch.Prefix">Create User</MudNavLink>
-      <MudNavGroup Title="Play" Expanded="true">
-          <MudNavLink Href="ChessGame"  Match="NavLinkMatch.Prefix">Computer</MudNavLink>
-          <MudNavLink Href="ChessGame"  Match="NavLinkMatch.Prefix">Online</MudNavLink>
-      </MudNavGroup>
-      <MudNavLink Href="/"  Match="NavLinkMatch.Prefix">About</MudNavLink>
-  </MudNavMenu>
+        <MudNavMenu>
+            <MudNavLink Href="/" Match="NavLinkMatch.All">Home</MudNavLink>
+            <MudNavLink Href="CreateUser" Match="NavLinkMatch.Prefix">Create User</MudNavLink>
+            <MudNavGroup Title="Play" Expanded="true">
+                <MudNavLink Href="ChessGame"  Match="NavLinkMatch.Prefix">Computer</MudNavLink>
+                <MudNavLink Href="ChessGame"  Match="NavLinkMatch.Prefix">Online</MudNavLink>
+            </MudNavGroup>
+            <MudNavLink Href="/"  Match="NavLinkMatch.Prefix">About</MudNavLink>
+        </MudNavMenu>
     </MudDrawer>
     <MudMainContent>
-        @*Body*@
+        @Body
     </MudMainContent>
 </MudLayout>
 
 <MudDialogProvider/>
 <MudSnackbarProvider/>
-
-
-
-    <article class="content px-4">
-            @Body
-        </article>
 
 
 @code {
