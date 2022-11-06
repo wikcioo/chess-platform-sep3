@@ -3,15 +3,15 @@ namespace Domain.DTOs;
 public class StockfishBestMoveDto
 {
     public string Fen { get; set; }
-    public int Depth { get; set; }
+    public string StockfishPlayer { get; set; }
 
     public StockfishBestMoveDto()
     {
     }
 
-    public StockfishBestMoveDto(string fen, int depth)
+    public StockfishBestMoveDto(string fen, string stockfishPlayer)
     {
         Fen = fen;
-        Depth = depth;
+        StockfishPlayer = stockfishPlayer;
     }
 }
