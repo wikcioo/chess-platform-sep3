@@ -6,6 +6,7 @@ using Domain.DTOs;
 using Domain.Enums;
 using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.Types;
+using StockfishWrapper;
 
 namespace Application.Logic;
 
@@ -45,7 +46,13 @@ public class GameLogic : IGameLogic
         gameRoom.PlayerWhite = responseDto.IsWhite ? dto.Username : dto.Opponent;
         gameRoom.PlayerBlack = responseDto.IsWhite ? dto.Opponent : dto.Username;
         
-        _gameRooms.Add(_nextGameId++, gameRoom);
+        
+        _gameRooms.Add(_nextGameId, gameRoom);
+        
+        if(gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
+            RequestAiMove(_nextGameId);
+
+        _nextGameId++;
 
         return Task.FromResult(responseDto);
     }
@@ -83,16 +90,21 @@ public class GameLogic : IGameLogic
     }
     
     //Todo make parser class
-    private static bool IsAi(string playerName) =>  playerName.StartsWith("StockfishAi");
+    private static bool IsAi(string? playerName) => StockfishLevels.IsAi(playerName);
     private async void RequestAiMove(ulong roomId)
     {
+        
         var room = _gameRooms[roomId];
-        var uci =  await _stockfishService.GetBestMoveAsync(new StockfishBestMoveDto(room.getFen().ToString(), 3));
+
+        if (!IsAi(room.CurrentPlayer))
+            throw new InvalidOperationException("Current player is not an AI");
+
+        var uci =  await _stockfishService.GetBestMoveAsync(new StockfishBestMoveDto(room.getFen().ToString(), room.CurrentPlayer));
         var move =  room.UciMoveToRudzoftMove(uci);
         var dto = new MakeMoveDto
         {
             GameRoom = roomId,
-            Username = "StockfishAi10",
+            Username = room.CurrentPlayer!,
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
             MoveType = (uint)move.MoveType(),
