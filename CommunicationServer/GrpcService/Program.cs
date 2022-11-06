@@ -1,6 +1,8 @@
 using System.Text;
+using Application.ClientInterfaces;
 using Application.Logic;
 using Application.LogicInterfaces;
+using DatabaseClient.Implementations;
 using Domain.Auth;
 using GrpcService.Services;
 using GrpcService.Services.ChessGame;
@@ -40,9 +42,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 });
 builder.Services.AddAuthorization();
 AuthorizationPolicies.AddPolicies(builder.Services);
+builder.Services.AddSingleton<HttpClient>();
 builder.Services.AddSingleton(new ChatRoomService());
-IGameLogic gameLogic = new GameLogic();
-builder.Services.AddSingleton(gameLogic);
+builder.Services.AddSingleton<IStockfishService, StockfishHttpClient>();
+builder.Services.AddSingleton<IGameLogic,GameLogic>();
 
 var app = builder.Build();
 app.UseResponseCompression();

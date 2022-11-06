@@ -1,5 +1,4 @@
 using System.Reactive.Linq;
-using Application.States;
 using Domain.DTOs;
 using Domain.Enums;
 using Rudzoft.ChessLib;
@@ -14,7 +13,6 @@ namespace Application.Entities;
 public class GameRoom
 {
     private readonly IGame _game;
-    private readonly IGameState _state;
     private readonly List<JoinedGameStreamDto> _gameData = new();
     private readonly ChessTimer _chessTimer;
     private bool _whitePlaying;
@@ -31,16 +29,10 @@ public class GameRoom
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
 
+    public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
+
     public GameRoom(GameStateTypes gameType, uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
     {
-        _state = gameType switch
-        {
-            GameStateTypes.Ai => new AiGameState(),
-            GameStateTypes.Friend => new FriendGameState(),
-            GameStateTypes.Random => new RandomGameState(),
-            _ => throw new Exception("Invalid game type.")
-        };
-
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
         _whitePlaying = _game.CurrentPlayer().IsWhite;
@@ -73,15 +65,8 @@ public class GameRoom
             _firstMovePlayed = true;
         }
 
-        if (!_whitePlaying && !dto.Username.Equals(PlayerBlack))
-        {
-            return AckTypes.IncorrectUser;
-        }
-
-        if (_whitePlaying && !dto.Username.Equals(PlayerWhite))
-        {
-            return AckTypes.IncorrectUser;
-        }
+        if (!dto.Username.Equals(CurrentPlayer))
+            return AckTypes.NotUserTurn;
 
         _game.Pos.MakeMove(move, _game.Pos.State);
         _chessTimer.UpdateTimers(_whitePlaying);
@@ -102,11 +87,16 @@ public class GameRoom
         return AckTypes.Success;
     }
 
+    public FenData getFen()
+    {
+        return _game.GetFen();
+    }
+
     public AckTypes Resign(RequestResignDto dto)
     {
         if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
         {
-            return AckTypes.IncorrectUser;
+            return AckTypes.NotUserTurn;
         }
         _chessTimer.StopTimers();
         _gameIsActive = false;
@@ -124,7 +114,7 @@ public class GameRoom
     {
         if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
         {
-            return AckTypes.IncorrectUser;
+            return AckTypes.NotUserTurn;
         }
 
         _isDrawOffered = true;
@@ -196,7 +186,7 @@ public class GameRoom
         return _game.Pos.GenerateMoves().ToList().Any(valid => move.Equals(valid));
     }
 
-    private Move UciMoveToRudzoftMove(string uci)
+    public Move UciMoveToRudzoftMove(string uci)
     {
         if (uci.Length < 4) throw new Exception("UCI move does not have 4 characters!");
 
