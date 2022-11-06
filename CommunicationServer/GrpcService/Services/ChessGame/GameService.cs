@@ -78,7 +78,7 @@ public class GameService : Game.GameBase
         {
             return new Acknowledge()
             {
-                Status = (uint) AckTypes.IncorrectUser
+                Status = (uint) AckTypes.NotUserTurn
             };
         }
 
@@ -104,7 +104,7 @@ public class GameService : Game.GameBase
         {
             return new Acknowledge()
             {
-                Status = (uint) AckTypes.IncorrectUser
+                Status = (uint) AckTypes.NotUserTurn
             };
         }
 
@@ -126,7 +126,7 @@ public class GameService : Game.GameBase
         {
             return new Acknowledge()
             {
-                Status = (uint) AckTypes.IncorrectUser
+                Status = (uint) AckTypes.NotUserTurn
             };
         }
         
@@ -148,7 +148,7 @@ public class GameService : Game.GameBase
         {
             return new Acknowledge()
             {
-                Status = (uint) AckTypes.IncorrectUser
+                Status = (uint) AckTypes.NotUserTurn
             };
         }
         

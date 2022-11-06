@@ -12,6 +12,7 @@
 @using Game = GrpcService.Game
 @using System.Security.Claims
 @using Domain.Enums
+@using StockfishWrapper
 @inject GrpcChannel Channel
 @inject IAuthService AuthService
 @using Position = Rudzoft.ChessLib.Position
@@ -116,22 +117,27 @@
         <TimerComponent Active="@(_isWhiteSide ? _whiteTimerActive : !_whiteTimerActive)" Seconds="@(_isWhiteSide ? _whiteSeconds : _blackSeconds)"/>
     </MudItem>
     <MudItem md="12" lg="6">
-    <MudSelect Dense="true" T="int" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
-        <MudSelectItem T="int" Value="1">Level 1</MudSelectItem>
-        <MudSelectItem T="int" Value="2">Level 2</MudSelectItem>
-        <MudSelectItem T="int" Value="3">Level 3</MudSelectItem>
-        <MudSelectItem T="int" Value="4">Level 4</MudSelectItem>
-        <MudSelectItem T="int" Value="5">Level 5</MudSelectItem>
-        <MudSelectItem T="int" Value="6">Level 6</MudSelectItem>
-        <MudSelectItem T="int" Value="7">Level 7</MudSelectItem>
+    <MudSelect Dense="true" T="string" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi3.Value)">Level 3</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi4.Value)">Level 4</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi5.Value)">Level 5</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi6.Value)">Level 6</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
     </MudSelect>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_stockfishActivated)" @onclick="PlayStockfish">Play</MudButton>
     <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
         <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
         <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
     </MudRadioGroup>
     <MudNumericField  T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
     <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
+    <MudRadioGroup @bind-SelectedOption="_chosenGameType" T="string">
+            <MudRadio T="string" Color="Color.Default" Option=@("AI")>AI</MudRadio>
+            <MudRadio T="string" Color="Color.Default" Option=@("Friend")>Friend</MudRadio>
+            <MudRadio T="string" Color="Color.Default" Option=@("Random")>Random</MudRadio>
+    </MudRadioGroup>
     <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
     <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
     <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
@@ -143,8 +149,9 @@
     private Game.GameClient _client;
     private readonly IPosition _position = new Position(new Board(), new PieceValue());
 
-    private int _selectedLevel = 1;
+    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
     private bool _stockfishActivated;
+    private string _chosenGameType;
 
     private bool _isWhiteSide = true;
     private ulong _gameRoomInt = 0;
@@ -178,12 +185,20 @@
 
         _whiteSeconds = _timeControlBase;
         _blackSeconds = _timeControlBase;
+
+        string opponent = _chosenGameType switch 
+        {
+            "AI" => _selectedLevel,
+            "Friend" => _opponent,
+            "Random" => String.Empty,
+            _ => throw new ArgumentOutOfRangeException()};
+
         var responseGame = await _client.StartGameAsync(new RequestGame()
         {
-            GameType = "AI",
+            GameType = _chosenGameType,
             Increment = _timeControlIncrement,
             IsWhite = _isWhiteSide,
-            Opponent = _opponent,
+            Opponent = opponent,
             Seconds = _timeControlBase,
             Username = user.Identity!.Name!
         });
@@ -270,27 +285,21 @@
     public async Task<int> MakeMove(Move move)
     {
         var token = AuthService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
         var call = await _client.MakeMoveAsync(new RequestMakeMove()
         {
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
             GameRoom = _gameRoomInt,
-            MoveType = (uint) move.MoveType(),
-            Promotion = (uint) move.PromotedPieceType().AsInt()
+            MoveType = (uint)move.MoveType(),
+            Promotion = (uint)move.PromotedPieceType().AsInt()
         }, headers);
-        return (int) call.Status;
+        return (int)call.Status;
     }
 
     private void PlaySound(string sound)
     {
         Js.InvokeAsync<string>("PlaySound", new object[] { sound });
-    }
-
-    public void PlayStockfish()
-    {
-        if (_selectedLevel is > 0 and < 9)
-            _stockfishActivated = true;
     }
 
 }
