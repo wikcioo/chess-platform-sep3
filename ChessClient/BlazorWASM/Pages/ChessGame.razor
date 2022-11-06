@@ -148,23 +148,19 @@
 
     private Game.GameClient _client;
     private readonly IPosition _position = new Position(new Board(), new PieceValue());
-
-    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
-    private bool _stockfishActivated;
-    private string _chosenGameType;
-
-    private bool _isWhiteSide = true;
-    private ulong _gameRoomInt = 0;
-
     private double _whiteSeconds;
     private double _blackSeconds;
-
-    private string _opponent = "StockfishAi";
-
     private bool _whiteTimerActive = true;
-    private uint _timeControlBase = 60, _timeControlIncrement = 0;
-
     private bool _isDrawOfferPending = false;
+    
+    //Form input bindings
+    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
+    private string _chosenGameType = "AI";
+    private ulong _gameRoomInt = 0;
+    private bool _isWhiteSide = true;
+    private string _opponent = "";
+    private uint _timeControlBase = 120;
+    private uint _timeControlIncrement = 0;
 
     protected override void OnInitialized()
     {
