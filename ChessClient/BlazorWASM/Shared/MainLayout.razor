@@ -1,7 +1,24 @@
 ﻿@inherits LayoutComponentBase
 @using Login
 @using MudBlazor
-<MudThemeProvider/>
+@inject NavigationManager NavMgr
+<MudThemeProvider Theme="MyCustomTheme"/>
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        <MudText Typo="Typo.h5" Class="ml-3">VIA Chess</MudText>
+        <MudSpacer />
+        <LoginButtons/>
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+        @*NavMenu*@
+    </MudDrawer>
+    <MudMainContent>
+        @*Body*@
+    </MudMainContent>
+</MudLayout>
+
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
@@ -10,14 +27,40 @@
     <div class="sidebar">
         <NavMenu/>
     </div>
-
-    <main>
-        <div class="top-row px-4">
-            <LoginButtons/>
-        </div>
-
-        <article class="content px-4">
+    <article class="content px-4">
             @Body
         </article>
-    </main>
 </div>
+
+@code {
+    
+    //to open the navbar
+    bool _drawerOpen = true;
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+    
+    //for a custom theme palette
+
+    MudTheme MyCustomTheme = new MudTheme()
+    {
+        Palette = new Palette()
+        {
+            Primary = Colors.Grey.Darken4,
+            Secondary = Colors.Green.Accent4,
+            AppbarBackground = Colors.BlueGrey.Darken3,
+        },
+        PaletteDark = new Palette()
+        {
+            AppbarBackground = Colors.BlueGrey.Darken4,
+        },
+
+        LayoutProperties = new LayoutProperties()
+        {
+            DrawerWidthLeft = "260px",
+            DrawerWidthRight = "300px"
+        }
+    };
+}
