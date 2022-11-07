@@ -10,7 +10,8 @@
 @using Rudzoft.ChessLib.Fen
 @using Rudzoft.ChessLib.Types
 @using Game = GrpcService.Game
-@using System.Security.Claims
+@using Application.LogicInterfaces
+@using Domain.DTOs
 @using Domain.Enums
 @using StockfishWrapper
 @inject GrpcChannel Channel
@@ -19,6 +20,7 @@
 @inject IDialogService DialogService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
+@inject IGameLogic GameLogic
 
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
@@ -51,7 +53,7 @@
         var ack = await _client.ResignAsync(new RequestResign() { Username = user.Identity!.Name, GameRoom = _gameRoomInt }, headers);
 
         if (ack.Status == (uint)AckTypes.Success) return;
-        OpenSnackBar("Failed to resign", Severity.Error);
+        Notify("Failed to resign", Severity.Error);
     }
 
     private async void OnOfferDraw()
@@ -71,13 +73,13 @@
         switch (ack.Status)
         {
             case (uint)AckTypes.Success:
-                OpenSnackBar("Draw Offer Successful!", Severity.Info);
+                Notify("Draw Offer Successful!", Severity.Info);
                 return;
             case (uint)AckTypes.DrawOfferExpired:
-                OpenSnackBar("Draw Offer Expired!", Severity.Info);
+                Notify("Draw Offer Expired!", Severity.Info);
                 break;
             case (uint)AckTypes.DrawOfferDeclined:
-                OpenSnackBar("Draw Offer Declined!", Severity.Info);
+                Notify("Draw Offer Declined!", Severity.Info);
                 break;
         }
     }
@@ -103,7 +105,7 @@
         }
         else
         {
-            OpenSnackBar($"Failed to send draw response! AckType = {ack.Status}", Severity.Error);
+            Notify($"Failed to send draw response! AckType = {ack.Status}", Severity.Error);
         }
     }
 }
@@ -160,71 +162,72 @@
     private uint _timeControlBase = 120;
     private uint _timeControlIncrement = 0;
 
+
     protected override void OnInitialized()
     {
         _client = new Game.GameClient(Channel);
+        GameLogic.GameStreamReceived += GameStreamReceived;
     }
 
     public ChessGame()
     {
         SetFenPosition(Fen.StartPositionFen);
+        
     }
 
     private async Task CreateGame()
     {
-
-        
-        ClaimsPrincipal user = await AuthService.GetAuthAsync();
-        var isLoggedIn = user.Identity != null;
-
-        if (!isLoggedIn)
+        string opponent = String.Empty;
+        try
         {
-            OpenSnackBar("You have to be logged in to create a game!", Severity.Warning);
-            return;            
+            opponent = _chosenGameType switch 
+            {
+                "AI" => _selectedLevel,
+                "Friend" => _opponent,
+                "Random" => String.Empty,
+                _ => throw new ArgumentNullException()
+                };
         }
-
-        string opponent = _chosenGameType switch 
+        catch (ArgumentNullException)
         {
-            "AI" => _selectedLevel,
-            "Friend" => _opponent,
-            "Random" => String.Empty,
-            _ => throw new ArgumentOutOfRangeException()};
-
+            Notify("Choose a game type before starting a game!", Severity.Warning);
+        }
+        
+        var request = new RequestGameDto()
+        {
+            GameType = _chosenGameType,
+            Increment = _timeControlIncrement,
+            IsWhite = _isWhiteSide,
+            Opponent = opponent,
+            Seconds = _timeControlBase
+        };
 
         try
         {
-            var responseGame = await _client.StartGameAsync(new RequestGame()
-            {
-                GameType = _chosenGameType,
-                Increment = _timeControlIncrement,
-                IsWhite = _isWhiteSide,
-                Opponent = opponent,
-                Seconds = _timeControlBase,
-                Username = user.Identity!.Name!
-            });
+            var response = await GameLogic.CreateGame(request);
+            _gameRoomInt = response.GameRoom;
+            //TODO why do we set the time control on game creation and not game join?
+            //TODO actually I think we do both, why?
+            _whiteSeconds = _timeControlBase;
+            _blackSeconds = _timeControlBase;
             
-            _gameRoomInt = responseGame.GameRoom;
-            OpenSnackBar($"Game created successfully! Game id: {responseGame.GameRoom}", Severity.Success);
+            Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
         }
-        catch (RpcException e)
+        catch (InvalidOperationException)
         {
-            OpenSnackBar($"Network error, Failed to create a game.", Severity.Error);
-            Console.WriteLine(e);
+            Notify("You have to be logged in to create a game!", Severity.Warning);
         }
-
-        _whiteSeconds = _timeControlBase;
-        _blackSeconds = _timeControlBase;
-        
-        
+        catch (HttpRequestException)
+        {
+            Notify($"Network error, Failed to create a game.", Severity.Error);
+        }
     }
 
     private async Task JoinGame()
     {
-        AsyncServerStreamingCall<JoinedGameStream>? call;
-        
         try
         {
-            call = _client.JoinGame(new RequestJoinGame()
+            GameLogic.JoinGame(new RequestJoinGameDto()
             {
                 GameRoom = _gameRoomInt,
                 Username = "Bob"
@@ -233,34 +236,37 @@
         catch (ArgumentException e)
         {
             //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
-            OpenSnackBar("Game room not found.", Severity.Warning);
+            Notify("Game room not found.", Severity.Warning);
             return;
         }
-
-        try
-        {while (await call.ResponseStream.MoveNext(CancellationToken.None))
+        catch (RpcException)
         {
-            var message = call.ResponseStream.Current;
-            Console.WriteLine("Evevnt: " + message.Event);
+            Notify("Connection error. Failed to participate in game. ¯\\_(ツ)_/¯", Severity.Error);
+        }
+    }
 
-            switch (message.Event)
+    private void GameStreamReceived(JoinedGameStreamDto dto)
+    {
+        Console.WriteLine("Event: " + dto.Event);
+
+            switch (dto.Event)
             {
                 case "TimeUpdate":
-                    if (message.GameEndType != (uint)GameEndTypes.TimeIsUp)
+                    if (dto.GameEndType != (uint)GameEndTypes.TimeIsUp)
                     {
-                        UpdateTimers(message.IsWhite, message.TimeLeftMs);
+                        UpdateTimers(dto.IsWhite, dto.TimeLeftMs);
                     }
                     break;
                 case "NewFenPosition":
                     _whiteTimerActive = !_whiteTimerActive;
-                    SetFenPosition(message.Fen);
+                    SetFenPosition(dto.FenString);
                     PlaySound("move");
                     break;
                 case "Resignation":
                 {
                     PlaySound("notify");
                     var options = new DialogOptions { CloseOnEscapeKey = true };
-                    if ((message.IsWhite && _isWhiteSide) || (!message.IsWhite && !_isWhiteSide))
+                    if ((dto.IsWhite && _isWhiteSide) || (!dto.IsWhite && !_isWhiteSide))
                     {
                         DialogService.Show<InformDialogComponent>("You resigned the game!", options);
                     }
@@ -271,7 +277,7 @@
                     break;
                 }
                 case "DrawOffer":
-                    if (!(message.IsWhite && _isWhiteSide) && !(!message.IsWhite && !_isWhiteSide))
+                    if (!(dto.IsWhite && _isWhiteSide) && !(!dto.IsWhite && !_isWhiteSide))
                         _isDrawOfferPending = true;
                     break;
                 case "DrawOfferTimeout":
@@ -285,23 +291,14 @@
                     break;
                 case "InitialTime":
                     PlaySound("notify");
-                    OpenSnackBar("Game joined. Have fun!", Severity.Success);
-                    _whiteSeconds = message.TimeLeftMs / 1000;
-                    _blackSeconds = message.TimeLeftMs / 1000;
+                    Notify("Game joined. Have fun!", Severity.Success);
+                    _whiteSeconds = dto.TimeLeftMs / 1000;
+                    _blackSeconds = dto.TimeLeftMs / 1000;
                     break;
             }
-
-            StateHasChanged();
-        }
-        }
-        catch (RpcException e)
-        {
-            OpenSnackBar("Failed to join game. Network Error.", Severity.Error);
-            return;
-        }
-        
-        
+        StateHasChanged();
     }
+
 
     private void UpdateTimers(bool white, double seconds)
     {
@@ -336,7 +333,7 @@
         Js.InvokeAsync<string>("PlaySound", new object[] { sound });
     }
 
-    private void OpenSnackBar(string message, Severity severity)
+    private void Notify(string message, Severity severity)
     {
         Snackbar.Add(message, severity);
     }
