@@ -65,7 +65,7 @@ public class GameLogic : IGameLogic
             return gameRoom.GetMovesAsObservable();
         }
 
-        throw new Exception("Game not found");
+        throw new ArgumentException("Game not found");
     }
 
     public Task<AckTypes> MakeMove(MakeMoveDto dto)
