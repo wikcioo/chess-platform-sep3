@@ -224,16 +224,28 @@
 
     private async Task JoinGame()
     {
-        var call = _client.JoinGame(new RequestJoinGame()
+        AsyncServerStreamingCall<JoinedGameStream>? call;
+        
+        try
         {
-            GameRoom = _gameRoomInt,
-            Username = "Bob"
-        });
+            call = _client.JoinGame(new RequestJoinGame()
+            {
+                GameRoom = _gameRoomInt,
+                Username = "Bob"
+            });
+        }
+        catch (ArgumentException e)
+        {
+            //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
+            OpenSnackBar("Game room not found.", Severity.Warning);
+            return;
+        }
 
-        while (await call.ResponseStream.MoveNext(CancellationToken.None))
+        try
+        {while (await call.ResponseStream.MoveNext(CancellationToken.None))
         {
             var message = call.ResponseStream.Current;
-            Console.WriteLine("Event: " + message.Event);
+            Console.WriteLine("Evevnt: " + message.Event);
 
             switch (message.Event)
             {
@@ -277,6 +289,7 @@
                     break;
                 case "InitialTime":
                     PlaySound("notify");
+                    OpenSnackBar("Game joined. Have fun!", Severity.Success);
                     _whiteSeconds = message.TimeLeftMs / 1000;
                     _blackSeconds = message.TimeLeftMs / 1000;
                     break;
@@ -284,6 +297,14 @@
 
             StateHasChanged();
         }
+        }
+        catch (RpcException e)
+        {
+            OpenSnackBar("Failed to join game. Network Error.", Severity.Error);
+            return;
+        }
+        
+        
     }
 
     private void UpdateTimers(bool white, double seconds)
