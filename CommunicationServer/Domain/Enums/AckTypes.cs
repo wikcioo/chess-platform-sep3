@@ -7,5 +7,8 @@ public enum AckTypes
     InvalidMove = 2,
     ConnectionFailure = 3,
     GameHasFinished = 4,
-    IncorrectUser = 5
+    NotUserTurn = 5,
+    DrawNotOffered = 6,
+    DrawOfferDeclined = 7,
+    DrawOfferExpired = 8
 }

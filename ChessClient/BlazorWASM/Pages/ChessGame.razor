@@ -4,7 +4,6 @@
 @using Grpc.Net.Client
 @using GrpcService
 @using HttpClients.ClientInterfaces
-@using HttpClients.Implementations
 @using MudBlazor
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
@@ -13,18 +12,36 @@
 @using Game = GrpcService.Game
 @using System.Security.Claims
 @using Domain.Enums
+@using StockfishWrapper
 @inject GrpcChannel Channel
 @inject IAuthService AuthService
 @using Position = Rudzoft.ChessLib.Position
 @inject IDialogService DialogService
-@using MudBlazor
+@inject IJSRuntime Js
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
 
-<MudButton @onclick="Resign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
-@code {
+<audio id="move" src="sounds/move.mp3"></audio>
+<audio id="notify" src="sounds/notify.mp3"></audio>
 
-    private async void Resign()
+<MudButton @onclick="OnResign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
+<MudButton @onclick="OnOfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
+<label>@(_drawResult)</label>
+@if (_isDrawOfferPending)
+{
+    <div>
+        <h3>You have a draw offer</h3>
+        <MudButton @onclick="() => OnSendDrawResponse(true)" Variant="Variant.Filled" Color="Color.Success">Accept</MudButton>
+        <MudButton @onclick="() => OnSendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
+    </div>
+}
+<label>@(_drawResponseError)</label>
+
+@code {
+    private string _drawResult = string.Empty;
+    private string _drawResponseError = string.Empty;
+
+    private async void OnResign()
     {
         var user = await AuthService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
@@ -38,101 +55,103 @@
         if (ack.Status == (uint)AckTypes.Success) return;
         DialogService.Show<InformDialogComponent>("Failed to resign", new DialogOptions() { CloseOnEscapeKey = true });
     }
+
+    private async void OnOfferDraw()
+    {
+        var user = await AuthService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!isLoggedIn) return;
+
+        var token = AuthService.GetJwtToken();
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var ack = await _client.OfferDrawAsync(new RequestDraw()
+        {
+            Username = user.Identity!.Name, GameRoom = _gameRoomInt
+        }, headers);
+
+        switch (ack.Status)
+        {
+            case (uint)AckTypes.Success:
+                _drawResult = "Draw Offer Successful!";
+                return;
+            case (uint)AckTypes.DrawOfferExpired:
+                _drawResult = "Draw Offer Expired!";
+                break;
+            case (uint)AckTypes.DrawOfferDeclined:
+                _drawResult = "Draw Offer Declined!";
+                break;
+        }
+    }
+
+    private async void OnSendDrawResponse(bool accepted)
+    {
+        var user = await AuthService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!isLoggedIn) return;
+
+        var token = AuthService.GetJwtToken();
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var ack = await _client.DrawOfferResponseAsync(new ResponseDraw()
+        {
+            Username = user.Identity!.Name, GameRoom = _gameRoomInt, Accept = accepted
+        
+        }, headers);
+
+        if (ack.Status == (uint)AckTypes.Success)
+        {
+            _isDrawOfferPending = false;
+        }
+        else
+        {
+            _drawResponseError = "Failed to send draw response! AckType = " + ack.Status;
+        }
+    }
 }
 
-<div class="chess-board">
-    <ul style="list-style-type: none; list-style-image: none">
-        <li>
-            <TimerComponent Active="@(_isWhiteSide ? !_whiteTimerActive : _whiteTimerActive)" Seconds="@(_isWhiteSide ? _blackSeconds : _whiteSeconds)"/>
-        </li>
-        <li style="margin: 10px 50px">
-            <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@_isWhiteSide"/>
-        </li>
-        <li>
-            <TimerComponent Active="@(_isWhiteSide ? _whiteTimerActive : !_whiteTimerActive)" Seconds="@(_isWhiteSide ? _whiteSeconds : _blackSeconds)"/>
-        </li>
-        <li style="float: left">
-            <div class="stockfish-levels">
-                <label for="stockfish_levels">Choose a Stockfish Level:</label>
-                <select id="stockfish_levels" class="stockfish-levels" @bind="@_selectedLevel">
-                    @foreach (var level in _levels)
-                    {
-                        <option value=@level.Key>Level: @level.Key, Skill: @level.Value.Item1/20, Depth: @level.Value.Item2, @level.Value.Item3 ms</option>
-                    }
-                </select>
-            </div>
-            <button style="margin: 20px" disabled="@(_stockfishActivated)" @onclick="PlayStockfish">Play</button>
-            <div>
-                <input type="radio" name="play-side" id="white" value="White"
-                       @onchange="() => _isWhiteSide = true"
-                       checked="@(_isWhiteSide)"/>
-                <label for="white">White</label>
-                <input type="radio" name="play-side" id="black" value="Black"
-                       @onchange="() => _isWhiteSide = false"
-                       checked="@(!_isWhiteSide)"/>
-                <label for="black">Black</label>
-            </div>
-            <div>
-                <label>Game room:</label>
-                <input type="text" @bind="_gameRoomInt"/>
-                <button @onclick="JoinGame">Join</button>
-            </div>
-            <div>
-                <label>Base time:</label>
-                <input type="number" @bind="_timeControlBase"/>
-                <label>Increment time:</label>
-                <input type="number" @bind="_timeControlIncrement"/>
-            </div>
-            <button @onclick="CreateGame">Create the game</button>
-        </li>
-    </ul>
-</div>
-
+<MudGrid>
+    <MudItem md="12" lg="6" Class="chess-board">
+        <TimerComponent Active="@(_isWhiteSide ? !_whiteTimerActive : _whiteTimerActive)" Seconds="@(_isWhiteSide ? _blackSeconds : _whiteSeconds)"/>
+        <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@_isWhiteSide"/>
+        <TimerComponent Active="@(_isWhiteSide ? _whiteTimerActive : !_whiteTimerActive)" Seconds="@(_isWhiteSide ? _whiteSeconds : _blackSeconds)"/>
+    </MudItem>
+    <MudItem md="12" lg="6">
+    <MudSelect Dense="true" T="string" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi3.Value)">Level 3</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi4.Value)">Level 4</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi5.Value)">Level 5</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi6.Value)">Level 6</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
+        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
+    </MudSelect>
+    <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
+        <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
+        <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
+    </MudRadioGroup>
+    <MudNumericField  T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
+    <MudRadioGroup @bind-SelectedOption="_chosenGameType" T="string">
+            <MudRadio T="string" Color="Color.Default" Option=@("AI")>AI</MudRadio>
+            <MudRadio T="string" Color="Color.Default" Option=@("Friend")>Friend</MudRadio>
+            <MudRadio T="string" Color="Color.Default" Option=@("Random")>Random</MudRadio>
+    </MudRadioGroup>
+    <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
+    <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
+    <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
+    </MudItem>
+</MudGrid>
 @code {
 
     private Game.GameClient _client;
-    private IPosition _position = new Position(new Board(), new PieceValue());
+    private readonly IPosition _position = new Position(new Board(), new PieceValue());
 
-    private readonly IStockfishService _stockfish = new StockfishHttpClient(new HttpClient());
-
-    private readonly Dictionary<int, Tuple<int, int, int>> _levels = new()
-    {
-        {
-            1,
-            new Tuple<int, int, int>(3, 1, 50)
-        },
-        {
-            2,
-            new Tuple<int, int, int>(6, 2, 100)
-        },
-        {
-            3,
-            new Tuple<int, int, int>(9, 3, 150)
-        },
-        {
-            4,
-            new Tuple<int, int, int>(11, 4, 200)
-        },
-        {
-            5,
-            new Tuple<int, int, int>(14, 6, 250)
-        },
-        {
-            6,
-            new Tuple<int, int, int>(17, 8, 300)
-        },
-        {
-            7,
-            new Tuple<int, int, int>(20, 10, 350)
-        },
-        {
-            8,
-            new Tuple<int, int, int>(20, 12, 400)
-        },
-    };
-
-    private int _selectedLevel = 1;
+    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
     private bool _stockfishActivated;
+    private string _chosenGameType;
 
     private bool _isWhiteSide = true;
     private ulong _gameRoomInt = 0;
@@ -140,8 +159,12 @@
     private double _whiteSeconds;
     private double _blackSeconds;
 
+    private string _opponent = "StockfishAi";
+
     private bool _whiteTimerActive = true;
-    private uint _timeControlBase, _timeControlIncrement;
+    private uint _timeControlBase = 60, _timeControlIncrement = 0;
+
+    private bool _isDrawOfferPending = false;
 
     protected override void OnInitialized()
     {
@@ -162,12 +185,20 @@
 
         _whiteSeconds = _timeControlBase;
         _blackSeconds = _timeControlBase;
+
+        string opponent = _chosenGameType switch 
+        {
+            "AI" => _selectedLevel,
+            "Friend" => _opponent,
+            "Random" => String.Empty,
+            _ => throw new ArgumentOutOfRangeException()};
+
         var responseGame = await _client.StartGameAsync(new RequestGame()
         {
-            GameType = "AI",
+            GameType = _chosenGameType,
             Increment = _timeControlIncrement,
-            IsWhite = false,
-            Opponent = "Jim",
+            IsWhite = _isWhiteSide,
+            Opponent = opponent,
             Seconds = _timeControlBase,
             Username = user.Identity!.Name!
         });
@@ -185,35 +216,53 @@
         while (await call.ResponseStream.MoveNext(CancellationToken.None))
         {
             var message = call.ResponseStream.Current;
+            Console.WriteLine("Event: " + message.Event);
 
-            if (message.Event.Equals("Resignation"))
+            switch (message.Event)
             {
-                var options = new DialogOptions { CloseOnEscapeKey = true };
-                if ((message.IsWhite && _isWhiteSide) || (!message.IsWhite && !_isWhiteSide))
+                case "TimeUpdate":
+                    if (message.GameEndType != (uint)GameEndTypes.TimeIsUp)
+                    {
+                        UpdateTimers(message.IsWhite, message.TimeLeftMs);
+                    }
+                    break;
+                case "NewFenPosition":
+                    _whiteTimerActive = !_whiteTimerActive;
+                    SetFenPosition(message.Fen);
+                    PlaySound("move");
+                    break;
+                case "Resignation":
                 {
-                    DialogService.Show<InformDialogComponent>("You resigned the game!", options);
+                    PlaySound("notify");
+                    var options = new DialogOptions { CloseOnEscapeKey = true };
+                    if ((message.IsWhite && _isWhiteSide) || (!message.IsWhite && !_isWhiteSide))
+                    {
+                        DialogService.Show<InformDialogComponent>("You resigned the game!", options);
+                    }
+                    else
+                    {
+                        DialogService.Show<InformDialogComponent>("Your opponent resigned the game!", options);
+                    }
+                    break;
                 }
-                else
-                {
-                    DialogService.Show<InformDialogComponent>("Your opponent resigned the game!", options);
-                }
-            }
-
-            if (message.Fen.Equals("initial"))
-            {
-                _whiteSeconds = message.TimeLeftMs / 1000;
-                _blackSeconds = message.TimeLeftMs / 1000;
-            }
-            else if (!message.Fen.Equals(""))
-            {
-                _whiteTimerActive = !_whiteTimerActive;
-                SetFenPosition(message.Fen);
-            }
-
-
-            if (message.GameEndType != (uint) GameEndTypes.TimeIsUp)
-            {
-                UpdateTimers(message.IsWhite, message.TimeLeftMs);
+                case "DrawOffer":
+                    if (!(message.IsWhite && _isWhiteSide) && !(!message.IsWhite && !_isWhiteSide))
+                        _isDrawOfferPending = true;
+                    break;
+                case "DrawOfferTimeout":
+                    _isDrawOfferPending = false;
+                    break;
+                case "DrawOfferAccepted":
+                    _isDrawOfferPending = false;
+                    PlaySound("notify");
+                    var opt = new DialogOptions { CloseOnEscapeKey = true };
+                    DialogService.Show<InformDialogComponent>("The game finished in a draw!", opt);
+                    break;
+                case "InitialTime":
+                    PlaySound("notify");
+                    _whiteSeconds = message.TimeLeftMs / 1000;
+                    _blackSeconds = message.TimeLeftMs / 1000;
+                    break;
             }
 
             StateHasChanged();
@@ -236,22 +285,21 @@
     public async Task<int> MakeMove(Move move)
     {
         var token = AuthService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
         var call = await _client.MakeMoveAsync(new RequestMakeMove()
         {
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
             GameRoom = _gameRoomInt,
-            MoveType = (uint) move.MoveType(),
-            Promotion = (uint) move.PromotedPieceType().AsInt()
+            MoveType = (uint)move.MoveType(),
+            Promotion = (uint)move.PromotedPieceType().AsInt()
         }, headers);
-        return (int) call.Status;
+        return (int)call.Status;
     }
 
-    public void PlayStockfish()
+    private void PlaySound(string sound)
     {
-        if (_selectedLevel is > 0 and < 9)
-            _stockfishActivated = true;
+        Js.InvokeAsync<string>("PlaySound", new object[] { sound });
     }
 
 }
