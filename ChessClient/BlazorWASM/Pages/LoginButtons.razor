@@ -1,16 +1,16 @@
 ﻿@using HttpClients.ClientInterfaces
+@using MudBlazor
 @inject NavigationManager NavMgr
 @inject IAuthService AuthService
-@using MudBlazor
 @namespace Login
 
 <AuthorizeView>
     <Authorized>
- <MudIconButton Icon="@Icons.Filled.ChevronRight" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Logout())" />
+ <MudIconButton Icon="@Icons.Filled.ChevronRight" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@(_ => Logout())" />
     </Authorized>
     <NotAuthorized>
         
-         <MudIconButton Icon="@Icons.Filled.ChevronLeft" Title="Login" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Login())" />
+         <MudIconButton Icon="@Icons.Filled.ChevronLeft" Title="Login" Color="Color.Inherit" Edge="Edge.End" OnClick="@(_ => Login())" />
     </NotAuthorized>
 </AuthorizeView>
 
