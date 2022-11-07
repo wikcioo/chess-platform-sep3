@@ -28,7 +28,6 @@
 
 <MudButton @onclick="OnResign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
 <MudButton @onclick="OnOfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
-<label>@(_drawResult)</label>
 @if (_isDrawOfferPending)
 {
     <div>
@@ -37,11 +36,8 @@
         <MudButton @onclick="() => OnSendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
     </div>
 }
-<label>@(_drawResponseError)</label>
 
 @code {
-    private string _drawResult = string.Empty;
-    private string _drawResponseError = string.Empty;
 
     private async void OnResign()
     {
@@ -55,7 +51,7 @@
         var ack = await _client.ResignAsync(new RequestResign() { Username = user.Identity!.Name, GameRoom = _gameRoomInt }, headers);
 
         if (ack.Status == (uint)AckTypes.Success) return;
-        DialogService.Show<InformDialogComponent>("Failed to resign", new DialogOptions() { CloseOnEscapeKey = true });
+        OpenSnackBar("Failed to resign", Severity.Error);
     }
 
     private async void OnOfferDraw()
@@ -75,13 +71,13 @@
         switch (ack.Status)
         {
             case (uint)AckTypes.Success:
-                _drawResult = "Draw Offer Successful!";
+                OpenSnackBar("Draw Offer Successful!", Severity.Info);
                 return;
             case (uint)AckTypes.DrawOfferExpired:
-                _drawResult = "Draw Offer Expired!";
+                OpenSnackBar("Draw Offer Expired!", Severity.Info);
                 break;
             case (uint)AckTypes.DrawOfferDeclined:
-                _drawResult = "Draw Offer Declined!";
+                OpenSnackBar("Draw Offer Declined!", Severity.Info);
                 break;
         }
     }
@@ -107,7 +103,7 @@
         }
         else
         {
-            _drawResponseError = "Failed to send draw response! AckType = " + ack.Status;
+            OpenSnackBar($"Failed to send draw response! AckType = {ack.Status}", Severity.Error);
         }
     }
 }
