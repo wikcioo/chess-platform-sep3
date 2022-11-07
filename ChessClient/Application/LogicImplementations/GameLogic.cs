@@ -93,17 +93,20 @@ public class GameLogic : IGameLogic
         {
             while (await call.ResponseStream.MoveNext(CancellationToken.None))
             {
+                Console.WriteLine("Pls tell me");
                 var response = MessageToDtoParser.ToDto(call.ResponseStream.Current);
 
                 switch (response.Event)
                 {
                     case GameStreamEvents.NewFenPosition:
                         NewFenReceived?.Invoke(response);
+                        Console.WriteLine("Come on man");
                         break;
                     case GameStreamEvents.TimeUpdate:
                         TimeUpdate(response);
                         break;
                     case GameStreamEvents.Resignation:
+                        Console.WriteLine("How many times do you fire");
                         ResignationReceived?.Invoke(response);
                         break;
                     case GameStreamEvents.DrawOffer:

@@ -15,6 +15,7 @@
 @using Domain.Enums
 @using Grpc.Core
 @using BlazorWASM.Pages.ChessComponents
+@using System.Diagnostics
 @inject GrpcChannel Channel
 @inject IAuthService AuthService
 @inject IDialogService DialogService
@@ -166,19 +167,39 @@
     protected override void OnInitialized()
     {
         _client = new Game.GameClient(Channel);
-        InitGameLogic();
         SetFenPosition(Fen.StartPositionFen);
-    }
+        InitGameLogic();
 
+    }
+    
     private void InitGameLogic()
     {
+        //For some odd reason OnInitialized might get executed twice.
+        //We need to make sure that only each method is getting appended only once, and this is the way   
+        
+        Console.WriteLine("Why");
+        
+        // GameLogic.TimeUpdated -= OnTimeUpdated;
         GameLogic.TimeUpdated += OnTimeUpdated;
+
+        // GameLogic.NewFenReceived -= OnNewFenReceived;
         GameLogic.NewFenReceived += OnNewFenReceived;
+        
+        // GameLogic.ResignationReceived -= OnResignationReceived;
         GameLogic.ResignationReceived += OnResignationReceived;
+        
+        // GameLogic.InitialTimeReceived -= OnInitialTimeReceived;
         GameLogic.InitialTimeReceived += OnInitialTimeReceived;
+        
+        // GameLogic.DrawOffered -= OnDrawOffered;
         GameLogic.DrawOffered += OnDrawOffered;
+        
+        // GameLogic.DrawOfferTimedOut -= OnDrawOfferTimedOut;
         GameLogic.DrawOfferTimedOut += OnDrawOfferTimedOut;
+        
+        // GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
         GameLogic.DrawOfferAccepted += OnDrawOfferAccepted;
+        
     }
 
     private async Task CreateGame()
@@ -261,6 +282,7 @@
     
     private void OnNewFenReceived(JoinedGameStreamDto dto)
     {
+        Console.WriteLine("Move received");
         SetFenPosition(dto.FenString);           
         PlaySound("move");
     }
@@ -275,6 +297,7 @@
     
     private void OnResignationReceived(JoinedGameStreamDto dto)
     {
+        Console.WriteLine("Resignation received");
         PlaySound("notify");
         var options = new DialogOptions { CloseOnEscapeKey = true };
         if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
