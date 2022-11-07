@@ -9,4 +9,6 @@ public interface IGameLogic
     IObservable<JoinedGameStreamDto> JoinGame(RequestJoinGameDto dto);    
     Task<AckTypes> MakeMove(MakeMoveDto dto);
     Task<AckTypes> Resign(RequestResignDto dto);
+    Task<AckTypes> OfferDraw(RequestDrawDto dto);
+    Task<AckTypes> DrawOfferResponse(ResponseDrawDto dto);
 }

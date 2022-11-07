@@ -1,4 +1,3 @@
-using Application.Utils;
 using Domain.DTOs;
 using Rudzoft.ChessLib.Enums;
 
@@ -10,14 +9,14 @@ public class ChessTimer
     private readonly PausableTimer _blackTimer = new(1000.0);
     private readonly uint _timeControlBaseMs;
     private readonly uint _timeControlIncrementMs;
-    private readonly ValueWrapper<bool> _whitePlaying;
+    private bool _whitePlaying;
     public double WhiteRemainingTimeMs { get; private set; }
     public double BlackRemainingTimeMs { get; private set; }
     
     public delegate void EventHandler(object sender, EventArgs args, JoinedGameStreamDto dto);
     public event EventHandler ThrowEvent = delegate{};
 
-    public ChessTimer(ref ValueWrapper<bool> whitePlaying, uint timeControlSeconds, uint timeControlIncrement)
+    public ChessTimer(bool whitePlaying, uint timeControlSeconds, uint timeControlIncrement)
     {
         _whitePlaying = whitePlaying;
         _timeControlBaseMs = timeControlSeconds * 1000;
@@ -42,18 +41,18 @@ public class ChessTimer
         _blackTimer.Stop();
     }
     
-    public void UpdateTimers()
+    public void UpdateTimers(bool whitePlaying)
     {
-        if (_whitePlaying.Value)
+        if (whitePlaying)
         {
-            _whitePlaying.Value = false;
+            _whitePlaying = false;
             WhiteRemainingTimeMs += _timeControlIncrementMs;
             WhiteRemainingTimeMs -= _whiteTimer.Pause();
             _blackTimer.Resume();
         }
         else
         {
-            _whitePlaying.Value = true;
+            _whitePlaying = true;
             BlackRemainingTimeMs += _timeControlIncrementMs;
             BlackRemainingTimeMs -= _blackTimer.Pause();
             _whiteTimer.Resume();
@@ -62,7 +61,7 @@ public class ChessTimer
 
     private void OnOneSecElapsed(object? sender, System.Timers.ElapsedEventArgs e)
     {
-        if (_whitePlaying.Value)
+        if (_whitePlaying)
             WhiteRemainingTimeMs -= 1000;
         else
             BlackRemainingTimeMs -= 1000;
@@ -72,8 +71,8 @@ public class ChessTimer
             StopTimers();
             ThrowEvent(this, EventArgs.Empty, new JoinedGameStreamDto()
             {
-                FenString = "",
-                IsWhite = _whitePlaying.Value,
+                Event = "TimeUpdate",
+                IsWhite = _whitePlaying,
                 TimeLeftMs = WhiteRemainingTimeMs <= 0 ? BlackRemainingTimeMs : WhiteRemainingTimeMs,
                 GameEndType = (uint)GameEndTypes.TimeIsUp
             });
@@ -82,9 +81,9 @@ public class ChessTimer
         {
             ThrowEvent(this, EventArgs.Empty, new JoinedGameStreamDto()
             {
-                FenString = "",
-                IsWhite = _whitePlaying.Value,
-                TimeLeftMs = _whitePlaying.Value ? WhiteRemainingTimeMs : BlackRemainingTimeMs,
+                Event = "TimeUpdate",
+                IsWhite = _whitePlaying,
+                TimeLeftMs = _whitePlaying ? WhiteRemainingTimeMs : BlackRemainingTimeMs,
                 GameEndType = (uint)GameEndTypes.None
             });
         }
