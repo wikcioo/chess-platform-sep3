@@ -18,7 +18,7 @@ public class GameLogic : IGameLogic
     
     public bool IsDrawOfferPending { get; set; } = false;
 
-    public bool OnWhiteSide { get; private set; } = true;
+    public bool OnWhiteSide { get; set; } = true;
     public bool WhiteTurn { get; private set; } = true;
 
     

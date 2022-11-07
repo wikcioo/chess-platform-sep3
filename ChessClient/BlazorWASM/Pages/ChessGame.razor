@@ -277,7 +277,7 @@
     {
         PlaySound("notify");
         var options = new DialogOptions { CloseOnEscapeKey = true };
-        if ((dto.IsWhite && _isWhiteSide) || (!dto.IsWhite && !_isWhiteSide))
+        if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
         {
             DialogService.Show<InformDialogComponent>("You resigned the game!", options);
         }
