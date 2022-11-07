@@ -22,6 +22,7 @@
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
 @inject IGameLogic GameLogic
+@implements IDisposable
 
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
@@ -50,7 +51,7 @@
         if (!isLoggedIn) return;
 
         var token = AuthService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
         var ack = await _client.ResignAsync(new RequestResign { Username = user.Identity!.Name, GameRoom = _gameRoomInt }, headers);
 
         if (ack.Status == (uint)AckTypes.Success) return;
@@ -65,7 +66,7 @@
         if (!isLoggedIn) return;
 
         var token = AuthService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
         var ack = await _client.OfferDrawAsync(new RequestDraw
         {
             Username = user.Identity!.Name, GameRoom = _gameRoomInt
@@ -93,11 +94,10 @@
         if (!isLoggedIn) return;
 
         var token = AuthService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
         var ack = await _client.DrawOfferResponseAsync(new ResponseDraw
         {
             Username = user.Identity!.Name, GameRoom = _gameRoomInt, Accept = accepted
-        
         }, headers);
 
         if (ack.Status == (uint)AckTypes.Success)
@@ -109,6 +109,7 @@
             Notify($"Failed to send draw response! AckType = {ack.Status}", Severity.Error);
         }
     }
+
 }
 
 <MudGrid>
@@ -118,33 +119,34 @@
         <TimerComponent Active="@(_isWhiteSide ? _whiteTimerActive : !_whiteTimerActive)" Seconds="@(_isWhiteSide ? _whiteSeconds : _blackSeconds)"/>
     </MudItem>
     <MudItem md="12" lg="6">
-    <MudSelect Dense="true" T="string" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi3.Value)">Level 3</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi4.Value)">Level 4</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi5.Value)">Level 5</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi6.Value)">Level 6</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
-    </MudSelect>
-    <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
-        <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
-        <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
-    </MudRadioGroup>
-    <MudNumericField  T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
-    <MudRadioGroup @bind-SelectedOption="_chosenGameType" T="string">
+        <MudSelect Dense="true" T="string" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi3.Value)">Level 3</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi4.Value)">Level 4</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi5.Value)">Level 5</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi6.Value)">Level 6</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
+        </MudSelect>
+        <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
+            <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
+            <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
+        </MudRadioGroup>
+        <MudNumericField T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
+        <MudRadioGroup @bind-SelectedOption="_chosenGameType" T="string">
             <MudRadio T="string" Color="Color.Default" Option=@("AI")>AI</MudRadio>
             <MudRadio T="string" Color="Color.Default" Option=@("Friend")>Friend</MudRadio>
             <MudRadio T="string" Color="Color.Default" Option=@("Random")>Random</MudRadio>
-    </MudRadioGroup>
-    <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
-    <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
-    <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
+        </MudRadioGroup>
+        <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
+        <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
+        <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
     </MudItem>
 </MudGrid>
+
 @code {
 
     private Game.GameClient _client;
@@ -153,7 +155,7 @@
     private double _blackSeconds;
     private bool _whiteTimerActive = true;
     private bool IsDrawOfferPending => GameLogic.IsDrawOfferPending;
-    
+
     //Form input bindings
     private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
     private string _chosenGameType = "AI";
@@ -169,37 +171,28 @@
         _client = new Game.GameClient(Channel);
         SetFenPosition(Fen.StartPositionFen);
         InitGameLogic();
-
     }
-    
+
+    public void Dispose()
+    {
+        GameLogic.TimeUpdated -= OnTimeUpdated;
+        GameLogic.NewFenReceived -= OnNewFenReceived;
+        GameLogic.ResignationReceived -= OnResignationReceived;
+        GameLogic.InitialTimeReceived -= OnInitialTimeReceived;
+        GameLogic.DrawOffered -= OnDrawOffered;
+        GameLogic.DrawOfferTimedOut -= OnDrawOfferTimedOut;
+        GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
+    }
+
     private void InitGameLogic()
     {
-        //For some odd reason OnInitialized might get executed twice.
-        //We need to make sure that only each method is getting appended only once, and this is the way   
-        
-        Console.WriteLine("Why");
-        
-        // GameLogic.TimeUpdated -= OnTimeUpdated;
         GameLogic.TimeUpdated += OnTimeUpdated;
-
-        // GameLogic.NewFenReceived -= OnNewFenReceived;
         GameLogic.NewFenReceived += OnNewFenReceived;
-        
-        // GameLogic.ResignationReceived -= OnResignationReceived;
         GameLogic.ResignationReceived += OnResignationReceived;
-        
-        // GameLogic.InitialTimeReceived -= OnInitialTimeReceived;
         GameLogic.InitialTimeReceived += OnInitialTimeReceived;
-        
-        // GameLogic.DrawOffered -= OnDrawOffered;
         GameLogic.DrawOffered += OnDrawOffered;
-        
-        // GameLogic.DrawOfferTimedOut -= OnDrawOfferTimedOut;
         GameLogic.DrawOfferTimedOut += OnDrawOfferTimedOut;
-        
-        // GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
         GameLogic.DrawOfferAccepted += OnDrawOfferAccepted;
-        
     }
 
     private async Task CreateGame()
@@ -219,7 +212,7 @@
         {
             Notify("Choose a game type before starting a game!", Severity.Warning);
         }
-        
+
         var request = new RequestGameDto
         {
             GameType = _chosenGameType,
@@ -233,7 +226,7 @@
         try
         {
             var response = await GameLogic.CreateGame(request);
-            
+
             _gameRoomInt = response.GameRoom;
     //TODO why do we set the time control on game creation and not game join?
     //TODO actually I think we do both, why?
@@ -264,7 +257,7 @@
         }
         catch (ArgumentException)
         {
-            //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
+    //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
             Notify("Game room not found.", Severity.Warning);
         }
         catch (RpcException)
@@ -279,11 +272,10 @@
         else _blackSeconds = dto.TimeLeftMs / 1000;
         StateHasChanged();
     }
-    
+
     private void OnNewFenReceived(JoinedGameStreamDto dto)
     {
-        Console.WriteLine("Move received");
-        SetFenPosition(dto.FenString);           
+        SetFenPosition(dto.FenString);
         PlaySound("move");
     }
 
@@ -294,10 +286,9 @@
         _position.Set(in fenData, ChessMode.Normal, state);
         StateHasChanged();
     }
-    
+
     private void OnResignationReceived(JoinedGameStreamDto dto)
     {
-        Console.WriteLine("Resignation received");
         PlaySound("notify");
         var options = new DialogOptions { CloseOnEscapeKey = true };
         if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
@@ -309,7 +300,7 @@
             DialogService.Show<InformDialogComponent>("Your opponent resigned the game!", options);
         }
     }
-    
+
     private void OnInitialTimeReceived(JoinedGameStreamDto dto)
     {
         PlaySound("notify");
@@ -318,17 +309,17 @@
         _blackSeconds = dto.TimeLeftMs / 1000;
         StateHasChanged();
     }
-    
+
     private void OnDrawOffered(JoinedGameStreamDto dto)
     {
         Notify("Opponent received draw offer.", Severity.Info);
     }
-    
+
     private void OnDrawOfferTimedOut(JoinedGameStreamDto dto)
     {
         Notify("Draw offer expired", Severity.Info);
     }
-    
+
     private void OnDrawOfferAccepted(JoinedGameStreamDto dto)
     {
         PlaySound("notify");
