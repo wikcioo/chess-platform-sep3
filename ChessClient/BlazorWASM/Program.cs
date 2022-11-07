@@ -9,6 +9,7 @@ using MudBlazor.Services;
 using BlazorWASM.Auth;
 using Domain.Auth;
 using Microsoft.AspNetCore.Components.Authorization;
+using MudBlazor;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -28,7 +29,17 @@ builder.Services.AddSingleton(services => GrpcChannel.ForAddress("http://localho
     HttpHandler = new GrpcWebHandler(new HttpClientHandler())
 }));
 
-builder.Services.AddMudServices();
+builder.Services.AddMudServices(config =>
+{
+    config.SnackbarConfiguration.PreventDuplicates = true;
+    config.SnackbarConfiguration.NewestOnTop = false;
+    config.SnackbarConfiguration.ShowCloseIcon = true;
+    config.SnackbarConfiguration.VisibleStateDuration = 6000;
+    config.SnackbarConfiguration.HideTransitionDuration = 500;
+    config.SnackbarConfiguration.ShowTransitionDuration = 500;
+    config.SnackbarConfiguration.SnackbarVariant = Variant.Filled; 
+    config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomCenter;
+});
 AuthorizationPolicies.AddPolicies(builder.Services);
 builder.Services.AddScoped<IUserService, UserHttpClient>();
 // builder.Services.AddBlazorBootstrap();

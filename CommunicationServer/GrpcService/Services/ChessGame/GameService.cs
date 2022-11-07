@@ -63,7 +63,7 @@ public class GameService : Game.GameBase
                     }), context.CancellationToken)
                     .ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (ArgumentException e)
             {
                 Console.WriteLine(e);
                 break;

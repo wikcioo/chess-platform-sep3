@@ -18,6 +18,8 @@
 @using Position = Rudzoft.ChessLib.Position
 @inject IDialogService DialogService
 @inject IJSRuntime Js
+@inject ISnackbar Snackbar
+
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
 
@@ -26,7 +28,6 @@
 
 <MudButton @onclick="OnResign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
 <MudButton @onclick="OnOfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
-<label>@(_drawResult)</label>
 @if (_isDrawOfferPending)
 {
     <div>
@@ -35,11 +36,8 @@
         <MudButton @onclick="() => OnSendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
     </div>
 }
-<label>@(_drawResponseError)</label>
 
 @code {
-    private string _drawResult = string.Empty;
-    private string _drawResponseError = string.Empty;
 
     private async void OnResign()
     {
@@ -53,7 +51,7 @@
         var ack = await _client.ResignAsync(new RequestResign() { Username = user.Identity!.Name, GameRoom = _gameRoomInt }, headers);
 
         if (ack.Status == (uint)AckTypes.Success) return;
-        DialogService.Show<InformDialogComponent>("Failed to resign", new DialogOptions() { CloseOnEscapeKey = true });
+        OpenSnackBar("Failed to resign", Severity.Error);
     }
 
     private async void OnOfferDraw()
@@ -73,13 +71,13 @@
         switch (ack.Status)
         {
             case (uint)AckTypes.Success:
-                _drawResult = "Draw Offer Successful!";
+                OpenSnackBar("Draw Offer Successful!", Severity.Info);
                 return;
             case (uint)AckTypes.DrawOfferExpired:
-                _drawResult = "Draw Offer Expired!";
+                OpenSnackBar("Draw Offer Expired!", Severity.Info);
                 break;
             case (uint)AckTypes.DrawOfferDeclined:
-                _drawResult = "Draw Offer Declined!";
+                OpenSnackBar("Draw Offer Declined!", Severity.Info);
                 break;
         }
     }
@@ -105,7 +103,7 @@
         }
         else
         {
-            _drawResponseError = "Failed to send draw response! AckType = " + ack.Status;
+            OpenSnackBar($"Failed to send draw response! AckType = {ack.Status}", Severity.Error);
         }
     }
 }
@@ -148,23 +146,19 @@
 
     private Game.GameClient _client;
     private readonly IPosition _position = new Position(new Board(), new PieceValue());
-
-    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
-    private bool _stockfishActivated;
-    private string _chosenGameType;
-
-    private bool _isWhiteSide = true;
-    private ulong _gameRoomInt = 0;
-
     private double _whiteSeconds;
     private double _blackSeconds;
-
-    private string _opponent = "StockfishAi";
-
     private bool _whiteTimerActive = true;
-    private uint _timeControlBase = 60, _timeControlIncrement = 0;
-
     private bool _isDrawOfferPending = false;
+    
+    //Form input bindings
+    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
+    private string _chosenGameType = "AI";
+    private ulong _gameRoomInt = 0;
+    private bool _isWhiteSide = true;
+    private string _opponent = "";
+    private uint _timeControlBase = 120;
+    private uint _timeControlIncrement = 0;
 
     protected override void OnInitialized()
     {
@@ -178,13 +172,16 @@
 
     private async Task CreateGame()
     {
+
+        
         ClaimsPrincipal user = await AuthService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
 
-        if (!isLoggedIn) return;
-
-        _whiteSeconds = _timeControlBase;
-        _blackSeconds = _timeControlBase;
+        if (!isLoggedIn)
+        {
+            OpenSnackBar("You have to be logged in to create a game!", Severity.Warning);
+            return;            
+        }
 
         string opponent = _chosenGameType switch 
         {
@@ -193,30 +190,58 @@
             "Random" => String.Empty,
             _ => throw new ArgumentOutOfRangeException()};
 
-        var responseGame = await _client.StartGameAsync(new RequestGame()
+
+        try
         {
-            GameType = _chosenGameType,
-            Increment = _timeControlIncrement,
-            IsWhite = _isWhiteSide,
-            Opponent = opponent,
-            Seconds = _timeControlBase,
-            Username = user.Identity!.Name!
-        });
-        _gameRoomInt = responseGame.GameRoom;
+            var responseGame = await _client.StartGameAsync(new RequestGame()
+            {
+                GameType = _chosenGameType,
+                Increment = _timeControlIncrement,
+                IsWhite = _isWhiteSide,
+                Opponent = opponent,
+                Seconds = _timeControlBase,
+                Username = user.Identity!.Name!
+            });
+            
+            _gameRoomInt = responseGame.GameRoom;
+            OpenSnackBar($"Game created successfully! Game id: {responseGame.GameRoom}", Severity.Success);
+        }
+        catch (RpcException e)
+        {
+            OpenSnackBar($"Network error, Failed to create a game.", Severity.Error);
+            Console.WriteLine(e);
+        }
+
+        _whiteSeconds = _timeControlBase;
+        _blackSeconds = _timeControlBase;
+        
+        
     }
 
     private async Task JoinGame()
     {
-        var call = _client.JoinGame(new RequestJoinGame()
+        AsyncServerStreamingCall<JoinedGameStream>? call;
+        
+        try
         {
-            GameRoom = _gameRoomInt,
-            Username = "Bob"
-        });
+            call = _client.JoinGame(new RequestJoinGame()
+            {
+                GameRoom = _gameRoomInt,
+                Username = "Bob"
+            });
+        }
+        catch (ArgumentException e)
+        {
+            //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
+            OpenSnackBar("Game room not found.", Severity.Warning);
+            return;
+        }
 
-        while (await call.ResponseStream.MoveNext(CancellationToken.None))
+        try
+        {while (await call.ResponseStream.MoveNext(CancellationToken.None))
         {
             var message = call.ResponseStream.Current;
-            Console.WriteLine("Event: " + message.Event);
+            Console.WriteLine("Evevnt: " + message.Event);
 
             switch (message.Event)
             {
@@ -260,6 +285,7 @@
                     break;
                 case "InitialTime":
                     PlaySound("notify");
+                    OpenSnackBar("Game joined. Have fun!", Severity.Success);
                     _whiteSeconds = message.TimeLeftMs / 1000;
                     _blackSeconds = message.TimeLeftMs / 1000;
                     break;
@@ -267,6 +293,14 @@
 
             StateHasChanged();
         }
+        }
+        catch (RpcException e)
+        {
+            OpenSnackBar("Failed to join game. Network Error.", Severity.Error);
+            return;
+        }
+        
+        
     }
 
     private void UpdateTimers(bool white, double seconds)
@@ -300,6 +334,11 @@
     private void PlaySound(string sound)
     {
         Js.InvokeAsync<string>("PlaySound", new object[] { sound });
+    }
+
+    private void OpenSnackBar(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
     }
 
 }
