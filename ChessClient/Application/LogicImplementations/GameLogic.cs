@@ -1,11 +1,13 @@
 using System.Security.Claims;
 using Application.LogicInterfaces;
 using Domain.DTOs;
+using Domain.Enums;
 using Grpc.Core;
 using Grpc.Net.Client;
 using GrpcService;
 using HttpClients;
 using HttpClients.ClientInterfaces;
+using Rudzoft.ChessLib.Enums;
 
 namespace Application.LogicImplementations;
 
@@ -13,15 +15,22 @@ public class GameLogic : IGameLogic
 {
     private readonly IAuthService _authService;
     private readonly Game.GameClient _gameClient;
-
-    private bool _isDrawOfferPending = false;
     
-    public bool OnWhiteSide { get; set; }
+    public bool IsDrawOfferPending { get; set; } = false;
+
+    public bool OnWhiteSide { get; private set; } = true;
+    public bool WhiteTurn { get; private set; } = true;
+
     
-    public delegate void NextMove(JoinedGameStreamDto dto);
-
-    public event NextMove? GameStreamReceived;
-
+    //Todo Possibility of replacing StreamUpdate with action and only needed information instead of dto
+    public delegate void StreamUpdate(JoinedGameStreamDto dto);
+    public event StreamUpdate? TimeUpdated;
+    public event StreamUpdate? NewFenReceived;
+    public event StreamUpdate? ResignationReceived;
+    public event StreamUpdate? InitialTimeReceived;
+    public event StreamUpdate? DrawOffered;
+    public event StreamUpdate? DrawOfferTimedOut;
+    public event StreamUpdate? DrawOfferAccepted;
     public GameLogic(IAuthService authService, GrpcChannel channel)
     {
         _authService = authService;
@@ -34,7 +43,7 @@ public class GameLogic : IGameLogic
         ClaimsPrincipal user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity;
 
-        if (isLoggedIn is { IsAuthenticated: false })
+        if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
             throw new InvalidOperationException("User not logged in.");
         
         try
@@ -47,8 +56,7 @@ public class GameLogic : IGameLogic
                 IsWhite = dto.IsWhite ?? true,
                 Opponent = dto.Opponent,
                 Seconds = dto.Seconds,
-                //TODO remove null suppression, add actual checks
-                Username = user.Identity!.Name!
+                Username = user.Identity?.Name
             });
 
             ResponseGameDto response = MessageToDtoParser.ToDto(grpcResponse);
@@ -85,8 +93,33 @@ public class GameLogic : IGameLogic
         {
             while (await call.ResponseStream.MoveNext(CancellationToken.None))
             {
-                var message = call.ResponseStream.Current;
-                GameStreamReceived?.Invoke(MessageToDtoParser.ToDto(message));
+                var response = MessageToDtoParser.ToDto(call.ResponseStream.Current);
+
+                switch (response.Event)
+                {
+                    case GameStreamEvents.NewFenPosition:
+                        NewFenReceived?.Invoke(response);
+                        break;
+                    case GameStreamEvents.TimeUpdate:
+                        TimeUpdate(response);
+                        break;
+                    case GameStreamEvents.Resignation:
+                        ResignationReceived?.Invoke(response);
+                        break;
+                    case GameStreamEvents.DrawOffer:
+                        DrawOffer(response);
+                        break;
+                    case GameStreamEvents.DrawOfferTimeout:
+                        DrawOfferTimeout(response);
+                        break;
+                    case GameStreamEvents.DrawOfferAcceptation:
+                        DrawOfferAcceptation(response);
+                        break;
+                    case GameStreamEvents.InitialTime:
+                        InitialTimeReceived?.Invoke(response);
+                        break;
+                    default: throw new ArgumentOutOfRangeException();
+                }
             }
         }
         catch (RpcException)
@@ -95,4 +128,31 @@ public class GameLogic : IGameLogic
         }
         
     }
+
+    private void TimeUpdate(JoinedGameStreamDto dto)
+    {
+        if (dto.GameEndType != (uint)GameEndTypes.TimeIsUp)
+        {
+            TimeUpdated?.Invoke(dto);
+        }
+    }
+    private void DrawOffer(JoinedGameStreamDto dto)
+    {
+        if (!(dto.IsWhite && OnWhiteSide) && !(!dto.IsWhite && !OnWhiteSide))
+            IsDrawOfferPending = true;
+        DrawOffered?.Invoke(dto);
+    }
+    
+    private void DrawOfferTimeout(JoinedGameStreamDto dto)
+    {
+        IsDrawOfferPending = false;
+        DrawOfferTimedOut?.Invoke(dto);
+    }
+    
+    private void DrawOfferAcceptation(JoinedGameStreamDto dto)
+    {
+        IsDrawOfferPending = false;
+        DrawOfferAccepted?.Invoke(dto);
+    }
+
 }

@@ -1,6 +1,6 @@
 @page "/ChessGame"
-@using BlazorWASM.Pages.ChessComponents
-@using Grpc.Core
+@using Rudzoft.ChessLib.Types
+@using StockfishWrapper
 @using Grpc.Net.Client
 @using GrpcService
 @using HttpClients.ClientInterfaces
@@ -8,12 +8,13 @@
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
 @using Rudzoft.ChessLib.Fen
-@using Rudzoft.ChessLib.Types
-@using Game = GrpcService.Game
 @using Application.LogicInterfaces
+@using Game = GrpcService.Game
+@using Position = Rudzoft.ChessLib.Position
 @using Domain.DTOs
 @using Domain.Enums
-@using StockfishWrapper
+@using Grpc.Core
+@using BlazorWASM.Pages.ChessComponents
 @inject GrpcChannel Channel
 @inject IAuthService AuthService
 @inject IDialogService DialogService
@@ -29,7 +30,7 @@
 
 <MudButton @onclick="OnResign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
 <MudButton @onclick="OnOfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
-@if (_isDrawOfferPending)
+@if (IsDrawOfferPending)
 {
     <div>
         <h3>You have a draw offer</h3>
@@ -49,7 +50,7 @@
 
         var token = AuthService.GetJwtToken();
         var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var ack = await _client.ResignAsync(new RequestResign() { Username = user.Identity!.Name, GameRoom = _gameRoomInt }, headers);
+        var ack = await _client.ResignAsync(new RequestResign { Username = user.Identity!.Name, GameRoom = _gameRoomInt }, headers);
 
         if (ack.Status == (uint)AckTypes.Success) return;
         Notify("Failed to resign", Severity.Error);
@@ -64,7 +65,7 @@
 
         var token = AuthService.GetJwtToken();
         var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var ack = await _client.OfferDrawAsync(new RequestDraw()
+        var ack = await _client.OfferDrawAsync(new RequestDraw
         {
             Username = user.Identity!.Name, GameRoom = _gameRoomInt
         }, headers);
@@ -92,7 +93,7 @@
 
         var token = AuthService.GetJwtToken();
         var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var ack = await _client.DrawOfferResponseAsync(new ResponseDraw()
+        var ack = await _client.DrawOfferResponseAsync(new ResponseDraw
         {
             Username = user.Identity!.Name, GameRoom = _gameRoomInt, Accept = accepted
         
@@ -100,7 +101,7 @@
 
         if (ack.Status == (uint)AckTypes.Success)
         {
-            _isDrawOfferPending = false;
+            GameLogic.IsDrawOfferPending = false;
         }
         else
         {
@@ -150,28 +151,34 @@
     private double _whiteSeconds;
     private double _blackSeconds;
     private bool _whiteTimerActive = true;
-    private bool _isDrawOfferPending = false;
+    private bool IsDrawOfferPending => GameLogic.IsDrawOfferPending;
     
     //Form input bindings
     private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
     private string _chosenGameType = "AI";
-    private ulong _gameRoomInt = 0;
+    private ulong _gameRoomInt;
     private bool _isWhiteSide = true;
     private string _opponent = "";
     private uint _timeControlBase = 120;
-    private uint _timeControlIncrement = 0;
+    private uint _timeControlIncrement;
 
 
     protected override void OnInitialized()
     {
         _client = new Game.GameClient(Channel);
-        GameLogic.GameStreamReceived += GameStreamReceived;
+        InitGameLogic();
+        SetFenPosition(Fen.StartPositionFen);
     }
 
-    public ChessGame()
+    private void InitGameLogic()
     {
-        SetFenPosition(Fen.StartPositionFen);
-        
+        GameLogic.TimeUpdated += OnTimeUpdated;
+        GameLogic.NewFenReceived += OnNewFenReceived;
+        GameLogic.ResignationReceived += OnResignationReceived;
+        GameLogic.InitialTimeReceived += OnInitialTimeReceived;
+        GameLogic.DrawOffered += OnDrawOffered;
+        GameLogic.DrawOfferTimedOut += OnDrawOfferTimedOut;
+        GameLogic.DrawOfferAccepted += OnDrawOfferAccepted;
     }
 
     private async Task CreateGame()
@@ -192,24 +199,26 @@
             Notify("Choose a game type before starting a game!", Severity.Warning);
         }
         
-        var request = new RequestGameDto()
+        var request = new RequestGameDto
         {
             GameType = _chosenGameType,
             Increment = _timeControlIncrement,
             IsWhite = _isWhiteSide,
             Opponent = opponent,
-            Seconds = _timeControlBase
+            Seconds = _timeControlBase,
+            Username = String.Empty // is set in game logic
         };
 
         try
         {
             var response = await GameLogic.CreateGame(request);
+            
             _gameRoomInt = response.GameRoom;
-            //TODO why do we set the time control on game creation and not game join?
-            //TODO actually I think we do both, why?
+    //TODO why do we set the time control on game creation and not game join?
+    //TODO actually I think we do both, why?
             _whiteSeconds = _timeControlBase;
             _blackSeconds = _timeControlBase;
-            
+
             Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
         }
         catch (InvalidOperationException)
@@ -218,7 +227,7 @@
         }
         catch (HttpRequestException)
         {
-            Notify($"Network error, Failed to create a game.", Severity.Error);
+            Notify("Network error, Failed to create a game.", Severity.Error);
         }
     }
 
@@ -226,17 +235,16 @@
     {
         try
         {
-            GameLogic.JoinGame(new RequestJoinGameDto()
+            GameLogic.JoinGame(new RequestJoinGameDto
             {
                 GameRoom = _gameRoomInt,
                 Username = "Bob"
             });
         }
-        catch (ArgumentException e)
+        catch (ArgumentException)
         {
             //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
             Notify("Game room not found.", Severity.Warning);
-            return;
         }
         catch (RpcException)
         {
@@ -244,65 +252,17 @@
         }
     }
 
-    private void GameStreamReceived(JoinedGameStreamDto dto)
+    private void OnTimeUpdated(JoinedGameStreamDto dto)
     {
-        Console.WriteLine("Event: " + dto.Event);
-
-            switch (dto.Event)
-            {
-                case "TimeUpdate":
-                    if (dto.GameEndType != (uint)GameEndTypes.TimeIsUp)
-                    {
-                        UpdateTimers(dto.IsWhite, dto.TimeLeftMs);
-                    }
-                    break;
-                case "NewFenPosition":
-                    _whiteTimerActive = !_whiteTimerActive;
-                    SetFenPosition(dto.FenString);
-                    PlaySound("move");
-                    break;
-                case "Resignation":
-                {
-                    PlaySound("notify");
-                    var options = new DialogOptions { CloseOnEscapeKey = true };
-                    if ((dto.IsWhite && _isWhiteSide) || (!dto.IsWhite && !_isWhiteSide))
-                    {
-                        DialogService.Show<InformDialogComponent>("You resigned the game!", options);
-                    }
-                    else
-                    {
-                        DialogService.Show<InformDialogComponent>("Your opponent resigned the game!", options);
-                    }
-                    break;
-                }
-                case "DrawOffer":
-                    if (!(dto.IsWhite && _isWhiteSide) && !(!dto.IsWhite && !_isWhiteSide))
-                        _isDrawOfferPending = true;
-                    break;
-                case "DrawOfferTimeout":
-                    _isDrawOfferPending = false;
-                    break;
-                case "DrawOfferAccepted":
-                    _isDrawOfferPending = false;
-                    PlaySound("notify");
-                    var opt = new DialogOptions { CloseOnEscapeKey = true };
-                    DialogService.Show<InformDialogComponent>("The game finished in a draw!", opt);
-                    break;
-                case "InitialTime":
-                    PlaySound("notify");
-                    Notify("Game joined. Have fun!", Severity.Success);
-                    _whiteSeconds = dto.TimeLeftMs / 1000;
-                    _blackSeconds = dto.TimeLeftMs / 1000;
-                    break;
-            }
+        if (dto.IsWhite) _whiteSeconds = dto.TimeLeftMs / 1000;
+        else _blackSeconds = dto.TimeLeftMs / 1000;
         StateHasChanged();
     }
-
-
-    private void UpdateTimers(bool white, double seconds)
+    
+    private void OnNewFenReceived(JoinedGameStreamDto dto)
     {
-        if (white) _whiteSeconds = seconds / 1000;
-        else _blackSeconds = seconds / 1000;
+        SetFenPosition(dto.FenString);           
+        PlaySound("move");
     }
 
     private void SetFenPosition(string fen)
@@ -310,13 +270,54 @@
         FenData fenData = new FenData(fen);
         State state = new State();
         _position.Set(in fenData, ChessMode.Normal, state);
+        StateHasChanged();
+    }
+    
+    private void OnResignationReceived(JoinedGameStreamDto dto)
+    {
+        PlaySound("notify");
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        if ((dto.IsWhite && _isWhiteSide) || (!dto.IsWhite && !_isWhiteSide))
+        {
+            DialogService.Show<InformDialogComponent>("You resigned the game!", options);
+        }
+        else
+        {
+            DialogService.Show<InformDialogComponent>("Your opponent resigned the game!", options);
+        }
+    }
+    
+    private void OnInitialTimeReceived(JoinedGameStreamDto dto)
+    {
+        PlaySound("notify");
+        Notify("Game joined. Have fun!", Severity.Success);
+        _whiteSeconds = dto.TimeLeftMs / 1000;
+        _blackSeconds = dto.TimeLeftMs / 1000;
+        StateHasChanged();
+    }
+    
+    private void OnDrawOffered(JoinedGameStreamDto dto)
+    {
+        Notify("Opponent received draw offer.", Severity.Info);
+    }
+    
+    private void OnDrawOfferTimedOut(JoinedGameStreamDto dto)
+    {
+        Notify("Draw offer expired", Severity.Info);
+    }
+    
+    private void OnDrawOfferAccepted(JoinedGameStreamDto dto)
+    {
+        PlaySound("notify");
+        var opt = new DialogOptions { CloseOnEscapeKey = true };
+        DialogService.Show<InformDialogComponent>("The game finished in a draw!", opt);
     }
 
     public async Task<int> MakeMove(Move move)
     {
         var token = AuthService.GetJwtToken();
         var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
-        var call = await _client.MakeMoveAsync(new RequestMakeMove()
+        var call = await _client.MakeMoveAsync(new RequestMakeMove
         {
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
