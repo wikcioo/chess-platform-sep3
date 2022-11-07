@@ -176,13 +176,16 @@
 
     private async Task CreateGame()
     {
+
+        
         ClaimsPrincipal user = await AuthService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
 
-        if (!isLoggedIn) return;
-
-        _whiteSeconds = _timeControlBase;
-        _blackSeconds = _timeControlBase;
+        if (!isLoggedIn)
+        {
+            OpenSnackBar("You have to be logged in to create a game!", Severity.Warning);
+            return;            
+        }
 
         string opponent = _chosenGameType switch 
         {
@@ -191,16 +194,32 @@
             "Random" => String.Empty,
             _ => throw new ArgumentOutOfRangeException()};
 
-        var responseGame = await _client.StartGameAsync(new RequestGame()
+
+        try
         {
-            GameType = _chosenGameType,
-            Increment = _timeControlIncrement,
-            IsWhite = _isWhiteSide,
-            Opponent = opponent,
-            Seconds = _timeControlBase,
-            Username = user.Identity!.Name!
-        });
-        _gameRoomInt = responseGame.GameRoom;
+            var responseGame = await _client.StartGameAsync(new RequestGame()
+            {
+                GameType = _chosenGameType,
+                Increment = _timeControlIncrement,
+                IsWhite = _isWhiteSide,
+                Opponent = opponent,
+                Seconds = _timeControlBase,
+                Username = user.Identity!.Name!
+            });
+            
+            _gameRoomInt = responseGame.GameRoom;
+            OpenSnackBar($"Game created successfully! Game id: {responseGame.GameRoom}", Severity.Success);
+        }
+        catch (RpcException e)
+        {
+            OpenSnackBar($"Network error, Failed to create a game.", Severity.Error);
+            Console.WriteLine(e);
+        }
+
+        _whiteSeconds = _timeControlBase;
+        _blackSeconds = _timeControlBase;
+        
+        
     }
 
     private async Task JoinGame()
