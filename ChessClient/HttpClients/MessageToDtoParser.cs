@@ -1,4 +1,5 @@
 using Domain.DTOs;
+using Domain.Enums;
 using GrpcService;
 
 namespace HttpClients;
@@ -13,7 +14,7 @@ public static class MessageToDtoParser
             GameEndType = message.GameEndType,
             TimeLeftMs = message.TimeLeftMs,
             IsWhite = message.IsWhite,
-            Event = message.Event,
+            Event = (GameStreamEvents) message.Event,
         };
     }
     
