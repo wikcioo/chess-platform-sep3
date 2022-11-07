@@ -34,9 +34,9 @@
     </Authorized>
 </AuthorizeView>
 @code {
-    private string _email;
-    private string _password;
-    private string _errorLabel;
+    private string _email = String.Empty;
+    private string _password = String.Empty;
+    private string _errorLabel = String.Empty;
 
     private async Task LoginAsync()
     {
