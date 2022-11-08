@@ -26,7 +26,7 @@
 
 <MudButton @onclick="Resign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
 <MudButton @onclick="OfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
-@if (IsDrawOfferPending)
+@if (GameLogic.IsDrawOfferPending)
 {
     <div>
         <h3>You have a draw offer</h3>
@@ -76,7 +76,6 @@
     private double _whiteSeconds;
     private double _blackSeconds;
     private bool _whiteTimerActive = true;
-    private bool IsDrawOfferPending => GameLogic.IsDrawOfferPending;
 
     //Form input bindings
     private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
@@ -170,11 +169,13 @@
     {
         try
         {
+            //workaround, initial position should be sent and not set
+            SetFenPosition(Fen.StartPositionFen);
             GameLogic.JoinGame(new RequestJoinGameDto
             {
                 GameRoom = _gameRoomInt,
-                Username = "Bob"
             });
+            
         }
         catch (ArgumentException)
         {
@@ -260,7 +261,7 @@
 
         if (ack == AckTypes.Success)
         {
-            GameLogic.IsDrawOfferPending = false;
+            StateHasChanged();
         }
         else
         {
@@ -314,12 +315,14 @@
 
     private void OnDrawOffered(JoinedGameStreamDto dto)
     {
-        Notify("Opponent received draw offer.", Severity.Info);
+        Notify($"Draw offer", Severity.Info);
+        StateHasChanged();
     }
 
     private void OnDrawOfferTimedOut(JoinedGameStreamDto dto)
     {
         Notify("Draw offer expired", Severity.Info);
+        StateHasChanged();
     }
 
     private void OnDrawOfferAccepted(JoinedGameStreamDto dto)
@@ -327,6 +330,7 @@
         PlaySound("notify");
         var opt = new DialogOptions { CloseOnEscapeKey = true };
         DialogService.Show<InformDialogComponent>("The game finished in a draw!", opt);
+        StateHasChanged();
     }
 
     private void PlaySound(string sound)

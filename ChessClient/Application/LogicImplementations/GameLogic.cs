@@ -23,7 +23,6 @@ public class GameLogic : IGameLogic
     public bool WhiteTurn { get; private set; } = true;
     public ulong? GameRoomId { get; set; }
 
-
     //Todo Possibility of replacing StreamUpdate with action and only needed information instead of dto
     public delegate void StreamUpdate(JoinedGameStreamDto dto);
     public event StreamUpdate? TimeUpdated;
@@ -77,6 +76,8 @@ public class GameLogic : IGameLogic
     {
         ClaimsPrincipal user = await _authService.GetAuthAsync();
 
+        Console.WriteLine(user.Identity?.Name);
+
         AsyncServerStreamingCall<JoinedGameStream>? call;
         
         try
@@ -88,6 +89,7 @@ public class GameLogic : IGameLogic
             });
 
             GameRoomId = dto.GameRoom;
+            // OnWhiteSide = dto.what?
         }
         catch (ArgumentException)
         {
@@ -144,9 +146,10 @@ public class GameLogic : IGameLogic
     }
     private void DrawOffer(JoinedGameStreamDto dto)
     {
-        if (!(dto.IsWhite && OnWhiteSide) && !(!dto.IsWhite && !OnWhiteSide))
+        // if (!(dto.IsWhite && OnWhiteSide) && !(!dto.IsWhite && !OnWhiteSide))
             IsDrawOfferPending = true;
-        DrawOffered?.Invoke(dto);
+        // else 
+            DrawOffered?.Invoke(dto);
     }
     
     private void DrawOfferTimeout(JoinedGameStreamDto dto)
@@ -157,6 +160,9 @@ public class GameLogic : IGameLogic
     
     private void DrawOfferAcceptation(JoinedGameStreamDto dto)
     {
+        if (!IsDrawOfferPending)
+            return;
+        
         IsDrawOfferPending = false;
         DrawOfferAccepted?.Invoke(dto);
     }
@@ -239,6 +245,11 @@ public class GameLogic : IGameLogic
             Username = user.Identity!.Name, GameRoom = GameRoomId.Value, Accept = accepted
         }, headers);
 
+        if ((AckTypes) ack.Status == AckTypes.Success)
+        {
+            IsDrawOfferPending = false;
+        }
+        
         return (AckTypes) ack.Status;
     }
 }
