@@ -1,5 +1,6 @@
 using Application.LogicImplementations;
 using Domain.DTOs;
+using Rudzoft.ChessLib.Types;
 
 namespace Application.LogicInterfaces;
 
@@ -14,7 +15,9 @@ public interface IGameLogic
     public event GameLogic.StreamUpdate? DrawOffered;
     public event GameLogic.StreamUpdate? DrawOfferTimedOut;
     public event GameLogic.StreamUpdate? DrawOfferAccepted;
-    
+
     public Task<ResponseGameDto> CreateGame(RequestGameDto dto);
     public Task JoinGame(RequestJoinGameDto dto);
+    public Task<int> MakeMove(Move move);
+
 }

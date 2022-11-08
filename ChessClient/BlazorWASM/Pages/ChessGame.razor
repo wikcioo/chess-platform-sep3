@@ -329,17 +329,7 @@
 
     public async Task<int> MakeMove(Move move)
     {
-        var token = AuthService.GetJwtToken();
-        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
-        var call = await _client.MakeMoveAsync(new RequestMakeMove
-        {
-            FromSquare = move.FromSquare().ToString(),
-            ToSquare = move.ToSquare().ToString(),
-            GameRoom = _gameRoomInt,
-            MoveType = (uint)move.MoveType(),
-            Promotion = (uint)move.PromotedPieceType().AsInt()
-        }, headers);
-        return (int)call.Status;
+        return await GameLogic.MakeMove(move);
     }
 
     private void PlaySound(string sound)

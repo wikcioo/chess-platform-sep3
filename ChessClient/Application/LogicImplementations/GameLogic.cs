@@ -8,6 +8,7 @@ using GrpcService;
 using HttpClients;
 using HttpClients.ClientInterfaces;
 using Rudzoft.ChessLib.Enums;
+using Rudzoft.ChessLib.Types;
 
 namespace Application.LogicImplementations;
 
@@ -17,11 +18,11 @@ public class GameLogic : IGameLogic
     private readonly Game.GameClient _gameClient;
     
     public bool IsDrawOfferPending { get; set; } = false;
-
     public bool OnWhiteSide { get; set; } = true;
     public bool WhiteTurn { get; private set; } = true;
+    public ulong GameRoomId { get; set; }
 
-    
+
     //Todo Possibility of replacing StreamUpdate with action and only needed information instead of dto
     public delegate void StreamUpdate(JoinedGameStreamDto dto);
     public event StreamUpdate? TimeUpdated;
@@ -62,6 +63,7 @@ public class GameLogic : IGameLogic
             ResponseGameDto response = MessageToDtoParser.ToDto(grpcResponse);
 
             OnWhiteSide = response.IsWhite;
+            GameRoomId = response.GameRoom;
             
             return response;
         }
@@ -155,4 +157,18 @@ public class GameLogic : IGameLogic
         DrawOfferAccepted?.Invoke(dto);
     }
 
+    public async Task<int> MakeMove(Move move)
+    {
+        var token = _authService.GetJwtToken();
+        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
+        var call = await _gameClient.MakeMoveAsync(new RequestMakeMove
+        {
+            FromSquare = move.FromSquare().ToString(),
+            ToSquare = move.ToSquare().ToString(),
+            GameRoom = GameRoomId,
+            MoveType = (uint)move.MoveType(),
+            Promotion = (uint)move.PromotedPieceType().AsInt()
+        }, headers);
+        return (int)call.Status;
+    }
 }
