@@ -35,38 +35,42 @@
     </div>
 }
 
-<MudGrid>
-    <MudItem md="12" lg="6" Class="chess-board">
-        <TimerComponent Active="@(_isWhiteSide ? !_whiteTimerActive : _whiteTimerActive)" Seconds="@(_isWhiteSide ? _blackSeconds : _whiteSeconds)"/>
-        <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@_isWhiteSide"/>
-        <TimerComponent Active="@(_isWhiteSide ? _whiteTimerActive : !_whiteTimerActive)" Seconds="@(_isWhiteSide ? _whiteSeconds : _blackSeconds)"/>
+<MudGrid Justify="Justify.SpaceAround" Spacing="10">
+    <MudItem md="12" lg="6">
+        <MudContainer MaxWidth="MaxWidth.Small">
+            <TimerComponent Active="@(_isWhiteSide ? !_whiteTimerActive : _whiteTimerActive)" Seconds="@(_isWhiteSide ? _blackSeconds : _whiteSeconds)"/>
+            <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@_isWhiteSide"/>
+            <TimerComponent Active="@(_isWhiteSide ? _whiteTimerActive : !_whiteTimerActive)" Seconds="@(_isWhiteSide ? _whiteSeconds : _blackSeconds)"/>
+        </MudContainer>
     </MudItem>
     <MudItem md="12" lg="6">
-        <MudSelect Dense="true" T="string" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
-            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
-            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
-            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi3.Value)">Level 3</MudSelectItem>
-            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi4.Value)">Level 4</MudSelectItem>
-            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi5.Value)">Level 5</MudSelectItem>
-            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi6.Value)">Level 6</MudSelectItem>
-            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
-            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
-        </MudSelect>
-        <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
-            <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
-            <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
-        </MudRadioGroup>
-        <MudNumericField T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
-        <MudRadioGroup @bind-SelectedOption="_chosenGameType" T="string">
-            <MudRadio T="string" Color="Color.Default" Option=@("AI")>AI</MudRadio>
-            <MudRadio T="string" Color="Color.Default" Option=@("Friend")>Friend</MudRadio>
-            <MudRadio T="string" Color="Color.Default" Option=@("Random")>Random</MudRadio>
-        </MudRadioGroup>
-        <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
-        <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
-        <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
+        <MudContainer MaxWidth="MaxWidth.Small">
+            <MudSelect Dense="true" T="string" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
+                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
+                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
+                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi3.Value)">Level 3</MudSelectItem>
+                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi4.Value)">Level 4</MudSelectItem>
+                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi5.Value)">Level 5</MudSelectItem>
+                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi6.Value)">Level 6</MudSelectItem>
+                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
+                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
+            </MudSelect>
+            <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
+                <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
+                <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
+            </MudRadioGroup>
+            <MudNumericField T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
+            <MudRadioGroup @bind-SelectedOption="_chosenGameType" T="string">
+                <MudRadio T="string" Color="Color.Default" Option=@("AI")>AI</MudRadio>
+                <MudRadio T="string" Color="Color.Default" Option=@("Friend")>Friend</MudRadio>
+                <MudRadio T="string" Color="Color.Default" Option=@("Random")>Random</MudRadio>
+            </MudRadioGroup>
+            <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
+            <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
+            <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
+        </MudContainer>
     </MudItem>
 </MudGrid>
 
@@ -169,13 +173,12 @@
     {
         try
         {
-            //workaround, initial position should be sent and not set
+    //workaround, initial position should be sent and not set
             SetFenPosition(Fen.StartPositionFen);
             GameLogic.JoinGame(new RequestJoinGameDto
             {
                 GameRoom = _gameRoomInt,
             });
-            
         }
         catch (ArgumentException)
         {
@@ -187,7 +190,7 @@
             Notify("Connection error. Failed to participate in game. ¯\\_(ツ)_/¯", Severity.Error);
         }
     }
-    
+
     public async Task<int> MakeMove(Move move)
     {
         try
@@ -197,10 +200,10 @@
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            return (int) AckTypes.GameNotFound;
+            return (int)AckTypes.GameNotFound;
         }
     }
-    
+
     private async void Resign()
     {
         AckTypes ack;
@@ -208,12 +211,12 @@
         {
             ack = await GameLogic.Resign();
         }
-        catch(InvalidOperationException e)
+        catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
             return;
         }
-        
+
         if (ack == (uint)AckTypes.Success) return;
         Notify("Failed to resign", Severity.Error);
     }
@@ -221,7 +224,7 @@
     private async void OfferDraw()
     {
         AckTypes ack;
-        
+
         try
         {
             ack = await GameLogic.OfferDraw();
@@ -253,7 +256,7 @@
         {
             ack = await GameLogic.SendDrawResponse(accepted);
         }
-        catch(InvalidOperationException e)
+        catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
             return;

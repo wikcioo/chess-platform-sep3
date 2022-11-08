@@ -4,7 +4,8 @@
 
 <div class="@($"square {SquareStyle()}")" @onclick="OnClicked">
     <div class="@($"square-overlay{RenderOverlayStyle()}")"></div>
-    <div class="piece @(!IsWhiteSide ? "black-side" : "")">@((MarkupString)RenderPiece(false))
+    <div class="piece @(!IsWhiteSide ? "black-side" : "")">
+        <div class="piece-icon">@((MarkupString)RenderPiece()) </div>
     </div>
 </div>
 
@@ -35,52 +36,30 @@
         OnClick.InvokeAsync(new ChessClickDto(Piece?.Value, SquareId, HasMoveTo));
     }
 
-    private string RenderPiece(bool isUnicode)
+    private string RenderPiece()
     {
-        if (!Piece.HasValue)
+        if (!Piece.HasValue || Piece.Value.Value == Pieces.NoPiece)
             return "";
 
         var pieceId = Piece.Value.Value;
-        if (isUnicode)
+        
         {
-            return pieceId switch
-            {
-                Pieces.NoPiece => "",
-                Pieces.WhitePawn => "\u2659",
-                Pieces.WhiteKnight => "\u2658",
-                Pieces.WhiteBishop => "\u2657",
-                Pieces.WhiteRook => "\u2656",
-                Pieces.WhiteQueen => "\u2655",
-                Pieces.WhiteKing =>"\u2654",
-                Pieces.BlackPawn => "\u265F",
-                Pieces.BlackKnight => "\u265E",
-                Pieces.BlackBishop => "\u265D",
-                Pieces.BlackRook => "\u265C",
-                Pieces.BlackQueen => "\u265B",
-                Pieces.BlackKing => "\u265A",
-                Pieces.PieceNb => "",
-                _ => throw new ArgumentOutOfRangeException()
-                }; 
-        }
-        else
-        {
-            string result = "<img style=\"height: 45px;\" class=\"piece-icon\" src=\"icons\\Chess";
+            string result = "<img style=\"width: 100%\" src=\"icons\\Chess";
             //TODO: Add contribution to the creator
             return result + pieceId switch
             {
-                Pieces.NoPiece => "",
-                Pieces.WhitePawn => "_plt45.svg\"/>",
-                Pieces.WhiteKnight => "_nlt45.svg\"/>",
-                Pieces.WhiteBishop => "_blt45.svg\"/>",
-                Pieces.WhiteRook => "_rlt45.svg\"/>",
-                Pieces.WhiteQueen => "_qlt45.svg\"/>",
-                Pieces.WhiteKing =>"_klt45.svg\"/>",
-                Pieces.BlackPawn => "_pdt45.svg\"/>",
-                Pieces.BlackKnight => "_ndt45.svg\"/>",
-                Pieces.BlackBishop => "_bdt45.svg\"/>",
-                Pieces.BlackRook => "_rdt45.svg\"/>",
-                Pieces.BlackQueen => "_qdt45.svg\"/>",
-                Pieces.BlackKing => "_kdt45.svg\"/>",
+                Pieces.WhitePawn => "_plt45.png\"/>",
+                Pieces.WhiteKnight => "_nlt45.png\"/>",
+                Pieces.WhiteBishop => "_blt45.png\"/>",
+                Pieces.WhiteRook => "_rlt45.png\"/>",
+                Pieces.WhiteQueen => "_qlt45.png\"/>",
+                Pieces.WhiteKing =>"_klt45.png\"/>",
+                Pieces.BlackPawn => "_pdt45.png\"/>",
+                Pieces.BlackKnight => "_ndt45.png\"/>",
+                Pieces.BlackBishop => "_bdt45.png\"/>",
+                Pieces.BlackRook => "_rdt45.png\"/>",
+                Pieces.BlackQueen => "_qdt45.png\"/>",
+                Pieces.BlackKing => "_kdt45.png\"/>",
                 Pieces.PieceNb => "",
                 _ => throw new ArgumentOutOfRangeException()
                 }; 
