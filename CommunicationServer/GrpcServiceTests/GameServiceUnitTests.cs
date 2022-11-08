@@ -127,6 +127,47 @@ public class GameServiceUnitTests
         }, serverCallContext);
         Assert.Equal((uint) AckTypes.NotUserTurn, response.Status);
     }
+    [Fact]
+    public async Task OfferingADrawWithValidUserAndAcceptingItWithValidUserReturnsSuccess()
+    {
+        var responseGame = await _gameService.StartGame(_requestGame, TestServerCallContext.Create());
+        var serverCallContext = SetUpAuthenticated("Jeff");
+        await _gameService.OfferDraw(new RequestDraw
+        {
+            GameRoom = responseGame.GameRoom,
+            Username = "Jeff"
+        }, serverCallContext);
+        
+        var serverCallContext2 = SetUpAuthenticated("Alice");
+        var drawOfferResponse =  await _gameService.DrawOfferResponse(new ResponseDraw
+        {
+            Accept = true,
+            GameRoom = responseGame.GameRoom,
+            Username = "Alice"
+        },serverCallContext2);
+        Assert.Equal((uint) AckTypes.Success, drawOfferResponse.Status);
+    }
+    
+    [Fact]
+    public async Task OfferingADrawWithValidUserAndAcceptingItWithInvalidUserReturnsNotUserTurn()
+    {
+        var responseGame = await _gameService.StartGame(_requestGame, TestServerCallContext.Create());
+        var serverCallContext = SetUpAuthenticated("Jeff");
+        await _gameService.OfferDraw(new RequestDraw
+        {
+            GameRoom = responseGame.GameRoom,
+            Username = "Jeff"
+        }, serverCallContext);
+        
+        var serverCallContext2 = SetUpNotAuthenticated();
+        var drawOfferResponse =  await _gameService.DrawOfferResponse(new ResponseDraw
+        {
+            Accept = true,
+            GameRoom = responseGame.GameRoom,
+            Username = "Alice"
+        },serverCallContext2);
+        Assert.Equal((uint) AckTypes.NotUserTurn, drawOfferResponse.Status);
+    }
 
     //Resigning
     [Fact]
