@@ -76,6 +76,32 @@ public class GameRoom
 
         _game.Pos.MakeMove(move, _game.Pos.State);
         _chessTimer.UpdateTimers(_whitePlaying);
+        
+        // Check game logic: Checkmate, Draw, Insufficient Material
+        // TODO(Wiktor): Implement the rest of end game scenarios
+        var reachedTheEnd = false;
+        var gameEndType = GameEndTypes.None;
+        if (_game.Pos.IsMate)
+        {
+            reachedTheEnd = true;
+            gameEndType = GameEndTypes.CheckMate;
+        }
+
+        if (reachedTheEnd)
+        {
+            _chessTimer.StopTimers();
+            GameJoined.Invoke(new JoinedGameStreamDto()
+            {
+                Event = GameStreamEvents.ReachedEndOfTheGame,
+                FenString = _game.Pos.FenNotation,
+                GameEndType = (uint)gameEndType,
+                IsWhite = !_whitePlaying,
+                TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
+            });
+            
+            return AckTypes.Success;
+        }
+        
         _whitePlaying = _game.CurrentPlayer().IsWhite;
 
         var responseJoinedGameDto = new JoinedGameStreamDto()
