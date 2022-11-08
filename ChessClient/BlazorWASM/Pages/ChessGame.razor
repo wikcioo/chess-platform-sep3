@@ -202,7 +202,16 @@
     
     private async void Resign()
     {
-        var ack = await GameLogic.Resign();
+        AckTypes ack;
+        try
+        {
+            ack = await GameLogic.Resign();
+        }
+        catch(InvalidOperationException e)
+        {
+            Notify(e.Message, Severity.Warning);
+            return;
+        }
         
         if (ack == (uint)AckTypes.Success) return;
         Notify("Failed to resign", Severity.Error);

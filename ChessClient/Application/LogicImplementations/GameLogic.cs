@@ -64,7 +64,6 @@ public class GameLogic : IGameLogic
             ResponseGameDto response = MessageToDtoParser.ToDto(grpcResponse);
 
             OnWhiteSide = response.IsWhite;
-            GameRoomId = response.GameRoom;
             
             return response;
         }
@@ -76,6 +75,8 @@ public class GameLogic : IGameLogic
 
     public async Task JoinGame(RequestJoinGameDto dto)
     {
+        ClaimsPrincipal user = await _authService.GetAuthAsync();
+
         AsyncServerStreamingCall<JoinedGameStream>? call;
         
         try
@@ -83,8 +84,10 @@ public class GameLogic : IGameLogic
             call = _gameClient.JoinGame(new RequestJoinGame()
             {
                 GameRoom = dto.GameRoom,
-                Username = "Bob"
+                Username = user.Identity?.Name
             });
+
+            GameRoomId = dto.GameRoom;
         }
         catch (ArgumentException)
         {
