@@ -155,7 +155,7 @@ public class GameService : Game.GameBase
         AckTypes ack = await _gameLogic.DrawOfferResponse(new ResponseDrawDto()
         {
             GameRoom = request.GameRoom,
-            Username = request.Username,
+            Username = claim.Value,
             Accept = request.Accept
         });
         return new Acknowledge()
