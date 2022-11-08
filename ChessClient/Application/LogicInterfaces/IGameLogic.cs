@@ -16,6 +16,8 @@ public interface IGameLogic
     public event GameLogic.StreamUpdate? DrawOffered;
     public event GameLogic.StreamUpdate? DrawOfferTimedOut;
     public event GameLogic.StreamUpdate? DrawOfferAccepted;
+    public event GameLogic.StreamUpdate? EndOfTheGameReached;
+    public event GameLogic.StreamUpdate? GameFirstJoined;
 
     public Task<ResponseGameDto> CreateGame(RequestGameDto dto);
     public Task JoinGame(RequestJoinGameDto dto);
