@@ -102,6 +102,8 @@
         GameLogic.DrawOffered -= OnDrawOffered;
         GameLogic.DrawOfferTimedOut -= OnDrawOfferTimedOut;
         GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
+        GameLogic.EndOfTheGameReached -= OnEndOfTheGameReached;
+        GameLogic.GameFirstJoined -= OnGameFirstJoined;
     }
 
     private void InitGameLogic()
@@ -113,6 +115,8 @@
         GameLogic.DrawOffered += OnDrawOffered;
         GameLogic.DrawOfferTimedOut += OnDrawOfferTimedOut;
         GameLogic.DrawOfferAccepted += OnDrawOfferAccepted;
+        GameLogic.EndOfTheGameReached += OnEndOfTheGameReached;
+        GameLogic.GameFirstJoined += OnGameFirstJoined;
     }
 
     private async Task CreateGame()
@@ -148,10 +152,6 @@
             var response = await GameLogic.CreateGame(request);
 
             _gameRoomInt = response.GameRoom;
-    //TODO why do we set the time control on game creation and not game join?
-    //TODO actually I think we do both, why?
-            _whiteSeconds = _timeControlBase;
-            _blackSeconds = _timeControlBase;
 
             Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
         }
@@ -269,11 +269,56 @@
         }
     }
 
+    private void OnGameFirstJoined(JoinedGameStreamDto dto)
+    {
+        _isWhiteSide = dto.IsWhite;
+    }
+
+    private void OnEndOfTheGameReached(JoinedGameStreamDto dto)
+    {
+        PlaySound("notify");
+        switch (dto.GameEndType)
+        {
+            case (uint)GameEndTypes.CheckMate:
+                if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
+                    DisplayDefaultDialog("You got checkmated!");
+                else
+                    DisplayDefaultDialog("You checkmated your opponent!");
+                break;
+            case (uint)GameEndTypes.Repetition:
+                DisplayDefaultDialog("Draw by repetition!");
+                break;
+            case (uint)GameEndTypes.Pat:
+                DisplayDefaultDialog("Stalemate!");
+                break;
+            case (uint)GameEndTypes.FiftyMove:
+                DisplayDefaultDialog("Draw by 50 moves!");
+                break;
+            case (uint)GameEndTypes.MaterialDrawn:
+                DisplayDefaultDialog("Draw! Insufficient material!");
+                break;
+        }
+    }
+
     private void OnTimeUpdated(JoinedGameStreamDto dto)
     {
-        if (dto.IsWhite) _whiteSeconds = dto.TimeLeftMs / 1000;
-        else _blackSeconds = dto.TimeLeftMs / 1000;
-        StateHasChanged();
+        if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp)
+        {
+            if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
+            {
+                DisplayDefaultDialog("You ran out of time! You loose!");
+            }
+            else
+            {
+                DisplayDefaultDialog("Your opponent ran out of time! You win!");
+            }
+        }
+        else
+        {
+            if (dto.IsWhite) _whiteSeconds = dto.TimeLeftMs / 1000;
+            else _blackSeconds = dto.TimeLeftMs / 1000;
+            StateHasChanged();
+        }
     }
 
     private void OnNewFenReceived(JoinedGameStreamDto dto)
@@ -293,14 +338,13 @@
     private void OnResignationReceived(JoinedGameStreamDto dto)
     {
         PlaySound("notify");
-        var options = new DialogOptions { CloseOnEscapeKey = true };
         if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
         {
-            DialogService.Show<InformDialogComponent>("You resigned the game!", options);
+            DisplayDefaultDialog("You resigned the game!");
         }
         else
         {
-            DialogService.Show<InformDialogComponent>("Your opponent resigned the game!", options);
+            DisplayDefaultDialog("Your opponent resigned the game!");
         }
     }
 
@@ -343,4 +387,9 @@
         Snackbar.Add(message, severity);
     }
 
+    private void DisplayDefaultDialog(string message)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        DialogService.Show<InformDialogComponent>(message, options);
+    }
 }
