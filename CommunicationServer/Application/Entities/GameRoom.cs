@@ -31,15 +31,21 @@ public class GameRoom
 
     public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
 
-    public GameRoom(GameStateTypes gameType, uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
+    public GameRoom(string? playerWhiteName, string? playerBlackName, uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
     {
+        PlayerWhite = playerWhiteName;
+        PlayerBlack = playerBlackName;
+        
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
+        
         _whitePlaying = _game.CurrentPlayer().IsWhite;
+        
         _gameData.Add(new JoinedGameStreamDto()
         {
             Event = GameStreamEvents.InitialTime,
-            TimeLeftMs = timeControlSeconds * 1000
+            TimeLeftMs = timeControlSeconds * 1000,
+            FenString = PlayerWhite ?? ""
         });
 
         _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
