@@ -59,7 +59,7 @@ public class GameService : Game.GameBase
                         GameEndType = x.GameEndType,
                         TimeLeftMs = x.TimeLeftMs,
                         IsWhite = x.IsWhite,
-                        Event = x.Event
+                        Event = (uint) x.Event
                     }), context.CancellationToken)
                     .ConfigureAwait(false);
             }

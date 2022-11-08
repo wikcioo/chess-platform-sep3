@@ -1,3 +1,5 @@
+using Application.LogicImplementations;
+using Application.LogicInterfaces;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using BlazorWASM;
@@ -17,14 +19,14 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 
 builder.Services.AddScoped(
-    sp =>
+    _ =>
         new HttpClient
         {
             BaseAddress = new Uri("https://localhost:7233")
         }
 );
 
-builder.Services.AddSingleton(services => GrpcChannel.ForAddress("http://localhost:5231", new GrpcChannelOptions
+builder.Services.AddSingleton(_ => GrpcChannel.ForAddress("http://localhost:5231", new GrpcChannelOptions
 {
     HttpHandler = new GrpcWebHandler(new HttpClientHandler())
 }));
@@ -44,6 +46,7 @@ AuthorizationPolicies.AddPolicies(builder.Services);
 builder.Services.AddScoped<IUserService, UserHttpClient>();
 // builder.Services.AddBlazorBootstrap();
 builder.Services.AddScoped<IAuthService, JwtAuthService>();
+builder.Services.AddScoped<IGameLogic, GameLogic>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthProvider>();
 
 builder.Services.AddAuthorizationCore();

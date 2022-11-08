@@ -7,10 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="DAOInterfaces" />
-    </ItemGroup>
-
-    <ItemGroup>
+      <ProjectReference Include="..\..\CommunicationServer\Domain\Domain.csproj" />
       <ProjectReference Include="..\HttpClients\HttpClients.csproj" />
     </ItemGroup>
 

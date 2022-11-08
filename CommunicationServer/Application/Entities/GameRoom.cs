@@ -38,7 +38,7 @@ public class GameRoom
         _whitePlaying = _game.CurrentPlayer().IsWhite;
         _gameData.Add(new JoinedGameStreamDto()
         {
-            Event = "InitialTime",
+            Event = GameStreamEvents.InitialTime,
             TimeLeftMs = timeControlSeconds * 1000
         });
 
@@ -74,7 +74,7 @@ public class GameRoom
 
         var responseJoinedGameDto = new JoinedGameStreamDto()
         {
-            Event = "NewFenPosition",
+            Event = GameStreamEvents.NewFenPosition,
             FenString = _game.Pos.FenNotation,
             TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             GameEndType = (uint) _game.GameEndType,
@@ -103,7 +103,7 @@ public class GameRoom
 
         GameJoined.Invoke(new JoinedGameStreamDto()
         {
-            Event = "Resignation",
+            Event = GameStreamEvents.Resignation,
             IsWhite = PlayerWhite!.Equals(dto.Username)
         });
 
@@ -121,7 +121,7 @@ public class GameRoom
 
         GameJoined.Invoke(new JoinedGameStreamDto()
         {
-            Event = "DrawOffer",
+            Event = GameStreamEvents.DrawOffer,
             IsWhite = PlayerWhite!.Equals(dto.Username)
         });
 
@@ -140,7 +140,7 @@ public class GameRoom
         {
             GameJoined.Invoke(new JoinedGameStreamDto()
             {
-                Event = "DrawOfferTimeout",
+                Event = GameStreamEvents.DrawOfferTimeout,
                 IsWhite = PlayerWhite!.Equals(dto.Username)
             });
             return AckTypes.DrawOfferExpired;
@@ -150,7 +150,7 @@ public class GameRoom
 
         GameJoined.Invoke(new JoinedGameStreamDto()
         {
-            Event = "DrawOfferAccepted",
+            Event = GameStreamEvents.DrawOfferAcceptation,
             IsWhite = PlayerWhite!.Equals(dto.Username)
         });
 

@@ -1,24 +1,22 @@
 @page "/ChessGame"
-@using BlazorWASM.Pages.ChessComponents
-@using Grpc.Core
+@using Rudzoft.ChessLib.Types
+@using StockfishWrapper
 @using Grpc.Net.Client
-@using GrpcService
-@using HttpClients.ClientInterfaces
 @using MudBlazor
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
 @using Rudzoft.ChessLib.Fen
-@using Rudzoft.ChessLib.Types
-@using Game = GrpcService.Game
-@using System.Security.Claims
-@using Domain.Enums
-@using StockfishWrapper
-@inject GrpcChannel Channel
-@inject IAuthService AuthService
+@using Application.LogicInterfaces
 @using Position = Rudzoft.ChessLib.Position
+@using Domain.DTOs
+@using Domain.Enums
+@using Grpc.Core
+@using BlazorWASM.Pages.ChessComponents
 @inject IDialogService DialogService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
+@inject IGameLogic GameLogic
+@implements IDisposable
 
 
 <h3 style="margin: 10px auto; text-align: center">ChessGame</h3>
@@ -26,86 +24,15 @@
 <audio id="move" src="sounds/move.mp3"></audio>
 <audio id="notify" src="sounds/notify.mp3"></audio>
 
-<MudButton @onclick="OnResign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
-<MudButton @onclick="OnOfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
-@if (_isDrawOfferPending)
+<MudButton @onclick="Resign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
+<MudButton @onclick="OfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
+@if (GameLogic.IsDrawOfferPending)
 {
     <div>
         <h3>You have a draw offer</h3>
-        <MudButton @onclick="() => OnSendDrawResponse(true)" Variant="Variant.Filled" Color="Color.Success">Accept</MudButton>
-        <MudButton @onclick="() => OnSendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
+        <MudButton @onclick="() => SendDrawResponse(true)" Variant="Variant.Filled" Color="Color.Success">Accept</MudButton>
+        <MudButton @onclick="() => SendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
     </div>
-}
-
-@code {
-
-    private async void OnResign()
-    {
-        var user = await AuthService.GetAuthAsync();
-        var isLoggedIn = user.Identity != null;
-
-        if (!isLoggedIn) return;
-
-        var token = AuthService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var ack = await _client.ResignAsync(new RequestResign() { Username = user.Identity!.Name, GameRoom = _gameRoomInt }, headers);
-
-        if (ack.Status == (uint)AckTypes.Success) return;
-        OpenSnackBar("Failed to resign", Severity.Error);
-    }
-
-    private async void OnOfferDraw()
-    {
-        var user = await AuthService.GetAuthAsync();
-        var isLoggedIn = user.Identity != null;
-
-        if (!isLoggedIn) return;
-
-        var token = AuthService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var ack = await _client.OfferDrawAsync(new RequestDraw()
-        {
-            Username = user.Identity!.Name, GameRoom = _gameRoomInt
-        }, headers);
-
-        switch (ack.Status)
-        {
-            case (uint)AckTypes.Success:
-                OpenSnackBar("Draw Offer Successful!", Severity.Info);
-                return;
-            case (uint)AckTypes.DrawOfferExpired:
-                OpenSnackBar("Draw Offer Expired!", Severity.Info);
-                break;
-            case (uint)AckTypes.DrawOfferDeclined:
-                OpenSnackBar("Draw Offer Declined!", Severity.Info);
-                break;
-        }
-    }
-
-    private async void OnSendDrawResponse(bool accepted)
-    {
-        var user = await AuthService.GetAuthAsync();
-        var isLoggedIn = user.Identity != null;
-
-        if (!isLoggedIn) return;
-
-        var token = AuthService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var ack = await _client.DrawOfferResponseAsync(new ResponseDraw()
-        {
-            Username = user.Identity!.Name, GameRoom = _gameRoomInt, Accept = accepted
-        
-        }, headers);
-
-        if (ack.Status == (uint)AckTypes.Success)
-        {
-            _isDrawOfferPending = false;
-        }
-        else
-        {
-            OpenSnackBar($"Failed to send draw response! AckType = {ack.Status}", Severity.Error);
-        }
-    }
 }
 
 <MudGrid>
@@ -115,198 +42,244 @@
         <TimerComponent Active="@(_isWhiteSide ? _whiteTimerActive : !_whiteTimerActive)" Seconds="@(_isWhiteSide ? _whiteSeconds : _blackSeconds)"/>
     </MudItem>
     <MudItem md="12" lg="6">
-    <MudSelect Dense="true" T="string" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi3.Value)">Level 3</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi4.Value)">Level 4</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi5.Value)">Level 5</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi6.Value)">Level 6</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
-        <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
-    </MudSelect>
-    <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
-        <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
-        <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
-    </MudRadioGroup>
-    <MudNumericField  T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
-    <MudRadioGroup @bind-SelectedOption="_chosenGameType" T="string">
+        <MudSelect Dense="true" T="string" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi3.Value)">Level 3</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi4.Value)">Level 4</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi5.Value)">Level 5</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi6.Value)">Level 6</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
+            <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
+        </MudSelect>
+        <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
+            <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
+            <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
+        </MudRadioGroup>
+        <MudNumericField T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
+        <MudRadioGroup @bind-SelectedOption="_chosenGameType" T="string">
             <MudRadio T="string" Color="Color.Default" Option=@("AI")>AI</MudRadio>
             <MudRadio T="string" Color="Color.Default" Option=@("Friend")>Friend</MudRadio>
             <MudRadio T="string" Color="Color.Default" Option=@("Random")>Random</MudRadio>
-    </MudRadioGroup>
-    <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
-    <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
-    <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
+        </MudRadioGroup>
+        <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
+        <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
+        <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
     </MudItem>
 </MudGrid>
+
 @code {
 
-    private Game.GameClient _client;
     private readonly IPosition _position = new Position(new Board(), new PieceValue());
     private double _whiteSeconds;
     private double _blackSeconds;
     private bool _whiteTimerActive = true;
-    private bool _isDrawOfferPending = false;
-    
+
     //Form input bindings
     private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
     private string _chosenGameType = "AI";
-    private ulong _gameRoomInt = 0;
+    private ulong _gameRoomInt;
     private bool _isWhiteSide = true;
     private string _opponent = "";
     private uint _timeControlBase = 120;
-    private uint _timeControlIncrement = 0;
+    private uint _timeControlIncrement;
+
 
     protected override void OnInitialized()
     {
-        _client = new Game.GameClient(Channel);
+        SetFenPosition(Fen.StartPositionFen);
+        InitGameLogic();
     }
 
-    public ChessGame()
+    public void Dispose()
     {
-        SetFenPosition(Fen.StartPositionFen);
+        GameLogic.TimeUpdated -= OnTimeUpdated;
+        GameLogic.NewFenReceived -= OnNewFenReceived;
+        GameLogic.ResignationReceived -= OnResignationReceived;
+        GameLogic.InitialTimeReceived -= OnInitialTimeReceived;
+        GameLogic.DrawOffered -= OnDrawOffered;
+        GameLogic.DrawOfferTimedOut -= OnDrawOfferTimedOut;
+        GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
+    }
+
+    private void InitGameLogic()
+    {
+        GameLogic.TimeUpdated += OnTimeUpdated;
+        GameLogic.NewFenReceived += OnNewFenReceived;
+        GameLogic.ResignationReceived += OnResignationReceived;
+        GameLogic.InitialTimeReceived += OnInitialTimeReceived;
+        GameLogic.DrawOffered += OnDrawOffered;
+        GameLogic.DrawOfferTimedOut += OnDrawOfferTimedOut;
+        GameLogic.DrawOfferAccepted += OnDrawOfferAccepted;
     }
 
     private async Task CreateGame()
     {
-
-        
-        ClaimsPrincipal user = await AuthService.GetAuthAsync();
-        var isLoggedIn = user.Identity != null;
-
-        if (!isLoggedIn)
+        string opponent = String.Empty;
+        try
         {
-            OpenSnackBar("You have to be logged in to create a game!", Severity.Warning);
-            return;            
+            opponent = _chosenGameType switch 
+            {
+                "AI" => _selectedLevel,
+                "Friend" => _opponent,
+                "Random" => String.Empty,
+                _ => throw new ArgumentNullException()
+                };
+        }
+        catch (ArgumentNullException)
+        {
+            Notify("Choose a game type before starting a game!", Severity.Warning);
         }
 
-        string opponent = _chosenGameType switch 
+        var request = new RequestGameDto
         {
-            "AI" => _selectedLevel,
-            "Friend" => _opponent,
-            "Random" => String.Empty,
-            _ => throw new ArgumentOutOfRangeException()};
-
+            GameType = _chosenGameType,
+            Increment = _timeControlIncrement,
+            IsWhite = _isWhiteSide,
+            Opponent = opponent,
+            Seconds = _timeControlBase,
+            Username = String.Empty // is set in game logic
+        };
 
         try
         {
-            var responseGame = await _client.StartGameAsync(new RequestGame()
-            {
-                GameType = _chosenGameType,
-                Increment = _timeControlIncrement,
-                IsWhite = _isWhiteSide,
-                Opponent = opponent,
-                Seconds = _timeControlBase,
-                Username = user.Identity!.Name!
-            });
-            
-            _gameRoomInt = responseGame.GameRoom;
-            OpenSnackBar($"Game created successfully! Game id: {responseGame.GameRoom}", Severity.Success);
-        }
-        catch (RpcException e)
-        {
-            OpenSnackBar($"Network error, Failed to create a game.", Severity.Error);
-            Console.WriteLine(e);
-        }
+            var response = await GameLogic.CreateGame(request);
 
-        _whiteSeconds = _timeControlBase;
-        _blackSeconds = _timeControlBase;
-        
-        
+            _gameRoomInt = response.GameRoom;
+    //TODO why do we set the time control on game creation and not game join?
+    //TODO actually I think we do both, why?
+            _whiteSeconds = _timeControlBase;
+            _blackSeconds = _timeControlBase;
+
+            Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
+        }
+        catch (InvalidOperationException)
+        {
+            Notify("You have to be logged in to create a game!", Severity.Warning);
+        }
+        catch (HttpRequestException)
+        {
+            Notify("Network error, Failed to create a game.", Severity.Error);
+        }
     }
 
     private async Task JoinGame()
     {
-        AsyncServerStreamingCall<JoinedGameStream>? call;
-        
         try
         {
-            call = _client.JoinGame(new RequestJoinGame()
+            //workaround, initial position should be sent and not set
+            SetFenPosition(Fen.StartPositionFen);
+            GameLogic.JoinGame(new RequestJoinGameDto
             {
                 GameRoom = _gameRoomInt,
-                Username = "Bob"
             });
+            
         }
-        catch (ArgumentException e)
+        catch (ArgumentException)
         {
-            //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
-            OpenSnackBar("Game room not found.", Severity.Warning);
-            return;
+    //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
+            Notify("Game room not found.", Severity.Warning);
         }
-
+        catch (RpcException)
+        {
+            Notify("Connection error. Failed to participate in game. ¯\\_(ツ)_/¯", Severity.Error);
+        }
+    }
+    
+    public async Task<int> MakeMove(Move move)
+    {
         try
-        {while (await call.ResponseStream.MoveNext(CancellationToken.None))
         {
-            var message = call.ResponseStream.Current;
-            Console.WriteLine("Evevnt: " + message.Event);
-
-            switch (message.Event)
-            {
-                case "TimeUpdate":
-                    if (message.GameEndType != (uint)GameEndTypes.TimeIsUp)
-                    {
-                        UpdateTimers(message.IsWhite, message.TimeLeftMs);
-                    }
-                    break;
-                case "NewFenPosition":
-                    _whiteTimerActive = !_whiteTimerActive;
-                    SetFenPosition(message.Fen);
-                    PlaySound("move");
-                    break;
-                case "Resignation":
-                {
-                    PlaySound("notify");
-                    var options = new DialogOptions { CloseOnEscapeKey = true };
-                    if ((message.IsWhite && _isWhiteSide) || (!message.IsWhite && !_isWhiteSide))
-                    {
-                        DialogService.Show<InformDialogComponent>("You resigned the game!", options);
-                    }
-                    else
-                    {
-                        DialogService.Show<InformDialogComponent>("Your opponent resigned the game!", options);
-                    }
-                    break;
-                }
-                case "DrawOffer":
-                    if (!(message.IsWhite && _isWhiteSide) && !(!message.IsWhite && !_isWhiteSide))
-                        _isDrawOfferPending = true;
-                    break;
-                case "DrawOfferTimeout":
-                    _isDrawOfferPending = false;
-                    break;
-                case "DrawOfferAccepted":
-                    _isDrawOfferPending = false;
-                    PlaySound("notify");
-                    var opt = new DialogOptions { CloseOnEscapeKey = true };
-                    DialogService.Show<InformDialogComponent>("The game finished in a draw!", opt);
-                    break;
-                case "InitialTime":
-                    PlaySound("notify");
-                    OpenSnackBar("Game joined. Have fun!", Severity.Success);
-                    _whiteSeconds = message.TimeLeftMs / 1000;
-                    _blackSeconds = message.TimeLeftMs / 1000;
-                    break;
-            }
-
-            StateHasChanged();
+            return await GameLogic.MakeMove(move);
         }
-        }
-        catch (RpcException e)
+        catch (InvalidOperationException e)
         {
-            OpenSnackBar("Failed to join game. Network Error.", Severity.Error);
+            Notify(e.Message, Severity.Warning);
+            return (int) AckTypes.GameNotFound;
+        }
+    }
+    
+    private async void Resign()
+    {
+        AckTypes ack;
+        try
+        {
+            ack = await GameLogic.Resign();
+        }
+        catch(InvalidOperationException e)
+        {
+            Notify(e.Message, Severity.Warning);
             return;
         }
         
-        
+        if (ack == (uint)AckTypes.Success) return;
+        Notify("Failed to resign", Severity.Error);
     }
 
-    private void UpdateTimers(bool white, double seconds)
+    private async void OfferDraw()
     {
-        if (white) _whiteSeconds = seconds / 1000;
-        else _blackSeconds = seconds / 1000;
+        AckTypes ack;
+        
+        try
+        {
+            ack = await GameLogic.OfferDraw();
+        }
+        catch (InvalidOperationException e)
+        {
+            Notify(e.Message, Severity.Warning);
+            return;
+        }
+
+        switch (ack)
+        {
+            case AckTypes.Success:
+                Notify("Draw Offer Successful!", Severity.Info);
+                return;
+            case AckTypes.DrawOfferExpired:
+                Notify("Draw Offer Expired!", Severity.Info);
+                break;
+            case AckTypes.DrawOfferDeclined:
+                Notify("Draw Offer Declined!", Severity.Info);
+                break;
+        }
+    }
+
+    private async void SendDrawResponse(bool accepted)
+    {
+        AckTypes ack;
+        try
+        {
+            ack = await GameLogic.SendDrawResponse(accepted);
+        }
+        catch(InvalidOperationException e)
+        {
+            Notify(e.Message, Severity.Warning);
+            return;
+        }
+
+        if (ack == AckTypes.Success)
+        {
+            StateHasChanged();
+        }
+        else
+        {
+            Notify($"Failed to send draw response! AckType = {ack}", Severity.Error);
+        }
+    }
+
+    private void OnTimeUpdated(JoinedGameStreamDto dto)
+    {
+        if (dto.IsWhite) _whiteSeconds = dto.TimeLeftMs / 1000;
+        else _blackSeconds = dto.TimeLeftMs / 1000;
+        StateHasChanged();
+    }
+
+    private void OnNewFenReceived(JoinedGameStreamDto dto)
+    {
+        SetFenPosition(dto.FenString);
+        PlaySound("move");
     }
 
     private void SetFenPosition(string fen)
@@ -314,21 +287,50 @@
         FenData fenData = new FenData(fen);
         State state = new State();
         _position.Set(in fenData, ChessMode.Normal, state);
+        StateHasChanged();
     }
 
-    public async Task<int> MakeMove(Move move)
+    private void OnResignationReceived(JoinedGameStreamDto dto)
     {
-        var token = AuthService.GetJwtToken();
-        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
-        var call = await _client.MakeMoveAsync(new RequestMakeMove()
+        PlaySound("notify");
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
         {
-            FromSquare = move.FromSquare().ToString(),
-            ToSquare = move.ToSquare().ToString(),
-            GameRoom = _gameRoomInt,
-            MoveType = (uint)move.MoveType(),
-            Promotion = (uint)move.PromotedPieceType().AsInt()
-        }, headers);
-        return (int)call.Status;
+            DialogService.Show<InformDialogComponent>("You resigned the game!", options);
+        }
+        else
+        {
+            DialogService.Show<InformDialogComponent>("Your opponent resigned the game!", options);
+        }
+    }
+
+    private void OnInitialTimeReceived(JoinedGameStreamDto dto)
+    {
+        PlaySound("notify");
+        Notify("Game joined. Have fun!", Severity.Success);
+        _whiteSeconds = dto.TimeLeftMs / 1000;
+        _blackSeconds = dto.TimeLeftMs / 1000;
+        StateHasChanged();
+    }
+
+    private void OnDrawOffered(JoinedGameStreamDto dto)
+    {
+        Notify($"Draw offer", Severity.Info);
+        StateHasChanged();
+    }
+
+    private void OnDrawOfferTimedOut(JoinedGameStreamDto dto)
+    {
+        Notify("Draw offer expired", Severity.Info);
+        StateHasChanged();
+    }
+
+    private void OnDrawOfferAccepted(JoinedGameStreamDto dto)
+    {
+        PlaySound("notify");
+        var opt = new DialogOptions { CloseOnEscapeKey = true };
+        DialogService.Show<InformDialogComponent>("The game finished in a draw!", opt);
+        StateHasChanged();
     }
 
     private void PlaySound(string sound)
@@ -336,7 +338,7 @@
         Js.InvokeAsync<string>("PlaySound", new object[] { sound });
     }
 
-    private void OpenSnackBar(string message, Severity severity)
+    private void Notify(string message, Severity severity)
     {
         Snackbar.Add(message, severity);
     }
