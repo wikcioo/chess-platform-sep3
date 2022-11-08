@@ -8,7 +8,6 @@ using GrpcService.Services.ChessGame;
 using GrpcServiceTests.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.JsonWebTokens;
-using Xunit.Abstractions;
 
 namespace GrpcServiceTests;
 
@@ -18,7 +17,7 @@ public class GameServiceUnitTests
     private readonly GameService _gameService;
 
 
-    public GameServiceUnitTests(ITestOutputHelper testOutputHelper)
+    public GameServiceUnitTests()
     {
         _requestGame = new RequestGame
         {
@@ -68,7 +67,7 @@ public class GameServiceUnitTests
     public async Task MakingAValidMoveAsValidUserReturnsSuccess()
     {
         var responseGame = await _gameService.StartGame(_requestGame, TestServerCallContext.Create());
-        var serverCallContext = SetUpAuthenticated();
+        var serverCallContext = SetUpAuthenticated("Jeff");
         var response = await _gameService.MakeMove(new RequestMakeMove
         {
             FromSquare = "e2",
@@ -85,7 +84,7 @@ public class GameServiceUnitTests
     public async Task MakingAnInvalidMoveAsValidUserReturnsInvalidMove()
     {
         var responseGame = await _gameService.StartGame(_requestGame, TestServerCallContext.Create());
-        var serverCallContext = SetUpAuthenticated();
+        var serverCallContext = SetUpAuthenticated("Jeff");
         var response = await _gameService.MakeMove(new RequestMakeMove
         {
             FromSquare = "e2",
@@ -131,10 +130,10 @@ public class GameServiceUnitTests
 
     //Resigning
     [Fact]
-    public async Task ResigningWithCorrectUserReturnsSuccess()
+    public async Task ResigningWithValidUserReturnsSuccess()
     {
         var responseGame = await _gameService.StartGame(_requestGame, TestServerCallContext.Create());
-        var serverCallContext = SetUpAuthenticated();
+        var serverCallContext = SetUpAuthenticated("Jeff");
         var response = await _gameService.Resign(new RequestResign
         {
             GameRoom = responseGame.GameRoom,
@@ -144,7 +143,7 @@ public class GameServiceUnitTests
     }
 
     [Fact]
-    public async Task ResigningWithIncorrectUserReturnsNotUserTurn()
+    public async Task ResigningWithInValidUserReturnsNotUserTurn()
     {
         var responseGame = await _gameService.StartGame(_requestGame, TestServerCallContext.Create());
         var serverCallContext = SetUpNotAuthenticated();
@@ -157,10 +156,10 @@ public class GameServiceUnitTests
     }
 
     //Helper methods
-    private static TestServerCallContext SetUpAuthenticated()
+    private static TestServerCallContext SetUpAuthenticated(string name)
     {
         var httpContext = new DefaultHttpContext();
-        ClaimsIdentity identity = new(CreateClaims(), "jwt");
+        ClaimsIdentity identity = new(CreateClaims(name), "jwt");
         httpContext.User.AddIdentity(identity);
         var serverCallContext = TestServerCallContext.Create();
         serverCallContext.UserState["__HttpContext"] = httpContext;
@@ -175,13 +174,13 @@ public class GameServiceUnitTests
         return serverCallContext;
     }
 
-    private static IEnumerable<Claim> CreateClaims()
+    private static IEnumerable<Claim> CreateClaims(string name)
     {
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)),
-            new Claim(ClaimTypes.Name, "Jeff"),
+            new Claim(ClaimTypes.Name, name),
             new Claim(ClaimTypes.Role, "user"),
             new Claim("Email", "Jeff@gmail.com")
         };
