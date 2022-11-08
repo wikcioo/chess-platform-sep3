@@ -6,11 +6,11 @@
 
 <AuthorizeView>
     <Authorized>
- <MudIconButton Icon="@Icons.Filled.ChevronRight" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Logout())" />
+ <MudIconButton Icon="@Icons.Filled.Logout" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Logout())" />
     </Authorized>
     <NotAuthorized>
         
-         <MudIconButton Icon="@Icons.Filled.ChevronLeft" Title="Login" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Login())" />
+         <MudIconButton Icon="@Icons.Filled.Login" Title="Login" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Login())" />
     </NotAuthorized>
 </AuthorizeView>
 
