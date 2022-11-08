@@ -2,22 +2,16 @@
 @using Rudzoft.ChessLib.Types
 @using StockfishWrapper
 @using Grpc.Net.Client
-@using GrpcService
-@using HttpClients.ClientInterfaces
 @using MudBlazor
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
 @using Rudzoft.ChessLib.Fen
 @using Application.LogicInterfaces
-@using Game = GrpcService.Game
 @using Position = Rudzoft.ChessLib.Position
 @using Domain.DTOs
 @using Domain.Enums
 @using Grpc.Core
 @using BlazorWASM.Pages.ChessComponents
-@using System.Diagnostics
-@inject GrpcChannel Channel
-@inject IAuthService AuthService
 @inject IDialogService DialogService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
@@ -30,86 +24,15 @@
 <audio id="move" src="sounds/move.mp3"></audio>
 <audio id="notify" src="sounds/notify.mp3"></audio>
 
-<MudButton @onclick="OnResign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
-<MudButton @onclick="OnOfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
+<MudButton @onclick="Resign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
+<MudButton @onclick="OfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
 @if (IsDrawOfferPending)
 {
     <div>
         <h3>You have a draw offer</h3>
-        <MudButton @onclick="() => OnSendDrawResponse(true)" Variant="Variant.Filled" Color="Color.Success">Accept</MudButton>
-        <MudButton @onclick="() => OnSendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
+        <MudButton @onclick="() => SendDrawResponse(true)" Variant="Variant.Filled" Color="Color.Success">Accept</MudButton>
+        <MudButton @onclick="() => SendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
     </div>
-}
-
-@code {
-
-    private async void OnResign()
-    {
-        var user = await AuthService.GetAuthAsync();
-        var isLoggedIn = user.Identity != null;
-
-        if (!isLoggedIn) return;
-
-        var token = AuthService.GetJwtToken();
-        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
-        var ack = await _client.ResignAsync(new RequestResign { Username = user.Identity!.Name, GameRoom = _gameRoomInt }, headers);
-
-        if (ack.Status == (uint)AckTypes.Success) return;
-        Notify("Failed to resign", Severity.Error);
-    }
-
-    private async void OnOfferDraw()
-    {
-        var user = await AuthService.GetAuthAsync();
-        var isLoggedIn = user.Identity != null;
-
-        if (!isLoggedIn) return;
-
-        var token = AuthService.GetJwtToken();
-        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
-        var ack = await _client.OfferDrawAsync(new RequestDraw
-        {
-            Username = user.Identity!.Name, GameRoom = _gameRoomInt
-        }, headers);
-
-        switch (ack.Status)
-        {
-            case (uint)AckTypes.Success:
-                Notify("Draw Offer Successful!", Severity.Info);
-                return;
-            case (uint)AckTypes.DrawOfferExpired:
-                Notify("Draw Offer Expired!", Severity.Info);
-                break;
-            case (uint)AckTypes.DrawOfferDeclined:
-                Notify("Draw Offer Declined!", Severity.Info);
-                break;
-        }
-    }
-
-    private async void OnSendDrawResponse(bool accepted)
-    {
-        var user = await AuthService.GetAuthAsync();
-        var isLoggedIn = user.Identity != null;
-
-        if (!isLoggedIn) return;
-
-        var token = AuthService.GetJwtToken();
-        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
-        var ack = await _client.DrawOfferResponseAsync(new ResponseDraw
-        {
-            Username = user.Identity!.Name, GameRoom = _gameRoomInt, Accept = accepted
-        }, headers);
-
-        if (ack.Status == (uint)AckTypes.Success)
-        {
-            GameLogic.IsDrawOfferPending = false;
-        }
-        else
-        {
-            Notify($"Failed to send draw response! AckType = {ack.Status}", Severity.Error);
-        }
-    }
-
 }
 
 <MudGrid>
@@ -149,7 +72,6 @@
 
 @code {
 
-    private Game.GameClient _client;
     private readonly IPosition _position = new Position(new Board(), new PieceValue());
     private double _whiteSeconds;
     private double _blackSeconds;
@@ -168,7 +90,6 @@
 
     protected override void OnInitialized()
     {
-        _client = new Game.GameClient(Channel);
         SetFenPosition(Fen.StartPositionFen);
         InitGameLogic();
     }
@@ -265,6 +186,78 @@
             Notify("Connection error. Failed to participate in game. ¯\\_(ツ)_/¯", Severity.Error);
         }
     }
+    
+    public async Task<int> MakeMove(Move move)
+    {
+        try
+        {
+            return await GameLogic.MakeMove(move);
+        }
+        catch (InvalidOperationException e)
+        {
+            Notify(e.Message, Severity.Warning);
+            return (int) AckTypes.GameNotFound;
+        }
+    }
+    
+    private async void Resign()
+    {
+        var ack = await GameLogic.Resign();
+        
+        if (ack == (uint)AckTypes.Success) return;
+        Notify("Failed to resign", Severity.Error);
+    }
+
+    private async void OfferDraw()
+    {
+        AckTypes ack;
+        
+        try
+        {
+            ack = await GameLogic.OfferDraw();
+        }
+        catch (InvalidOperationException e)
+        {
+            Notify(e.Message, Severity.Warning);
+            return;
+        }
+
+        switch (ack)
+        {
+            case AckTypes.Success:
+                Notify("Draw Offer Successful!", Severity.Info);
+                return;
+            case AckTypes.DrawOfferExpired:
+                Notify("Draw Offer Expired!", Severity.Info);
+                break;
+            case AckTypes.DrawOfferDeclined:
+                Notify("Draw Offer Declined!", Severity.Info);
+                break;
+        }
+    }
+
+    private async void SendDrawResponse(bool accepted)
+    {
+        AckTypes ack;
+        try
+        {
+            ack = await GameLogic.SendDrawResponse(accepted);
+        }
+        catch(InvalidOperationException e)
+        {
+            Notify(e.Message, Severity.Warning);
+            return;
+        }
+
+        if (ack == AckTypes.Success)
+        {
+            GameLogic.IsDrawOfferPending = false;
+        }
+        else
+        {
+            Notify($"Failed to send draw response! AckType = {ack}", Severity.Error);
+        }
+    }
 
     private void OnTimeUpdated(JoinedGameStreamDto dto)
     {
@@ -325,11 +318,6 @@
         PlaySound("notify");
         var opt = new DialogOptions { CloseOnEscapeKey = true };
         DialogService.Show<InformDialogComponent>("The game finished in a draw!", opt);
-    }
-
-    public async Task<int> MakeMove(Move move)
-    {
-        return await GameLogic.MakeMove(move);
     }
 
     private void PlaySound(string sound)

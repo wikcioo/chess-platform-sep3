@@ -8,6 +8,7 @@ using GrpcService;
 using HttpClients;
 using HttpClients.ClientInterfaces;
 using Rudzoft.ChessLib.Enums;
+using Rudzoft.ChessLib.Exceptions;
 using Rudzoft.ChessLib.Types;
 
 namespace Application.LogicImplementations;
@@ -20,7 +21,7 @@ public class GameLogic : IGameLogic
     public bool IsDrawOfferPending { get; set; } = false;
     public bool OnWhiteSide { get; set; } = true;
     public bool WhiteTurn { get; private set; } = true;
-    public ulong GameRoomId { get; set; }
+    public ulong? GameRoomId { get; set; }
 
 
     //Todo Possibility of replacing StreamUpdate with action and only needed information instead of dto
@@ -159,16 +160,82 @@ public class GameLogic : IGameLogic
 
     public async Task<int> MakeMove(Move move)
     {
+        if (!GameRoomId.HasValue)
+            throw new InvalidOperationException("You didn't join a game room!");
+        
+        
         var token = _authService.GetJwtToken();
         var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
         var call = await _gameClient.MakeMoveAsync(new RequestMakeMove
         {
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
-            GameRoom = GameRoomId,
+            GameRoom = GameRoomId.Value,
             MoveType = (uint)move.MoveType(),
             Promotion = (uint)move.PromotedPieceType().AsInt()
         }, headers);
         return (int)call.Status;
+    }
+
+    public async Task<AckTypes> OfferDraw()
+    {
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+        
+        if (!GameRoomId.HasValue)
+            throw new InvalidOperationException("You didn't join a game room!");
+
+        
+        if (!isLoggedIn) 
+            throw new InvalidOperationException("User not logged in");
+
+
+        var token = _authService.GetJwtToken();
+        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
+        var ack = await _gameClient.OfferDrawAsync(new RequestDraw
+        {
+            Username = user.Identity!.Name, GameRoom = GameRoomId.Value
+        }, headers);
+
+        return (AckTypes) ack.Status;
+    }
+
+    public async Task<AckTypes> Resign()
+    {
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!GameRoomId.HasValue)
+            throw new InvalidOperationException("You didn't join a game room!");
+
+        
+        if (!isLoggedIn)
+            throw new InvalidOperationException("User not logged in.");
+
+        var token = _authService.GetJwtToken();
+        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
+        var ack =  await _gameClient.ResignAsync(new RequestResign { Username = user.Identity!.Name, GameRoom = GameRoomId.Value }, headers);
+         return (AckTypes) ack.Status;
+    }
+
+    public async Task<AckTypes> SendDrawResponse(bool accepted)
+    {
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!GameRoomId.HasValue)
+            throw new InvalidOperationException("You didn't join a game room!");
+
+        if (!isLoggedIn) 
+            throw new InvalidOperationException("User not logged in.");
+
+        var token = _authService.GetJwtToken();
+        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
+        var ack = await _gameClient.DrawOfferResponseAsync(new ResponseDraw
+        {
+            Username = user.Identity!.Name, GameRoom = GameRoomId.Value, Accept = accepted
+        }, headers);
+
+        return (AckTypes) ack.Status;
     }
 }

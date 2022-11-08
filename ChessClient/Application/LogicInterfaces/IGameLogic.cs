@@ -1,5 +1,6 @@
 using Application.LogicImplementations;
 using Domain.DTOs;
+using Domain.Enums;
 using Rudzoft.ChessLib.Types;
 
 namespace Application.LogicInterfaces;
@@ -19,5 +20,8 @@ public interface IGameLogic
     public Task<ResponseGameDto> CreateGame(RequestGameDto dto);
     public Task JoinGame(RequestJoinGameDto dto);
     public Task<int> MakeMove(Move move);
+    public Task<AckTypes> OfferDraw();
+    public Task<AckTypes> Resign();
+    public Task<AckTypes> SendDrawResponse(bool accepted);
 
 }
