@@ -31,7 +31,7 @@ message JoinedGameStream {
   uint32 game_end_type  = 2;
   double time_left_ms   = 3;
   bool   is_white       = 4;
-  string event          = 5;
+  uint32 event          = 5;
 }
 
 message RequestMakeMove {

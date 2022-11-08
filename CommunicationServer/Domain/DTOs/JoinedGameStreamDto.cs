@@ -1,3 +1,5 @@
+using Domain.Enums;
+
 namespace Domain.DTOs;
 
 public class JoinedGameStreamDto
@@ -6,5 +8,5 @@ public class JoinedGameStreamDto
     public uint GameEndType { get; set; }
     public double TimeLeftMs { get; set; }
     public bool IsWhite { get; set; }
-    public string Event { get; set; } = string.Empty;
+    public GameStreamEvents Event { get; set; }
 }

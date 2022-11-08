@@ -37,7 +37,10 @@ public class StockfishController : ControllerBase
             // TODO(Wiktor): Add validation for fen and depth value
             _stockfish.UciNewGame();
             _stockfish.Position(dto.Fen, PositionType.Fen);
-            var bestMove = await _stockfish.Go(depth: dto.Depth);
+
+            StockfishPlayer levels = StockfishLevels.LevelOf[dto.StockfishPlayer];
+            
+            var bestMove = await _stockfish.Go(depth: (int) levels.Depth, moveTime: (int) levels.Time);
             return Ok(bestMove);
         }
         catch (Exception e)
