@@ -1,9 +1,11 @@
 ﻿@page "/Login"
 @using HttpClients.ClientInterfaces
+@using MudBlazor
 @inject IAuthService AuthService
 @inject NavigationManager NavMgr
 <AuthorizeView>
     <NotAuthorized>
+        <MudPaper Class="pa-4" Style="@($"color:{Colors.BlueGrey.Darken4}; background:{Colors.BlueGrey.Darken4};")">
         <div class="card">
             <h3>Please login</h3>
             <div class="field">
@@ -26,6 +28,7 @@
                 <button class="acceptbtn" @onclick="LoginAsync">Log in</button>
             </div>
         </div>
+        </MudPaper>
     </NotAuthorized>
     <Authorized>
         <div class="card">

@@ -1,7 +1,11 @@
 @page "/CreateUser"
 @using HttpClients.ClientInterfaces
 @using Domain.Models
+@using MudBlazor
 @inject IUserService UserService
+
+
+<MudPaper Class="pa-4" Style="@($"color:{Colors.BlueGrey.Darken4}; background:{Colors.BlueGrey.Darken4};")">
 <div class="card">
     <h3>CreateUser</h3>
     <div class="form-group field">
@@ -30,7 +34,7 @@
         <button @onclick="CreateAsync" disabled="@(IsValid())" class="acceptbtn">Create</button>
     </div>
 </div>
-
+</MudPaper>
 @code {
     private string _username = "";
     private string _email = "";
