@@ -1,29 +1,20 @@
 ﻿@inherits LayoutComponentBase
-@using Login
+@using Login 
 @using MudBlazor
 @inject NavigationManager NavMgr
-<MudThemeProvider Theme="MyCustomTheme" @ref="@_mudThemeProvider" @bind-IsDarkMode="@_isDarkMode"/>
+<MudThemeProvider Theme="MyCustomTheme"/>
 
 <MudLayout>
     <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        <MudText Typo="Typo.h5" Class="ml-3">VIA Chess</MudText>
-        <MudSpacer />
-        <MudIcon Icon="@Icons.Filled.Lightbulb" Color="Color.Secondary"></MudIcon>
-        <MudSwitch @bind-Checked="@_isDarkMode" Color="Color.Primary" T="bool"/>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"/>
+        <MudText Typo="Typo.h5" Class="ml-4">VIA Chess</MudText>
+        <MudLink Href="/">Home</MudLink>
+            <MudLink Href="CreateUser" Class="ml-4">Create User</MudLink>
+            <MudLink Href="StartGame" Class="ml-4">Play</MudLink>
+            <MudLink Href="/" Disabled="true" Class="ml-4">About</MudLink>
+        <MudSpacer/>
         <LoginButtons/>
     </MudAppBar>
-    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
-        <MudNavMenu>
-            <MudNavLink Href="/" Match="NavLinkMatch.All">Home</MudNavLink>
-            <MudNavLink Href="CreateUser" Match="NavLinkMatch.Prefix">Create User</MudNavLink>
-            <MudNavGroup Title="Play" Expanded="true">
-                <MudNavLink Href="ChessGame"  Match="NavLinkMatch.Prefix">Computer</MudNavLink>
-                <MudNavLink Href="ChessGame"  Match="NavLinkMatch.Prefix">Online</MudNavLink>
-            </MudNavGroup>
-            <MudNavLink Href="/"  Match="NavLinkMatch.Prefix">About</MudNavLink>
-        </MudNavMenu>
-    </MudDrawer>
     <MudMainContent>
         @Body
     </MudMainContent>
@@ -34,43 +25,33 @@
 
 
 @code {
-    
-    //to open the navbar
-    bool _drawerOpen = true;
 
-    void DrawerToggle()
+    protected override void OnInitialized()
     {
-        _drawerOpen = !_drawerOpen;
+        StateHasChanged();
     }
-    
-    //for a custom theme palette
+
+    // for a custom theme palette
 
     MudTheme MyCustomTheme = new MudTheme()
     {
         Palette = new Palette()
         {
-            Primary = Colors.Grey.Darken4,
-            Secondary = Colors.Green.Accent4,
-            AppbarBackground = Colors.BlueGrey.Darken3,
+            Primary = Colors.LightGreen.Lighten1,
+            Secondary = Colors.LightGreen.Darken3,
+            AppbarBackground = Colors.BlueGrey.Darken4,
+            Background = Colors.Grey.Darken4,
+            TextPrimary = Colors.BlueGrey.Lighten5,
+            ActionDisabled = Colors.LightGreen.Lighten5,
         },
 
         LayoutProperties = new LayoutProperties()
         {
-            DrawerWidthLeft = "260px",
-            DrawerWidthRight = "300px"
+            AppbarHeight = "60px",
+            DefaultBorderRadius = "1px",
+
+
         }
     };
-    
-    // for a dark mode switch and memorization
-    private bool _isDarkMode;
-    private MudThemeProvider _mudThemeProvider;
-    
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _isDarkMode = await _mudThemeProvider.GetSystemPreference();
-            StateHasChanged();
-        }
-    }
+
 }
