@@ -1,12 +1,15 @@
-﻿using System.Reactive.Linq;
+﻿using Application.Entities;
+using Application.LogicInterfaces;
+using Domain.DTOs;
+using Domain.DTOs.Chat;
 
-namespace GrpcService.Services;
+namespace Application.Logic;
 
-public class ChatRoomService
+public class ChatLogic : IChatLogic
 {
     private Dictionary<string, ChatRoom> _chatRooms = new();
 
-    public void Add(Message message)
+    public void Add(MessageDto message)
     {
         string key = GenerateKey(message.Username, message.Receiver);
         Console.WriteLine(key);
@@ -23,7 +26,7 @@ public class ChatRoomService
         }
     }
 
-    public IObservable<Message> GetMessagesAsObservable(RequestMessage request)
+    public IObservable<MessageDto> GetMessagesAsObservable(RequestMessageDto request)
     {
         string key = GenerateKey(request.Username, request.Receiver);
         if (_chatRooms.ContainsKey(key))
