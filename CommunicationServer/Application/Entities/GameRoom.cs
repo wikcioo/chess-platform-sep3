@@ -20,6 +20,7 @@ public class GameRoom
     private bool _gameIsActive = true;
 
     // Offer draw related fields
+    private string _drawOfferOrigin = string.Empty;
     private bool _isDrawOffered = false;
     private bool _isDrawOfferAccepted = false;
     private bool _drawResponseWithinTimespan = false;
@@ -86,6 +87,11 @@ public class GameRoom
             reachedTheEnd = true;
             gameEndType = GameEndTypes.CheckMate;
         }
+        else if (_game.Pos.GenerateMoves().Length == 0 && !_game.Pos.InCheck)
+        {
+            reachedTheEnd = true;
+            gameEndType = GameEndTypes.Pat;
+        }
 
         if (reachedTheEnd)
         {
@@ -150,6 +156,9 @@ public class GameRoom
         }
 
         _isDrawOffered = true;
+        _drawOfferOrigin = dto.Username;
+        _isDrawOfferAccepted = false;
+        _drawResponseWithinTimespan = false;
 
         GameJoined.Invoke(new JoinedGameStreamDto()
         {
@@ -192,6 +201,11 @@ public class GameRoom
     public AckTypes DrawOfferResponse(ResponseDrawDto dto)
     {
         if (!_isDrawOffered) return AckTypes.DrawNotOffered;
+        
+        if (dto.Username.Equals(_drawOfferOrigin))
+        {
+            return AckTypes.NotUserTurn;
+        }
 
         _drawResponseWithinTimespan = true;
         if (dto.Accept)
