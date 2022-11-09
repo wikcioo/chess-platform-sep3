@@ -42,10 +42,9 @@ public class GameLogic : IGameLogic
                 "Invalid Game type exception")
         };
 
-        GameRoom gameRoom = new(gameType, dto.Seconds, dto.Increment);
-        gameRoom.PlayerWhite = responseDto.IsWhite ? dto.Username : dto.Opponent;
-        gameRoom.PlayerBlack = responseDto.IsWhite ? dto.Opponent : dto.Username;
-        
+        var playerWhite = responseDto.IsWhite ? dto.Username : dto.Opponent;
+        var playerBlack = responseDto.IsWhite ? dto.Opponent : dto.Username;
+        GameRoom gameRoom = new(playerWhite, playerBlack, dto.Seconds, dto.Increment);
         
         _gameRooms.Add(_nextGameId, gameRoom);
         

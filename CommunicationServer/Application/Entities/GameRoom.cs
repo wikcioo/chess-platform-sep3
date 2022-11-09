@@ -20,6 +20,7 @@ public class GameRoom
     private bool _gameIsActive = true;
 
     // Offer draw related fields
+    private string _drawOfferOrigin = string.Empty;
     private bool _isDrawOffered = false;
     private bool _isDrawOfferAccepted = false;
     private bool _drawResponseWithinTimespan = false;
@@ -31,15 +32,21 @@ public class GameRoom
 
     public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
 
-    public GameRoom(GameStateTypes gameType, uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
+    public GameRoom(string? playerWhiteName, string? playerBlackName, uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
     {
+        PlayerWhite = playerWhiteName;
+        PlayerBlack = playerBlackName;
+        
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
+        
         _whitePlaying = _game.CurrentPlayer().IsWhite;
+        
         _gameData.Add(new JoinedGameStreamDto()
         {
             Event = GameStreamEvents.InitialTime,
-            TimeLeftMs = timeControlSeconds * 1000
+            TimeLeftMs = timeControlSeconds * 1000,
+            FenString = PlayerWhite ?? ""
         });
 
         _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
@@ -70,6 +77,37 @@ public class GameRoom
 
         _game.Pos.MakeMove(move, _game.Pos.State);
         _chessTimer.UpdateTimers(_whitePlaying);
+        
+        // Check game logic: Checkmate, Draw, Insufficient Material
+        // TODO(Wiktor): Implement the rest of end game scenarios
+        var reachedTheEnd = false;
+        var gameEndType = GameEndTypes.None;
+        if (_game.Pos.IsMate)
+        {
+            reachedTheEnd = true;
+            gameEndType = GameEndTypes.CheckMate;
+        }
+        else if (_game.Pos.GenerateMoves().Length == 0 && !_game.Pos.InCheck)
+        {
+            reachedTheEnd = true;
+            gameEndType = GameEndTypes.Pat;
+        }
+
+        if (reachedTheEnd)
+        {
+            _chessTimer.StopTimers();
+            GameJoined.Invoke(new JoinedGameStreamDto()
+            {
+                Event = GameStreamEvents.ReachedEndOfTheGame,
+                FenString = _game.Pos.FenNotation,
+                GameEndType = (uint)gameEndType,
+                IsWhite = !_whitePlaying,
+                TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
+            });
+            
+            return AckTypes.Success;
+        }
+        
         _whitePlaying = _game.CurrentPlayer().IsWhite;
 
         var responseJoinedGameDto = new JoinedGameStreamDto()
@@ -118,6 +156,9 @@ public class GameRoom
         }
 
         _isDrawOffered = true;
+        _drawOfferOrigin = dto.Username;
+        _isDrawOfferAccepted = false;
+        _drawResponseWithinTimespan = false;
 
         GameJoined.Invoke(new JoinedGameStreamDto()
         {
@@ -160,6 +201,11 @@ public class GameRoom
     public AckTypes DrawOfferResponse(ResponseDrawDto dto)
     {
         if (!_isDrawOffered) return AckTypes.DrawNotOffered;
+        
+        if (dto.Username.Equals(_drawOfferOrigin))
+        {
+            return AckTypes.NotUserTurn;
+        }
 
         _drawResponseWithinTimespan = true;
         if (dto.Accept)
