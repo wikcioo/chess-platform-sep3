@@ -32,12 +32,13 @@ public class GameLogic : IGameLogic
     public event StreamUpdate? DrawOffered;
     public event StreamUpdate? DrawOfferTimedOut;
     public event StreamUpdate? DrawOfferAccepted;
+    public event StreamUpdate? EndOfTheGameReached;
+    public event StreamUpdate? GameFirstJoined;
     public GameLogic(IAuthService authService, GrpcChannel channel)
     {
         _authService = authService;
         _gameClient = new Game.GameClient(channel);
     }
-
 
     public async Task<ResponseGameDto> CreateGame(RequestGameDto dto)
     {
@@ -89,7 +90,6 @@ public class GameLogic : IGameLogic
             });
 
             GameRoomId = dto.GameRoom;
-            // OnWhiteSide = dto.what?
         }
         catch (ArgumentException)
         {
@@ -107,9 +107,15 @@ public class GameLogic : IGameLogic
                 {
                     case GameStreamEvents.NewFenPosition:
                         NewFenReceived?.Invoke(response);
+                        TimeUpdate(response);
                         break;
                     case GameStreamEvents.TimeUpdate:
                         TimeUpdate(response);
+                        break;
+                    case GameStreamEvents.ReachedEndOfTheGame:
+                        TimeUpdate(response);
+                        NewFenReceived?.Invoke(response);
+                        EndOfTheGameReached?.Invoke(response);
                         break;
                     case GameStreamEvents.Resignation:
                         ResignationReceived?.Invoke(response);
@@ -124,7 +130,8 @@ public class GameLogic : IGameLogic
                         DrawOfferAcceptation(response);
                         break;
                     case GameStreamEvents.InitialTime:
-                        InitialTimeReceived?.Invoke(response);
+                        response.IsWhite = response.FenString.Equals(user.Identity?.Name);
+                        InitialTime(response);
                         break;
                     default: throw new ArgumentOutOfRangeException();
                 }
@@ -134,22 +141,26 @@ public class GameLogic : IGameLogic
         {
             throw new HttpRequestException("Connection error. Failed to participate in game stream");
         }
-        
     }
 
     private void TimeUpdate(JoinedGameStreamDto dto)
     {
-        if (dto.GameEndType != (uint)GameEndTypes.TimeIsUp)
-        {
-            TimeUpdated?.Invoke(dto);
-        }
+        TimeUpdated?.Invoke(dto);
     }
+
+    private void InitialTime(JoinedGameStreamDto dto)
+    {
+        OnWhiteSide = dto.IsWhite;
+        GameFirstJoined?.Invoke(dto);
+        InitialTimeReceived?.Invoke(dto);
+    }
+    
     private void DrawOffer(JoinedGameStreamDto dto)
     {
-        // if (!(dto.IsWhite && OnWhiteSide) && !(!dto.IsWhite && !OnWhiteSide))
+        if (dto.IsWhite != OnWhiteSide)
             IsDrawOfferPending = true;
-        // else 
-            DrawOffered?.Invoke(dto);
+        
+        DrawOffered?.Invoke(dto);
     }
     
     private void DrawOfferTimeout(JoinedGameStreamDto dto)
@@ -160,9 +171,6 @@ public class GameLogic : IGameLogic
     
     private void DrawOfferAcceptation(JoinedGameStreamDto dto)
     {
-        if (!IsDrawOfferPending)
-            return;
-        
         IsDrawOfferPending = false;
         DrawOfferAccepted?.Invoke(dto);
     }

@@ -34,7 +34,8 @@ public class PausableTimer : System.Timers.Timer
     public void Resume()
     {
         _wasResumed = true;
-        Interval = _timeRemainingAfterPauseMs == 0 ? _initialIntervalMs : _timeRemainingAfterPauseMs;
+        // TODO(Wiktor): Investigate why does the _timeRemainingAfterPauseMs is sometimes negative, for now add < sign to prevent errors
+        Interval = _timeRemainingAfterPauseMs <= 0 ? _initialIntervalMs : _timeRemainingAfterPauseMs;
         _timeRemainingAfterPauseMs = 0.0;
         Start();
     }
