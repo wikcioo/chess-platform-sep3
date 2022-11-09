@@ -237,9 +237,6 @@
             case AckTypes.Success:
                 Notify("Draw Offer Successful!", Severity.Info);
                 return;
-            case AckTypes.DrawOfferExpired:
-                Notify("Draw Offer Expired!", Severity.Info);
-                break;
             case AckTypes.DrawOfferDeclined:
                 Notify("Draw Offer Declined!", Severity.Info);
                 break;
@@ -372,8 +369,7 @@
     private void OnDrawOfferAccepted(JoinedGameStreamDto dto)
     {
         PlaySound("notify");
-        var opt = new DialogOptions { CloseOnEscapeKey = true };
-        DialogService.Show<InformDialogComponent>("The game finished in a draw!", opt);
+        DisplayDefaultDialog("The game finished in a draw!");
         StateHasChanged();
     }
 

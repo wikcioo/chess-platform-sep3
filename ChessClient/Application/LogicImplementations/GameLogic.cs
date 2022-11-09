@@ -157,10 +157,10 @@ public class GameLogic : IGameLogic
     
     private void DrawOffer(JoinedGameStreamDto dto)
     {
-        // if (!(dto.IsWhite && OnWhiteSide) && !(!dto.IsWhite && !OnWhiteSide))
+        if (dto.IsWhite != OnWhiteSide)
             IsDrawOfferPending = true;
-        // else 
-            DrawOffered?.Invoke(dto);
+        
+        DrawOffered?.Invoke(dto);
     }
     
     private void DrawOfferTimeout(JoinedGameStreamDto dto)
@@ -171,9 +171,6 @@ public class GameLogic : IGameLogic
     
     private void DrawOfferAcceptation(JoinedGameStreamDto dto)
     {
-        if (!IsDrawOfferPending)
-            return;
-        
         IsDrawOfferPending = false;
         DrawOfferAccepted?.Invoke(dto);
     }
