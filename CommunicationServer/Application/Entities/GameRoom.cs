@@ -125,7 +125,7 @@ public class GameRoom
         return AckTypes.Success;
     }
 
-    public FenData getFen()
+    public FenData GetFen()
     {
         return _game.GetFen();
     }

@@ -97,7 +97,7 @@ public class GameLogic : IGameLogic
         if (!IsAi(room.CurrentPlayer))
             throw new InvalidOperationException("Current player is not an AI");
 
-        var uci =  await _stockfishService.GetBestMoveAsync(new StockfishBestMoveDto(room.getFen().ToString(), room.CurrentPlayer));
+        var uci =  await _stockfishService.GetBestMoveAsync(new StockfishBestMoveDto(room.GetFen().ToString(), room.CurrentPlayer));
         var move =  room.UciMoveToRudzoftMove(uci);
         var dto = new MakeMoveDto
         {
