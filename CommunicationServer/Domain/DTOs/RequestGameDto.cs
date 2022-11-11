@@ -8,4 +8,5 @@ public class RequestGameDto
     public uint Seconds {get;set;}
     public uint Increment {get;set;}
     public bool? IsWhite {get;set;}
+    public bool IsVisible { get; set; } = false;
 }

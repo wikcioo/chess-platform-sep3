@@ -24,7 +24,8 @@ public class GameService : Game.GameBase
             Increment = request.Increment,
             IsWhite = request.IsWhite,
             Opponent = request.Opponent,
-            Seconds = request.Seconds
+            Seconds = request.Seconds,
+            IsVisible = request.IsVisible
         };
         var responseDto = await _gameLogic.StartGame(dto);
         ResponseGame response = new()
