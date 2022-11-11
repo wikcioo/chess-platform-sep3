@@ -30,16 +30,32 @@ public class ChessTimer
         _blackTimer.Elapsed += OnOneSecElapsed;
     }
 
-    public void StartTimers()
+    public void StartTimers(bool both = true, bool white = true)
     {
-        _whiteTimer.Start();
-        _blackTimer.Start();
+        if (both)
+        {
+            _whiteTimer.Start();
+            _blackTimer.Start();
+        }
+        else
+        {
+            if (white) _whiteTimer.Start();
+            else _blackTimer.Start();
+        }
     }
 
-    public void StopTimers()
+    public void StopTimers(bool both = true, bool white = true)
     {
-        _whiteTimer.Stop();
-        _blackTimer.Stop();
+        if (both)
+        {
+            _whiteTimer.Stop();
+            _blackTimer.Stop();
+        }
+        else
+        {
+            if (white) _whiteTimer.Stop();
+            else _blackTimer.Stop();
+        }
     }
     
     public void UpdateTimers(bool whitePlaying)
