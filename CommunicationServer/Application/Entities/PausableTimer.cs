@@ -28,7 +28,7 @@ public class PausableTimer : System.Timers.Timer
         Stop();
         _stopwatch.Stop();
         _timeRemainingAfterPauseMs = Interval - _stopwatch.Elapsed.TotalMilliseconds;
-        return _timeRemainingAfterPauseMs;
+        return _stopwatch.Elapsed.TotalMilliseconds;
     }
 
     public void Resume()
