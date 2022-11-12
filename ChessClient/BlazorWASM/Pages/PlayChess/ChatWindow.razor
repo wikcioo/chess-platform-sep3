@@ -1,16 +1,15 @@
 @using Application.LogicInterfaces
 @using Domain.DTOs.Chat
+@using MudBlazor
 @inject IChatLogic ChatLogic
 @implements IDisposable
 
+<MudContainer Class="pa-0" MaxWidth="MaxWidth.Small">
+    <MudPaper Class="overflow-x-auto" Height="400px">@((MarkupString) _resultMsg)</MudPaper>
+    <MudTextField Immediate="true" T="string" InputType="InputType.Text" placeholder="Enter message" @bind-Value="_messageBody" OnKeyPress="OnKeyPress"/>
+    <MudButton OnClick="WriteMessageAsync" Color="Color.Secondary">Send</MudButton>
+</MudContainer>
 
-<div class="chat-window">
-    <div class="message-history">@((MarkupString) _resultMsg)</div>
-    <div class="message-body">
-        <input oninput="(this.dispatchEvent(new CustomEvent('change', { bubbles: true })))" class="message-input" type="text" placeholder="Enter message" @bind="_messageBody" @onkeydown="OnKeyPress "/>
-        <button @onclick="WriteMessageAsync" enabled="@(IsValid())" class="acceptbtn">Send</button>
-    </div>
-</div>
 
 @code {
 
@@ -36,14 +35,17 @@
 
     private async Task WriteMessageAsync()
     {
-        await ChatLogic.WriteMessageAsync(new MessageDto
+        if (IsValid())
         {
-            Username = Username,
-            Body = _messageBody,
-            Receiver = Receiver
-        });
-        _messageBody = "";
-        StateHasChanged();
+            await ChatLogic.WriteMessageAsync(new MessageDto
+            {
+                Username = Username,
+                Body = _messageBody,
+                Receiver = Receiver
+            });
+            _messageBody = "";
+            StateHasChanged();
+        }
     }
 
     private void OnMessageReceived(MessageDto dto)
@@ -57,7 +59,7 @@
         return !string.IsNullOrEmpty(_messageBody);
     }
 
-    private async void OnKeyPress (KeyboardEventArgs e)
+    private async void OnKeyPress(KeyboardEventArgs e)
     {
         if (e.Code is not ("Enter" or "NumpadEnter")) return;
         if (IsValid())

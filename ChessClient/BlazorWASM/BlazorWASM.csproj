@@ -54,7 +54,6 @@
     
     <ItemGroup>
       <Content Include="Pages\LogIn\LoginButtons.razor.css" />
-      <Content Include="Pages\PlayChess\ChatWindow.razor.css" />
       <Content Include="Pages\PlayChess\ChessBoardComponent.razor.css" />
       <Content Include="Pages\PlayChess\SquareComponent.razor.css" />
       <Content Include="Pages\PlayChess\TimerComponent.razor.css" />
