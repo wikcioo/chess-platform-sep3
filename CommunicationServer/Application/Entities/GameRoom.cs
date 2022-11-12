@@ -29,6 +29,7 @@ public class GameRoom
     public event Action<JoinedGameStreamDto> GameJoined = delegate { };
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
+    public bool IsVisible { get; set; }
 
     public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
 
@@ -125,7 +126,7 @@ public class GameRoom
         return AckTypes.Success;
     }
 
-    public FenData getFen()
+    public FenData GetFen()
     {
         return _game.GetFen();
     }

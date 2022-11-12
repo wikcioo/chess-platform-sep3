@@ -1,3 +1,4 @@
+using Application.Entities;
 using Domain.DTOs;
 using Domain.Enums;
 

@@ -1,11 +1,9 @@
-using System.Text.RegularExpressions;
 using Application.ClientInterfaces;
 using Application.Entities;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.Enums;
 using Rudzoft.ChessLib.Fen;
-using Rudzoft.ChessLib.Types;
 using StockfishWrapper;
 
 namespace Application.Logic;
@@ -14,7 +12,7 @@ public class GameLogic : IGameLogic
 {
     private ulong _nextGameId;
     private readonly Dictionary<ulong, GameRoom> _gameRooms = new();
-    private IStockfishService _stockfishService;
+    private readonly IStockfishService _stockfishService;
 
     public GameLogic(IStockfishService stockfishService)
     {
@@ -44,7 +42,10 @@ public class GameLogic : IGameLogic
 
         var playerWhite = responseDto.IsWhite ? dto.Username : dto.Opponent;
         var playerBlack = responseDto.IsWhite ? dto.Opponent : dto.Username;
-        GameRoom gameRoom = new(playerWhite, playerBlack, dto.Seconds, dto.Increment);
+        GameRoom gameRoom = new(playerWhite, playerBlack, dto.Seconds, dto.Increment)
+        {
+            IsVisible = dto.IsVisible
+        };
         
         _gameRooms.Add(_nextGameId, gameRoom);
         
@@ -97,7 +98,7 @@ public class GameLogic : IGameLogic
         if (!IsAi(room.CurrentPlayer))
             throw new InvalidOperationException("Current player is not an AI");
 
-        var uci =  await _stockfishService.GetBestMoveAsync(new StockfishBestMoveDto(room.getFen().ToString(), room.CurrentPlayer));
+        var uci =  await _stockfishService.GetBestMoveAsync(new StockfishBestMoveDto(room.GetFen().ToString(), room.CurrentPlayer));
         var move =  room.UciMoveToRudzoftMove(uci);
         var dto = new MakeMoveDto
         {

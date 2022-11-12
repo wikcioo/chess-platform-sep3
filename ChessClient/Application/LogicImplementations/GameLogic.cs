@@ -58,7 +58,8 @@ public class GameLogic : IGameLogic
                 IsWhite = dto.IsWhite ?? true,
                 Opponent = dto.Opponent,
                 Seconds = dto.Seconds,
-                Username = user.Identity?.Name
+                Username = user.Identity?.Name,
+                IsVisible = dto.IsVisible
             });
 
             ResponseGameDto response = MessageToDtoParser.ToDto(grpcResponse);
