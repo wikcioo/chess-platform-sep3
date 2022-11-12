@@ -29,6 +29,7 @@ public class GameRoom
     public event Action<JoinedGameStreamDto> GameJoined = delegate { };
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
+    public bool IsVisible { get; set; }
 
     public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
 
