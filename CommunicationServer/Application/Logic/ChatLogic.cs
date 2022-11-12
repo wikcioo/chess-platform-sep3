@@ -44,7 +44,7 @@ public class ChatLogic : IChatLogic
     {
         if (String.CompareOrdinal(senderUsername, receiverUsername) < 0)
         {
-            return senderUsername + receiverUsername;
+            return $"{senderUsername}-{receiverUsername}";
         }
 
         return receiverUsername + senderUsername;
