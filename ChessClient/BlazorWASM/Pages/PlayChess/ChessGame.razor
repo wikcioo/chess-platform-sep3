@@ -69,6 +69,7 @@
             <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
             <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
             <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+            <MudCheckBox @bind-Checked="@_isGamePrivate">Private</MudCheckBox>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
         </MudContainer>
     </MudItem>
@@ -89,7 +90,7 @@
     private string _opponent = "";
     private uint _timeControlBase = 120;
     private uint _timeControlIncrement;
-
+    private bool _isGamePrivate;
 
     protected override void OnInitialized()
     {
@@ -148,7 +149,8 @@
             IsWhite = _isWhiteSide,
             Opponent = opponent,
             Seconds = _timeControlBase,
-            Username = String.Empty // is set in game logic
+            Username = String.Empty, // is set in game logic
+            IsVisible = !_isGamePrivate
         };
 
         try
