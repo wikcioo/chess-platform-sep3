@@ -47,6 +47,7 @@ builder.Services.AddScoped<IUserService, UserHttpClient>();
 // builder.Services.AddBlazorBootstrap();
 builder.Services.AddScoped<IAuthService, JwtAuthService>();
 builder.Services.AddScoped<IGameLogic, GameLogic>();
+builder.Services.AddScoped<IChatLogic, ChatLogic>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthProvider>();
 
 builder.Services.AddAuthorizationCore();

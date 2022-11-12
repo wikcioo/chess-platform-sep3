@@ -1,7 +1,7 @@
-@using GrpcService
-@using Grpc.Core
-@using Grpc.Net.Client
-@inject GrpcChannel Channel
+@using Application.LogicInterfaces
+@using Domain.DTOs.Chat
+@inject IChatLogic ChatLogic
+@implements IDisposable
 
 
 <div class="chat-window">
@@ -22,31 +22,33 @@
     [Parameter]
     public string Receiver { get; set; }
 
-    private Chat.ChatClient _client;
-    private AsyncServerStreamingCall<Message> _call;
     private string _resultMsg = "";
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        _client = new Chat.ChatClient(Channel);
-        _call = _client.StartMessaging(new RequestMessage
-        {
-            Username = Username,
-            Receiver = Receiver
-        });
-        while (await _call.ResponseStream.MoveNext())
-        {
-            var message = _call.ResponseStream.Current;
-            _resultMsg += $"<div>{message.Username}:{message.Body}\n</div>";
-            StateHasChanged();
-        }
+        ChatLogic.MessageReceived += OnMessageReceived;
+    }
+
+    public void Dispose()
+    {
+        ChatLogic.MessageReceived -= OnMessageReceived;
     }
 
     private async Task WriteMessageAsync()
     {
-        await _client.WriteAsync(
-            new Message {Username = Username, Body = _messageBody, Receiver = Receiver});
+        await ChatLogic.WriteMessageAsync(new MessageDto
+        {
+            Username = Username,
+            Body = _messageBody,
+            Receiver = Receiver
+        });
         _messageBody = "";
+        StateHasChanged();
+    }
+
+    private void OnMessageReceived(MessageDto dto)
+    {
+        _resultMsg += $"<div>{dto.Username}:{dto.Body}\n</div>";
         StateHasChanged();
     }
 
