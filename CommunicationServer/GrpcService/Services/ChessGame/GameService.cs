@@ -115,7 +115,7 @@ public class GameService : Game.GameBase
         AckTypes ack = await _gameLogic.Resign(new RequestResignDto()
         {
             GameRoom = request.GameRoom,
-            Username = request.Username
+            Username = claim.Value
         });
         return new Acknowledge()
         {
@@ -137,7 +137,7 @@ public class GameService : Game.GameBase
         AckTypes ack = await _gameLogic.OfferDraw(new RequestDrawDto()
         {
             GameRoom = request.GameRoom,
-            Username = request.Username
+            Username = claim.Value
         });
         return new Acknowledge()
         {
