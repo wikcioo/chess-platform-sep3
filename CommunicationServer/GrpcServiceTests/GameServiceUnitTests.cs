@@ -22,10 +22,10 @@ public class GameServiceUnitTests
         _requestGame = new RequestGame
         {
             Username = "Jeff",
-            GameType = "Friend",
+            OpponentType = "Friend",
             Increment = 0,
-            IsWhite = true,
-            Opponent = "Alice",
+            Side = "White",
+            OpponentName = "Alice",
             Seconds = 600
         };
         _gameService = new GameService(new GameLogic(new StockfishHttpClient(new HttpClient())));
@@ -37,7 +37,7 @@ public class GameServiceUnitTests
     {
         var response = await _gameService.StartGame(_requestGame, TestServerCallContext.Create());
 
-        Assert.Equal(_requestGame.Opponent, response.Opponent);
+        Assert.Equal(_requestGame.OpponentName, response.Opponent);
     }
 
     //Joining a game

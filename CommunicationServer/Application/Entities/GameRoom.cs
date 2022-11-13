@@ -29,28 +29,31 @@ public class GameRoom
     public event Action<JoinedGameStreamDto> GameJoined = delegate { };
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
-    public bool IsVisible { get; set; }
 
     public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
+    public uint GetInitialTimeControlSeconds => (_chessTimer.TimeControlBaseMs / 1000);
+    public uint GetInitialTimeControlIncrement => (_chessTimer.TimeControlIncrementMs / 1000);
+    public GameSides GameSide;
 
-    public GameRoom(string? playerWhiteName, string? playerBlackName, uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
+    public GameRoom(uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
     {
-        PlayerWhite = playerWhiteName;
-        PlayerBlack = playerBlackName;
-        
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
+        _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
         
         _whitePlaying = _game.CurrentPlayer().IsWhite;
-        
+    }
+
+    public void Initialize()
+    {
         _gameData.Add(new JoinedGameStreamDto()
         {
             Event = GameStreamEvents.InitialTime,
-            TimeLeftMs = timeControlSeconds * 1000,
-            FenString = PlayerWhite ?? ""
+            TimeLeftMs = _chessTimer.TimeControlBaseMs,
+            UsernameWhite = PlayerWhite ?? "",
+            UsernameBlack =  PlayerBlack ?? ""
         });
 
-        _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
         _chessTimer.ThrowEvent += (_, _, dto) =>
         {
             if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) _gameIsActive = false;
@@ -164,7 +167,8 @@ public class GameRoom
         GameJoined.Invoke(new JoinedGameStreamDto()
         {
             Event = GameStreamEvents.DrawOffer,
-            IsWhite = PlayerWhite!.Equals(dto.Username)
+            UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
+            UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
         });
 
         _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -202,6 +206,10 @@ public class GameRoom
     public AckTypes DrawOfferResponse(ResponseDrawDto dto)
     {
         if (!_isDrawOffered) return AckTypes.DrawNotOffered;
+        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        {
+            return AckTypes.NotUserTurn;
+        }
         
         if (dto.Username.Equals(_drawOfferOrigin))
         {

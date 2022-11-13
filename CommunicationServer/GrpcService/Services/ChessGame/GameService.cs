@@ -17,14 +17,17 @@ public class GameService : Game.GameBase
 
     public override async Task<ResponseGame> StartGame(RequestGame request, ServerCallContext context)
     {
+        Enum.TryParse(request.Side, out GameSides side);
+        Enum.TryParse(request.OpponentType, out OpponentTypes opponentType);
+        
         RequestGameDto dto = new()
         {
             Username = request.Username,
-            GameType = request.GameType,
-            Increment = request.Increment,
-            IsWhite = request.IsWhite,
-            Opponent = request.Opponent,
+            OpponentType = opponentType,
+            OpponentName = request.OpponentName,
             Seconds = request.Seconds,
+            Increment = request.Increment,
+            Side = side,
             IsVisible = request.IsVisible
         };
         var responseDto = await _gameLogic.StartGame(dto);
@@ -60,7 +63,9 @@ public class GameService : Game.GameBase
                         GameEndType = x.GameEndType,
                         TimeLeftMs = x.TimeLeftMs,
                         IsWhite = x.IsWhite,
-                        Event = (uint) x.Event
+                        Event = (uint) x.Event,
+                        UsernameWhite = x.UsernameWhite,
+                        UsernameBlack = x.UsernameBlack
                     }), context.CancellationToken)
                     .ConfigureAwait(false);
             }
@@ -112,7 +117,7 @@ public class GameService : Game.GameBase
         AckTypes ack = await _gameLogic.Resign(new RequestResignDto()
         {
             GameRoom = request.GameRoom,
-            Username = request.Username
+            Username = claim.Value
         });
         return new Acknowledge()
         {
@@ -134,7 +139,7 @@ public class GameService : Game.GameBase
         AckTypes ack = await _gameLogic.OfferDraw(new RequestDrawDto()
         {
             GameRoom = request.GameRoom,
-            Username = request.Username
+            Username = claim.Value
         });
         return new Acknowledge()
         {
@@ -163,5 +168,40 @@ public class GameService : Game.GameBase
         {
             Status = (uint)ack
         };
+    }
+
+    public override Task<ResponseSpectateableGameRooms> GetSpectateableGames(EmptyGameMessage request, ServerCallContext context)
+    {
+        var responseSpectateableGameRooms = new ResponseSpectateableGameRooms();
+        foreach (var room in _gameLogic.GetSpectateableGameRoomData())
+        {
+            responseSpectateableGameRooms.GameRoomsData.Add(new SpectateableGameRoomData()
+            {
+                GameRoom = room.GameRoom,
+                UsernameWhite = room.UsernameWhite,
+                UsernameBlack = room.UsernameBlack,
+                Seconds = room.Seconds,
+                Increment = room.Increment
+            });
+        }
+
+        return Task.FromResult(responseSpectateableGameRooms);
+    }
+
+    public override Task<ResponseJoinableGameRooms> GetJoinableGames(EmptyGameMessage request, ServerCallContext context)
+    {
+        var responseJoinableGameRooms = new ResponseJoinableGameRooms();
+        foreach (var room in _gameLogic.GetJoinableGameRoomData())
+        {
+            responseJoinableGameRooms.GameRoomsData.Add(new JoinableGameRoomData()
+            {
+                GameRoom = room.GameRoom,
+                Username = room.Username,
+                Seconds = room.Seconds,
+                Increment = room.Increment
+            });
+        }
+
+        return Task.FromResult(responseJoinableGameRooms);
     }
 }

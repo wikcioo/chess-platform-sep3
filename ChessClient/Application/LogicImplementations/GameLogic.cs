@@ -52,11 +52,10 @@ public class GameLogic : IGameLogic
         {
             var grpcResponse = await _gameClient.StartGameAsync(new RequestGame()
             {
-                GameType = dto.GameType,
+                OpponentType = dto.OpponentType.ToString(),
                 Increment = dto.Increment,
-                //TODO Add a randomizer for side when not chosen
-                IsWhite = dto.IsWhite ?? true,
-                Opponent = dto.Opponent,
+                Side = dto.Side.ToString(),
+                OpponentName = dto.OpponentName,
                 Seconds = dto.Seconds,
                 Username = user.Identity?.Name,
                 IsVisible = dto.IsVisible
@@ -111,14 +110,17 @@ public class GameLogic : IGameLogic
                         TimeUpdate(response);
                         break;
                     case GameStreamEvents.TimeUpdate:
+                        if (response.GameEndType == (uint)GameEndTypes.TimeIsUp) call.Dispose();
                         TimeUpdate(response);
                         break;
                     case GameStreamEvents.ReachedEndOfTheGame:
+                        call.Dispose();
                         TimeUpdate(response);
                         NewFenReceived?.Invoke(response);
                         EndOfTheGameReached?.Invoke(response);
                         break;
                     case GameStreamEvents.Resignation:
+                        call.Dispose();
                         ResignationReceived?.Invoke(response);
                         break;
                     case GameStreamEvents.DrawOffer:
@@ -128,10 +130,10 @@ public class GameLogic : IGameLogic
                         DrawOfferTimeout(response);
                         break;
                     case GameStreamEvents.DrawOfferAcceptation:
+                        call.Dispose();
                         DrawOfferAcceptation(response);
                         break;
                     case GameStreamEvents.InitialTime:
-                        response.IsWhite = response.FenString.Equals(user.Identity?.Name);
                         InitialTime(response);
                         break;
                     default: throw new ArgumentOutOfRangeException();
@@ -149,16 +151,27 @@ public class GameLogic : IGameLogic
         TimeUpdated?.Invoke(dto);
     }
 
-    private void InitialTime(JoinedGameStreamDto dto)
+    private async void InitialTime(JoinedGameStreamDto dto)
     {
-        OnWhiteSide = dto.IsWhite;
+        var user = await _authService.GetAuthAsync();
+        var myName = user.Identity!.Name;
+        if (dto.UsernameBlack.Equals(myName))
+        {
+            OnWhiteSide = false;
+        }
+        if (dto.UsernameWhite.Equals(myName))
+        {
+            OnWhiteSide = true;
+        }
+        
         GameFirstJoined?.Invoke(dto);
         InitialTimeReceived?.Invoke(dto);
     }
     
-    private void DrawOffer(JoinedGameStreamDto dto)
+    private async void DrawOffer(JoinedGameStreamDto dto)
     {
-        if (dto.IsWhite != OnWhiteSide)
+        var user = await _authService.GetAuthAsync();
+        if (dto.UsernameWhite.Equals(user.Identity!.Name) || dto.UsernameBlack.Equals(user.Identity!.Name))
             IsDrawOfferPending = true;
         
         DrawOffered?.Invoke(dto);
