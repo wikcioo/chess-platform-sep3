@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using Application.Logic;
 using Application.LogicInterfaces;
@@ -13,19 +14,19 @@ namespace Application.Tests;
 public class GameLogicUnitTests
 {
     [Theory]
-    [InlineData("Alice")]
-    [InlineData("StockfishAi1")]
-    [InlineData(null)]
-    public void StartingGameReturnsCorrectResponseDto(string? opponent)
+    [InlineData("Alice", 0)]
+    [InlineData("StockfishAi1", 1)]
+    [InlineData(null, 2)]
+    public void StartingGameReturnsCorrectResponseDto(string? opponent, ulong id)
     {
         IGameLogic gameLogic = new GameLogic(new StockfishHttpClient(new HttpClient()));
         var response = gameLogic.StartGame(new RequestGameDto()
         {
             Username = "Jeff",
-            GameType = "Friend",
+            OpponentType = OpponentTypes.Friend,
             Increment = 0,
-            IsWhite = true,
-            Opponent = opponent,
+            Side = GameSides.White,
+            OpponentName = opponent,
             Seconds = 600
         });
 
@@ -34,10 +35,10 @@ public class GameLogicUnitTests
             Success = true,
             IsWhite = true,
             Opponent = opponent ?? "StockfishAI01",
-            GameRoom = 0,
+            GameRoom = id,
             Fen = Fen.StartPositionFen
         };
-
+        
         Assert.Equal(expectedResponse.Success, response.Result.Success);
         Assert.Equal(expectedResponse.Opponent, response.Result.Opponent);
         Assert.Equal(expectedResponse.IsWhite, response.Result.IsWhite);
@@ -49,7 +50,7 @@ public class GameLogicUnitTests
     public void JoinRoomThrowsArgumentExceptionWhenNoRoomFound()
     {
         IGameLogic gameLogic = new GameLogic(new StockfishHttpClient(new HttpClient()));
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<KeyNotFoundException>(() =>
         {
             gameLogic.JoinGame(new RequestJoinGameDto()
             {
