@@ -2,6 +2,7 @@ using Application.ClientInterfaces;
 using Application.Entities;
 using Application.LogicInterfaces;
 using Domain.DTOs;
+using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Rudzoft.ChessLib.Fen;
 using StockfishWrapper;
@@ -134,5 +135,43 @@ public class GameLogic : IGameLogic
             return Task.FromResult(AckTypes.GameNotFound);
         
         return Task.FromResult(_gameRooms[dto.GameRoom].DrawOfferResponse(dto));
+
+    public IEnumerable<SpectateableGameRoomDataDto> GetSpectateableGameRoomData()
+    {
+        IList<SpectateableGameRoomDataDto> list = new List<SpectateableGameRoomDataDto>();
+        foreach (var tuple in _gameRoomsData.GetSpectateable())
+        {
+            list.Add(new SpectateableGameRoomDataDto()
+            {
+                GameRoom = tuple.Item1,
+                UsernameWhite = tuple.Item2.PlayerWhite!,
+                UsernameBlack = tuple.Item2.PlayerBlack!,
+                Seconds = tuple.Item2.GetInitialTimeControlSeconds,
+                Increment = tuple.Item2.GetInitialTimeControlIncrement
+            });
+        }
+
+        return list;
+    }
+
+    public IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData()
+    {
+        IList<JoinableGameRoomDataDto> list = new List<JoinableGameRoomDataDto>();
+        foreach (var tuple in _gameRoomsData.GetJoinable())
+        {
+            var username = string.IsNullOrEmpty(tuple.Item2.PlayerWhite)
+                ? tuple.Item2.PlayerBlack!
+                : tuple.Item2.PlayerWhite!;
+            list.Add(new JoinableGameRoomDataDto()
+            {
+                GameRoom = tuple.Item1,
+                Username = username,
+                Seconds = tuple.Item2.GetInitialTimeControlSeconds,
+                Increment = tuple.Item2.GetInitialTimeControlIncrement,
+                Side = tuple.Item2.GameSide
+            });
+        }
+
+        return list;
     }
 }
