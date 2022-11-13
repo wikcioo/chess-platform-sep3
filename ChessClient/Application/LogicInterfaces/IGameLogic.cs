@@ -1,5 +1,6 @@
 using Application.LogicImplementations;
 using Domain.DTOs;
+using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Rudzoft.ChessLib.Types;
 
@@ -25,5 +26,6 @@ public interface IGameLogic
     public Task<AckTypes> OfferDraw();
     public Task<AckTypes> Resign();
     public Task<AckTypes> SendDrawResponse(bool accepted);
-
+    public Task<IList<SpectateableGameRoomDataDto>> GetAllSpectateableGames();
+    public Task<IList<JoinableGameRoomDataDto>> GetAllJoinableGames();
 }
