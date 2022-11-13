@@ -205,6 +205,10 @@ public class GameRoom
     public AckTypes DrawOfferResponse(ResponseDrawDto dto)
     {
         if (!_isDrawOffered) return AckTypes.DrawNotOffered;
+        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        {
+            return AckTypes.NotUserTurn;
+        }
         
         if (dto.Username.Equals(_drawOfferOrigin))
         {
