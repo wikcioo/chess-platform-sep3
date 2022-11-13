@@ -151,16 +151,27 @@ public class GameLogic : IGameLogic
         TimeUpdated?.Invoke(dto);
     }
 
-    private void InitialTime(JoinedGameStreamDto dto)
+    private async void InitialTime(JoinedGameStreamDto dto)
     {
-        OnWhiteSide = dto.IsWhite;
+        var user = await _authService.GetAuthAsync();
+        var myName = user.Identity!.Name;
+        if (dto.UsernameBlack.Equals(myName))
+        {
+            OnWhiteSide = false;
+        }
+        if (dto.UsernameWhite.Equals(myName))
+        {
+            OnWhiteSide = true;
+        }
+        
         GameFirstJoined?.Invoke(dto);
         InitialTimeReceived?.Invoke(dto);
     }
     
-    private void DrawOffer(JoinedGameStreamDto dto)
+    private async void DrawOffer(JoinedGameStreamDto dto)
     {
-        if (dto.IsWhite != OnWhiteSide)
+        var user = await _authService.GetAuthAsync();
+        if (dto.UsernameWhite.Equals(user.Identity!.Name) || dto.UsernameBlack.Equals(user.Identity!.Name))
             IsDrawOfferPending = true;
         
         DrawOffered?.Invoke(dto);

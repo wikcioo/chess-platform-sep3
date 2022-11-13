@@ -63,7 +63,9 @@ public class GameService : Game.GameBase
                         GameEndType = x.GameEndType,
                         TimeLeftMs = x.TimeLeftMs,
                         IsWhite = x.IsWhite,
-                        Event = (uint) x.Event
+                        Event = (uint) x.Event,
+                        UsernameWhite = x.UsernameWhite,
+                        UsernameBlack = x.UsernameBlack
                     }), context.CancellationToken)
                     .ConfigureAwait(false);
             }

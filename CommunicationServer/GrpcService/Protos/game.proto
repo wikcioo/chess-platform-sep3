@@ -33,6 +33,8 @@ message JoinedGameStream {
   double time_left_ms   = 3;
   bool   is_white       = 4;
   uint32 event          = 5;
+  string username_white = 6;
+  string username_black = 7;
 }
 
 message RequestMakeMove {

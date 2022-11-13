@@ -167,7 +167,8 @@ public class GameRoom
         GameJoined.Invoke(new JoinedGameStreamDto()
         {
             Event = GameStreamEvents.DrawOffer,
-            IsWhite = PlayerWhite!.Equals(dto.Username)
+            UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
+            UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
         });
 
         _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
