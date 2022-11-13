@@ -5,13 +5,13 @@ option csharp_namespace = "GrpcService";
 package game;
 
 message RequestGame {
-  string username  = 1;
-  string game_type = 2;
-  string opponent  = 3;
-  uint32 seconds   = 4;
-  uint32 increment = 5;
-  bool   is_white  = 6;
-  bool   is_visible = 7;
+  string username      = 1;
+  string opponent_type = 2;
+  string opponent_name = 3;
+  uint32 seconds       = 4;
+  uint32 increment     = 5;
+  string side          = 6;
+  bool   is_visible    = 7;
 }
 
 message ResponseGame {
@@ -57,12 +57,38 @@ message RequestDraw {
 message ResponseDraw {
   uint64 game_room = 1;
   string username  = 2;
-  bool accept      = 3;
+  bool   accept    = 3;
+}
+
+message SpectateableGameRoomData {
+  uint64 game_room      = 1;
+  string username_white = 2;
+  string username_black = 3;
+  uint32 seconds        = 4;
+  uint32 increment      = 5;
+}
+
+message JoinableGameRoomData {
+  uint64 game_room = 1;
+  string username  = 2;
+  uint32 seconds   = 3;
+  uint32 increment = 4;
+  string side      = 5;
+}
+
+message ResponseSpectateableGameRooms {
+  repeated SpectateableGameRoomData game_rooms_data = 1;
+}
+
+message ResponseJoinableGameRooms {
+  repeated JoinableGameRoomData game_rooms_data = 1;
 }
 
 message Acknowledge {
   uint32 status = 1;
 }
+
+message EmptyGameMessage {}
 
 service Game {
   rpc StartGame(RequestGame) returns (ResponseGame) {}
@@ -71,4 +97,6 @@ service Game {
   rpc Resign(RequestResign) returns (Acknowledge) {}
   rpc OfferDraw(RequestDraw) returns (Acknowledge) {}
   rpc DrawOfferResponse(ResponseDraw) returns (Acknowledge) {}
+  rpc GetSpectateableGames(EmptyGameMessage) returns (ResponseSpectateableGameRooms) {}
+  rpc GetJoinableGames(EmptyGameMessage) returns (ResponseJoinableGameRooms) {}
 }
