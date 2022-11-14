@@ -30,4 +30,34 @@
         <ProjectReference Include="..\Application\Application.csproj" />
         <ProjectReference Include="..\HttpClients\HttpClients.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <AdditionalFiles Include="Pages\LogIn\Login.razor" />
+      <AdditionalFiles Include="Pages\LogIn\LoginButtons.razor" />
+      <AdditionalFiles Include="Pages\ManageUsers\CreateUser.razor" />
+      <AdditionalFiles Include="Pages\PlayChess\ChatWindow.razor" />
+      <AdditionalFiles Include="Pages\PlayChess\ChessBoardComponent.razor" />
+      <AdditionalFiles Include="Pages\PlayChess\ChessGame.razor" />
+      <AdditionalFiles Include="Pages\PlayChess\SquareComponent.razor" />
+      <AdditionalFiles Include="Pages\PlayChess\TimerComponent.razor" />
+      <AdditionalFiles Include="Shared\DialogComponent.razor" />
+      <AdditionalFiles Include="Shared\InformDialogComponent.razor" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="Pages\LogIn\LoginButtons.razor.css" />
+        <None Remove="Pages\PlayChess\ChatWindow.razor.css" />
+        <None Remove="Pages\PlayChess\ChessBoardComponent.razor.css" />
+        <None Remove="Pages\PlayChess\SquareComponent.razor.css" />
+        <None Remove="Pages\PlayChess\TimerComponent.razor.css" />
+    </ItemGroup>
+    
+    
+    <ItemGroup>
+      <Content Include="Pages\LogIn\LoginButtons.razor.css" />
+      <Content Include="Pages\PlayChess\ChatWindow.razor.css" />
+      <Content Include="Pages\PlayChess\ChessBoardComponent.razor.css" />
+      <Content Include="Pages\PlayChess\SquareComponent.razor.css" />
+      <Content Include="Pages\PlayChess\TimerComponent.razor.css" />
+    </ItemGroup>
 </Project>

@@ -15,6 +15,8 @@ public static class MessageToDtoParser
             TimeLeftMs = message.TimeLeftMs,
             IsWhite = message.IsWhite,
             Event = (GameStreamEvents) message.Event,
+            UsernameWhite = message.UsernameWhite,
+            UsernameBlack = message.UsernameBlack
         };
     }
     

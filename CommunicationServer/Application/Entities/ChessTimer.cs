@@ -8,8 +8,8 @@ public class ChessTimer
 {
     private readonly PausableTimer _whiteTimer = new(1000.0);
     private readonly PausableTimer _blackTimer = new(1000.0);
-    private readonly uint _timeControlBaseMs;
-    private readonly uint _timeControlIncrementMs;
+    public readonly uint TimeControlBaseMs;
+    public readonly uint TimeControlIncrementMs;
     private bool _whitePlaying;
     public double WhiteRemainingTimeMs { get; private set; }
     public double BlackRemainingTimeMs { get; private set; }
@@ -20,26 +20,42 @@ public class ChessTimer
     public ChessTimer(bool whitePlaying, uint timeControlSeconds, uint timeControlIncrement)
     {
         _whitePlaying = whitePlaying;
-        _timeControlBaseMs = timeControlSeconds * 1000;
-        _timeControlIncrementMs = timeControlIncrement * 1000;
+        TimeControlBaseMs = timeControlSeconds * 1000;
+        TimeControlIncrementMs = timeControlIncrement * 1000;
 
-        WhiteRemainingTimeMs = _timeControlBaseMs;
-        BlackRemainingTimeMs = _timeControlBaseMs;
+        WhiteRemainingTimeMs = TimeControlBaseMs;
+        BlackRemainingTimeMs = TimeControlBaseMs;
         
         _whiteTimer.Elapsed += OnOneSecElapsed;
         _blackTimer.Elapsed += OnOneSecElapsed;
     }
 
-    public void StartTimers()
+    public void StartTimers(bool both = true, bool white = true)
     {
-        _whiteTimer.Start();
-        _blackTimer.Start();
+        if (both)
+        {
+            _whiteTimer.Start();
+            _blackTimer.Start();
+        }
+        else
+        {
+            if (white) _whiteTimer.Start();
+            else _blackTimer.Start();
+        }
     }
 
-    public void StopTimers()
+    public void StopTimers(bool both = true, bool white = true)
     {
-        _whiteTimer.Stop();
-        _blackTimer.Stop();
+        if (both)
+        {
+            _whiteTimer.Stop();
+            _blackTimer.Stop();
+        }
+        else
+        {
+            if (white) _whiteTimer.Stop();
+            else _blackTimer.Stop();
+        }
     }
     
     public void UpdateTimers(bool whitePlaying)
@@ -47,14 +63,14 @@ public class ChessTimer
         if (whitePlaying)
         {
             _whitePlaying = false;
-            WhiteRemainingTimeMs += _timeControlIncrementMs;
+            WhiteRemainingTimeMs += TimeControlIncrementMs;
             WhiteRemainingTimeMs -= _whiteTimer.Pause();
             _blackTimer.Resume();
         }
         else
         {
             _whitePlaying = true;
-            BlackRemainingTimeMs += _timeControlIncrementMs;
+            BlackRemainingTimeMs += TimeControlIncrementMs;
             BlackRemainingTimeMs -= _blackTimer.Pause();
             _whiteTimer.Resume();
         }

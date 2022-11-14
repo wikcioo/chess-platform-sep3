@@ -1,105 +1,154 @@
-using System.Text.RegularExpressions;
 using Application.ClientInterfaces;
 using Application.Entities;
 using Application.LogicInterfaces;
 using Domain.DTOs;
+using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Rudzoft.ChessLib.Fen;
-using Rudzoft.ChessLib.Types;
 using StockfishWrapper;
 
 namespace Application.Logic;
 
 public class GameLogic : IGameLogic
 {
-    private ulong _nextGameId;
-    private readonly Dictionary<ulong, GameRoom> _gameRooms = new();
-    private IStockfishService _stockfishService;
+    private readonly GameRoomsData _gameRoomsData = new();
+    private readonly IStockfishService _stockfishService;
 
     public GameLogic(IStockfishService stockfishService)
     {
         _stockfishService = stockfishService;
-        _nextGameId = 0;
     }
 
     public Task<ResponseGameDto> StartGame(RequestGameDto dto)
     {
+        GameRoom gameRoom = new(dto.Seconds, dto.Increment)
+        {
+            GameSide = dto.Side
+        };
+
+        var requesterIsWhite = true;
+        switch (dto.Side)
+        {
+            case GameSides.White:
+            {
+                gameRoom.PlayerWhite = dto.Username;
+                gameRoom.PlayerBlack = dto.OpponentName;
+                requesterIsWhite = true;
+                break;
+            }
+            case GameSides.Black:
+            {
+                gameRoom.PlayerWhite = dto.OpponentName;
+                gameRoom.PlayerBlack = dto.Username;
+                requesterIsWhite = false;
+                break;
+            }
+            case GameSides.Random:
+            {
+                if (new Random().Next(100) <= 50)
+                {
+                    gameRoom.PlayerWhite = dto.Username;
+                    gameRoom.PlayerBlack = dto.OpponentName;
+                    requesterIsWhite = true;
+                }
+                else
+                {
+                    gameRoom.PlayerWhite = dto.OpponentName;
+                    gameRoom.PlayerBlack = dto.Username;
+                    requesterIsWhite = false;
+                }
+
+                break;
+            }
+        }
+
+        gameRoom.Initialize();
+        var id = _gameRoomsData.Add(gameRoom, dto.IsVisible, dto.OpponentType);
+
+        if (gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
+            RequestAiMove(id);
+
         ResponseGameDto responseDto = new()
         {
             Success = true,
-            GameRoom = _nextGameId,
-            Opponent = dto.Opponent ?? "StockfishAI01",
+            GameRoom = id,
+            Opponent = dto.OpponentName ?? "StockfishAI01",
             Fen = Fen.StartPositionFen,
-            IsWhite = dto.IsWhite ?? true
+            IsWhite = requesterIsWhite,
         };
-
-        var gameType = dto.GameType switch
-        {
-            "AI" => GameStateTypes.Ai,
-            "Friend" => GameStateTypes.Friend,
-            "Random" => GameStateTypes.Random,
-            _ => throw new Exception(
-                "Invalid Game type exception")
-        };
-
-        GameRoom gameRoom = new(gameType, dto.Seconds, dto.Increment);
-        gameRoom.PlayerWhite = responseDto.IsWhite ? dto.Username : dto.Opponent;
-        gameRoom.PlayerBlack = responseDto.IsWhite ? dto.Opponent : dto.Username;
-        
-        
-        _gameRooms.Add(_nextGameId, gameRoom);
-        
-        if(gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
-            RequestAiMove(_nextGameId);
-
-        _nextGameId++;
 
         return Task.FromResult(responseDto);
     }
 
     public IObservable<JoinedGameStreamDto> JoinGame(RequestJoinGameDto dto)
     {
-        if (_gameRooms.ContainsKey(dto.GameRoom))
+        var gameRoom = _gameRoomsData.Get(dto.GameRoom);
+        if ((_gameRoomsData.IsJoinable(dto.GameRoom) && _gameRoomsData.CanUsernameJoin(dto.GameRoom, dto.Username)))
         {
-            GameRoom gameRoom = _gameRooms[dto.GameRoom];
+            if (++_gameRoomsData.NumPlayersJoined[dto.GameRoom] == 2)
+            {
+                _gameRoomsData.TransitionFromJoinableAndAddToSpectateableIfVisible(dto.GameRoom);
+                if (string.IsNullOrEmpty(gameRoom.PlayerWhite))
+                {
+                    gameRoom.PlayerWhite = dto.Username;
+                }
+                else if (string.IsNullOrEmpty(gameRoom.PlayerBlack))
+                {
+                    gameRoom.PlayerBlack = dto.Username;
+                }
+
+                gameRoom.Initialize();
+            }
+
             return gameRoom.GetMovesAsObservable();
         }
 
-        throw new ArgumentException("Game not found");
+        if (_gameRoomsData.IsSpectateable(dto.GameRoom))
+        {
+            _gameRoomsData.NumSpectatorsJoined[dto.GameRoom]++;
+            return gameRoom.GetMovesAsObservable();
+        }
+
+        throw new ArgumentException("Cannot join the game!");
     }
 
     public Task<AckTypes> MakeMove(MakeMoveDto dto)
     {
-        if (!_gameRooms.ContainsKey(dto.GameRoom))
-            return Task.FromResult(AckTypes.GameNotFound);
-
-        GameRoom room = _gameRooms[dto.GameRoom];
-
-        AckTypes ack = room.MakeMove(dto);
-
-        if (ack != AckTypes.Success)
+        try
         {
+            var room = _gameRoomsData.Get(dto.GameRoom);
+
+            var ack = room.MakeMove(dto);
+            if (ack != AckTypes.Success)
+            {
+                return Task.FromResult(ack);
+            }
+
+            if (room.CurrentPlayer != null && IsAi(room.CurrentPlayer))
+            {
+                Task.Run(() => RequestAiMove(dto.GameRoom));
+            }
+
             return Task.FromResult(ack);
         }
-        
-        if (room.CurrentPlayer != null && IsAi(room.CurrentPlayer))
+        catch (KeyNotFoundException e)
         {
-            Task.Run(() => RequestAiMove(dto.GameRoom));
+            return Task.FromResult(AckTypes.GameNotFound);
         }
-        return Task.FromResult(ack);
     }
-    
+
     private static bool IsAi(string? playerName) => StockfishLevels.IsAi(playerName);
+
     private async void RequestAiMove(ulong roomId)
     {
-        
-        var room = _gameRooms[roomId];
+        var room = _gameRoomsData.Get(roomId);
 
         if (!IsAi(room.CurrentPlayer))
             throw new InvalidOperationException("Current player is not an AI");
 
-        var uci =  await _stockfishService.GetBestMoveAsync(new StockfishBestMoveDto(room.getFen().ToString(), room.CurrentPlayer));
-        var move =  room.UciMoveToRudzoftMove(uci);
+        var uci = await _stockfishService.GetBestMoveAsync(new StockfishBestMoveDto(room.GetFen().ToString(),
+            room.CurrentPlayer));
+        var move = room.UciMoveToRudzoftMove(uci);
         var dto = new MakeMoveDto
         {
             GameRoom = roomId,
@@ -114,25 +163,88 @@ public class GameLogic : IGameLogic
 
     public Task<AckTypes> Resign(RequestResignDto dto)
     {
-        if (!_gameRooms.ContainsKey(dto.GameRoom))
-            return Task.FromResult(AckTypes.GameNotFound);
+        try
+        {
+            var result = Task.FromResult(_gameRoomsData.Get(dto.GameRoom).Resign(dto));
+            if (result.Result == AckTypes.Success)
+            {
+                _gameRoomsData.Remove(dto.GameRoom);
+            }
 
-        return Task.FromResult(_gameRooms[dto.GameRoom].Resign(dto));
+            return result;
+        }
+        catch (KeyNotFoundException e)
+        {
+            return Task.FromResult(AckTypes.GameNotFound);
+        }
     }
 
     public async Task<AckTypes> OfferDraw(RequestDrawDto dto)
     {
-        if (!_gameRooms.ContainsKey(dto.GameRoom))
+        try
+        {
+            return await _gameRoomsData.Get(dto.GameRoom).OfferDraw(dto);
+        }
+        catch (KeyNotFoundException e)
+        {
             return await Task.FromResult(AckTypes.GameNotFound);
-
-        return await _gameRooms[dto.GameRoom].OfferDraw(dto);
+        }
     }
 
     public Task<AckTypes> DrawOfferResponse(ResponseDrawDto dto)
     {
-        if (!_gameRooms.ContainsKey(dto.GameRoom))
+        try
+        {
+            var result = Task.FromResult(_gameRoomsData.Get(dto.GameRoom).DrawOfferResponse(dto));
+            if (result.Result == AckTypes.Success && dto.Accept)
+            {
+                _gameRoomsData.Remove(dto.GameRoom);
+            }
+
+            return result;
+        }
+        catch (KeyNotFoundException e)
+        {
             return Task.FromResult(AckTypes.GameNotFound);
-        
-        return Task.FromResult(_gameRooms[dto.GameRoom].DrawOfferResponse(dto));
+        }
+    }
+
+    public IEnumerable<SpectateableGameRoomDataDto> GetSpectateableGameRoomData()
+    {
+        IList<SpectateableGameRoomDataDto> list = new List<SpectateableGameRoomDataDto>();
+        foreach (var tuple in _gameRoomsData.GetSpectateable())
+        {
+            list.Add(new SpectateableGameRoomDataDto()
+            {
+                GameRoom = tuple.Item1,
+                UsernameWhite = tuple.Item2.PlayerWhite!,
+                UsernameBlack = tuple.Item2.PlayerBlack!,
+                Seconds = tuple.Item2.GetInitialTimeControlSeconds,
+                Increment = tuple.Item2.GetInitialTimeControlIncrement
+            });
+        }
+
+        return list;
+    }
+
+    public IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData()
+    {
+        IList<JoinableGameRoomDataDto> list = new List<JoinableGameRoomDataDto>();
+        foreach (var tuple in _gameRoomsData.GetJoinable())
+        {
+            var username = string.IsNullOrEmpty(tuple.Item2.PlayerWhite)
+                ? tuple.Item2.PlayerBlack!
+                : tuple.Item2.PlayerWhite!;
+            list.Add(new JoinableGameRoomDataDto()
+            {
+                GameRoom = tuple.Item1,
+                Username = username,
+                Seconds = tuple.Item2.GetInitialTimeControlSeconds,
+                Increment = tuple.Item2.GetInitialTimeControlIncrement,
+                Side = tuple.Item2.GameSide
+            });
+        }
+
+        return list;
     }
 }

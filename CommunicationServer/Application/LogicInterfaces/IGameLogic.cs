@@ -1,4 +1,6 @@
+using Application.Entities;
 using Domain.DTOs;
+using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 
 namespace Application.LogicInterfaces;
@@ -6,9 +8,11 @@ namespace Application.LogicInterfaces;
 public interface IGameLogic
 {
     Task<ResponseGameDto> StartGame(RequestGameDto dto);
-    IObservable<JoinedGameStreamDto> JoinGame(RequestJoinGameDto dto);    
+    IObservable<JoinedGameStreamDto> JoinGame(RequestJoinGameDto dto);
     Task<AckTypes> MakeMove(MakeMoveDto dto);
     Task<AckTypes> Resign(RequestResignDto dto);
     Task<AckTypes> OfferDraw(RequestDrawDto dto);
     Task<AckTypes> DrawOfferResponse(ResponseDrawDto dto);
+    IEnumerable<SpectateableGameRoomDataDto> GetSpectateableGameRoomData();
+    IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData();
 }

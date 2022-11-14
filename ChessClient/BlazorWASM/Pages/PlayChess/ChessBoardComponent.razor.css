@@ -1,9 +1,10 @@
 .chess-board {
     display: grid;
-    width: 400px;
+    width: 100%;
     box-sizing: content-box;
-    grid-template-columns: repeat(8, 50px);
-    grid-auto-rows: 50px;
+    grid-template-columns: repeat(8, calc(100% / 8));
+    grid-auto-rows: calc(100% / 8);
+    aspect-ratio: 1;
     border: 10px solid black;
 }
 
