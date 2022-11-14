@@ -1,16 +1,64 @@
 ﻿@using MudBlazor
+@using StockfishWrapper
+@using Microsoft.AspNetCore.Components
+@using Domain.Enums
 
 @page "/StartGame"
 
+
 <MudTabs Elevation="4" Rounded="true" Centered="true"  ApplyEffectsToContainer="true"  Color="@Color.Primary">
     <MudTabPanel Text="Computer">
-
+        <MudContainer MaxWidth="MaxWidth.Medium">
+            <MudPaper Class="mud-theme-tertiary text-white">
+                <MudRadioGroup Style="color: aliceblue" T="@GameSides" > <MudText Class="ml-5 mt-5">Choose a side:</MudText>
+                    <MudRadio Class="ml-5" T="@GameSides" Color="Color.Primary" Option="@GameSides.White">White</MudRadio>
+                    <MudRadio Class="ml-5" T="@GameSides" Color="Color.Primary" Option="@GameSides.Black">Black</MudRadio>
+                    <MudRadio Class="ml-5" T="@GameSides" Color="Color.Primary" Option="@GameSides.Random">Random</MudRadio>
+                </MudRadioGroup>
+                <MudSelect Class="ml-5" Margin="Margin.Dense" T="string" Label="Select a level:" Variant="Variant.Filled"> 
+                    <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
+                    <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
+                    <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi3.Value)">Level 3</MudSelectItem>
+                    <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi4.Value)">Level 4</MudSelectItem>
+                    <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi5.Value)">Level 5</MudSelectItem>
+                    <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi6.Value)">Level 6</MudSelectItem>
+                    <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
+                    <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
+                </MudSelect>
+                <MudNumericField Class="ml-5" T="uint" Label="Base time" Variant="Variant.Filled" Min="60"/>
+                <MudNumericField Class="ml-5" T="uint" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+                <MudButton Class="ml-5" Variant="Variant.Filled" Color="Color.Primary">Create game</MudButton>
+                <MudNumericField Class="ml-5" T="ulong" Label="Room id" Variant="Variant.Text" Min="0"/>
+                <MudButton Class="ml-5" Variant="Variant.Filled" Color="Color.Primary">Join</MudButton>
+            </MudPaper>
+        </MudContainer>
     </MudTabPanel>
+    
     <MudTabPanel Text="Friend">
-        
+         <MudContainer MaxWidth="MaxWidth.Medium">
+         <MudPaper Class="mud-theme-primary text-white">
+             <MudExpansionPanels Class="mud-theme-primary" MultiExpansion="true">
+                 <MudExpansionPanel Class="mud-theme-tertiary" Text="Create Game" MaxHeight="300"> 
+                     <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!"/>
+                     <MudNumericField T="uint" Label="Base time" Variant="Variant.Filled" Min="60"/>
+                     <MudNumericField T="uint" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+                     <MudButton Variant="Variant.Filled" Color="Color.Primary">Create game</MudButton>
+                 </MudExpansionPanel>
+                 <MudExpansionPanel Class="mud-theme-tertiary" Text="Join Game" MaxHeight="500">
+                     <MudNumericField T="ulong" Label="Room id" Variant="Variant.Text" Min="0"/>
+                     <MudButton Variant="Variant.Filled" Color="Color.Primary">Join</MudButton>
+                 </MudExpansionPanel>
+             </MudExpansionPanels>
+         </MudPaper>
+         </MudContainer>
     </MudTabPanel>
     <MudTabPanel Text="Random">
-        
+         <MudContainer MaxWidth="MaxWidth.Medium">
+         <MudPaper Class="mud-theme-tertiary text-white">
+             <MudNumericField Class="mt-5 ml-5" T="ulong" Label="Room id" Variant="Variant.Text" Min="0"/>
+             <MudButton Class="mt-5 ml-5" Variant="Variant.Filled" Color="Color.Primary">Join</MudButton>
+         </MudPaper>
+         </MudContainer>
     </MudTabPanel>
 </MudTabs>
 
