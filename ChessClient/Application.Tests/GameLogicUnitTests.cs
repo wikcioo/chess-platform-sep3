@@ -173,12 +173,11 @@ public class GameLogicUnitTests
             .Setup(service => service.GetJwtToken())
             .Returns("foo");
 
-        var meta = new Metadata { { "Authorization", "Bearer foo" } };
         var mockClient = new Mock<Game.GameClient>();
         mockClient
-            .Setup(m => m.MakeMoveAsync(It.IsAny<RequestMakeMove>(), meta, null, default(CancellationToken)))
+            .Setup(m => m.MakeMoveAsync(It.IsAny<RequestMakeMove>(), It.IsAny<Metadata>(), null,CancellationToken.None))
             .Returns(mockCall);
-
+       
         var gameLogic = new GameLogic(mockAuth.Object, mockClient.Object)
         {
             GameRoomId = gameRoomId
@@ -186,6 +185,7 @@ public class GameLogicUnitTests
 
         var res = gameLogic.MakeMove(move).Result;
         Assert.Equal((int)AckTypes.Success, res);
+        
     }
 
     [Fact]
@@ -221,10 +221,13 @@ public class GameLogicUnitTests
         
         var mockClient = new Mock<Game.GameClient>();
         mockClient
-            .Setup(m => m.OfferDrawAsync(new RequestDraw(), null, null, CancellationToken.None))
+            .Setup(m => m.OfferDrawAsync(It.IsAny<RequestDraw>(), It.IsAny<Metadata>(), null, CancellationToken.None))
             .Returns(mockCall);
 
-        var gameLogic = new GameLogic(mockAuth.Object, mockClient.Object);
+        var gameLogic = new GameLogic(mockAuth.Object, mockClient.Object)
+        {
+            GameRoomId = 0
+        };
 
         var res = gameLogic.OfferDraw().Result;
         Assert.Equal(AckTypes.Success, res);
@@ -263,7 +266,7 @@ public class GameLogicUnitTests
         
         var mockClient = new Mock<Game.GameClient>();
         mockClient
-            .Setup(m => m.ResignAsync(new RequestResign(), null, null, CancellationToken.None))
+            .Setup(m => m.ResignAsync(It.IsAny<RequestResign>(), It.IsAny<Metadata>(), null, CancellationToken.None))
             .Returns(mockCall);
 
         var gameLogic = new GameLogic(mockAuth.Object, mockClient.Object)
@@ -271,9 +274,9 @@ public class GameLogicUnitTests
             GameRoomId = 0
         };
 
-        var res = await gameLogic.OfferDraw();
+        var res = await gameLogic.Resign();
         _testOutputHelper.WriteLine(res.ToString());
-        // Assert.Equal(AckTypes.Success, res);
+        Assert.Equal(AckTypes.Success, res);
     }
     
     [Fact]
@@ -291,7 +294,7 @@ public class GameLogicUnitTests
     }
 
     [Fact]
-    public void SendDrawResponseClearsIsDrawOfferPendingFlagWhenPassedAccept()
+    public async void SendDrawResponseClearsIsDrawOfferPendingFlagWhenPassedAccept()
     {
         var mockCall = CallHelpers.CreateAsyncUnaryCall(new Acknowledge()
         {
@@ -299,18 +302,25 @@ public class GameLogicUnitTests
         });
         
         var mockAuth = new Mock<IAuthService>();
+        mockAuth
+            .Setup(service => service.GetAuthAsync())
+            .Returns(Task.FromResult(new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
+            {
+                new Claim(ClaimTypes.Name, "Jim"),
         
+            }, "mock"))));
         var mockClient = new Mock<Game.GameClient>();
         mockClient
-            .Setup(m => m.DrawOfferResponseAsync(new ResponseDraw(), null, null, CancellationToken.None))
+            .Setup(m => m.DrawOfferResponseAsync(It.IsAny<ResponseDraw>(), It.IsAny<Metadata>(), null, CancellationToken.None))
             .Returns(mockCall);
 
         var gameLogic = new GameLogic(mockAuth.Object, mockClient.Object)
         {
-            IsDrawOfferPending = true
+            IsDrawOfferPending = true,
+            GameRoomId = 0
         };
 
-        gameLogic.SendDrawResponse(true).Wait();
+        await gameLogic.SendDrawResponse(true);
         Assert.False(gameLogic.IsDrawOfferPending);
     }
 }
