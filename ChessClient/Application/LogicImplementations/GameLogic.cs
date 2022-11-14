@@ -298,7 +298,9 @@ public class GameLogic : IGameLogic
 
     public async Task<IList<JoinableGameRoomDataDto>> GetAllJoinableGames()
     {
-        var response = await _gameClient.GetJoinableGamesAsync(_empty);
+        var token = _authService.GetJwtToken();
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var response = await _gameClient.GetJoinableGamesAsync(_empty, headers);
         var roomList = response.GameRoomsData;
         IList<JoinableGameRoomDataDto> joinableRoomList = new List<JoinableGameRoomDataDto>();
         foreach (var room in roomList)

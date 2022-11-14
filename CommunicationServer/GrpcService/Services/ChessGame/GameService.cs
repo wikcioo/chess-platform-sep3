@@ -19,7 +19,7 @@ public class GameService : Game.GameBase
     {
         Enum.TryParse(request.Side, out GameSides side);
         Enum.TryParse(request.OpponentType, out OpponentTypes opponentType);
-        
+
         RequestGameDto dto = new()
         {
             Username = request.Username,
@@ -121,7 +121,7 @@ public class GameService : Game.GameBase
         });
         return new Acknowledge()
         {
-            Status = (uint)ack
+            Status = (uint) ack
         };
     }
 
@@ -135,7 +135,7 @@ public class GameService : Game.GameBase
                 Status = (uint) AckTypes.NotUserTurn
             };
         }
-        
+
         AckTypes ack = await _gameLogic.OfferDraw(new RequestDrawDto()
         {
             GameRoom = request.GameRoom,
@@ -143,7 +143,7 @@ public class GameService : Game.GameBase
         });
         return new Acknowledge()
         {
-            Status = (uint)ack
+            Status = (uint) ack
         };
     }
 
@@ -157,7 +157,7 @@ public class GameService : Game.GameBase
                 Status = (uint) AckTypes.NotUserTurn
             };
         }
-        
+
         AckTypes ack = await _gameLogic.DrawOfferResponse(new ResponseDrawDto()
         {
             GameRoom = request.GameRoom,
@@ -166,11 +166,12 @@ public class GameService : Game.GameBase
         });
         return new Acknowledge()
         {
-            Status = (uint)ack
+            Status = (uint) ack
         };
     }
 
-    public override Task<ResponseSpectateableGameRooms> GetSpectateableGames(EmptyGameMessage request, ServerCallContext context)
+    public override Task<ResponseSpectateableGameRooms> GetSpectateableGames(EmptyGameMessage request,
+        ServerCallContext context)
     {
         var responseSpectateableGameRooms = new ResponseSpectateableGameRooms();
         foreach (var room in _gameLogic.GetSpectateableGameRoomData())
@@ -188,10 +189,17 @@ public class GameService : Game.GameBase
         return Task.FromResult(responseSpectateableGameRooms);
     }
 
-    public override Task<ResponseJoinableGameRooms> GetJoinableGames(EmptyGameMessage request, ServerCallContext context)
+    public override Task<ResponseJoinableGameRooms> GetJoinableGames(EmptyGameMessage request,
+        ServerCallContext context)
     {
+        var claim = context.GetHttpContext().User.Claims.FirstOrDefault(claim => claim.Type.Equals(ClaimTypes.Name));
         var responseJoinableGameRooms = new ResponseJoinableGameRooms();
-        foreach (var room in _gameLogic.GetJoinableGameRoomData())
+        if (claim == null)
+        {
+            return Task.FromResult(responseJoinableGameRooms);
+        }
+
+        foreach (var room in _gameLogic.GetJoinableGameRoomData(claim.Value))
         {
             responseJoinableGameRooms.GameRoomsData.Add(new JoinableGameRoomData()
             {
