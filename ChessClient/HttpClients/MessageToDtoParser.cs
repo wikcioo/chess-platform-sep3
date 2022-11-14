@@ -27,7 +27,7 @@ public static class MessageToDtoParser
             Success = message.Success,
             GameRoom = message.GameRoom,
             Opponent = message.Opponent,
-            Fen = message.Opponent,
+            Fen = message.Fen,
             IsWhite = message.IsWhite
         };
     }
