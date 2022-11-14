@@ -14,5 +14,5 @@ public interface IGameLogic
     Task<AckTypes> OfferDraw(RequestDrawDto dto);
     Task<AckTypes> DrawOfferResponse(ResponseDrawDto dto);
     IEnumerable<SpectateableGameRoomDataDto> GetSpectateableGameRoomData();
-    IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData();
+    IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData(string requesterUsername);
 }

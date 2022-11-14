@@ -155,8 +155,8 @@ public class GameLogic : IGameLogic
             Username = room.CurrentPlayer!,
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
-            MoveType = (uint)move.MoveType(),
-            Promotion = (uint)move.PromotedPieceType()
+            MoveType = (uint) move.MoveType(),
+            Promotion = (uint) move.PromotedPieceType()
         };
         await MakeMove(dto);
     }
@@ -227,10 +227,10 @@ public class GameLogic : IGameLogic
         return list;
     }
 
-    public IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData()
+    public IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData(string requesterUsername)
     {
         IList<JoinableGameRoomDataDto> list = new List<JoinableGameRoomDataDto>();
-        foreach (var tuple in _gameRoomsData.GetJoinable())
+        foreach (var tuple in _gameRoomsData.GetJoinable(requesterUsername))
         {
             var username = string.IsNullOrEmpty(tuple.Item2.PlayerWhite)
                 ? tuple.Item2.PlayerBlack!

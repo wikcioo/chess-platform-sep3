@@ -6,7 +6,7 @@ public class GameRoomsData
 {
     private static readonly Stack<ulong> RecentlyFreedGameIds = new();
     private static ulong _nextGameId = 0;
-    
+
     private readonly Dictionary<ulong, GameRoom> _gameRooms = new();
     private readonly Dictionary<ulong, bool> _visible = new();
     private readonly Dictionary<ulong, OpponentTypes> _opponentType = new();
@@ -69,19 +69,20 @@ public class GameRoomsData
     {
         if (_opponentType[id] == OpponentTypes.Random || _opponentType[id] == OpponentTypes.Ai)
             return true;
-        
+
         if (_gameRooms[id].PlayerWhite!.Equals(username) || _gameRooms[id].PlayerBlack!.Equals(username))
             return true;
-        
+
         return false;
     }
 
-    public List<Tuple<ulong, GameRoom>> GetJoinable()
+    public List<Tuple<ulong, GameRoom>> GetJoinable(string requesterUsername)
     {
         var gameRooms = new List<Tuple<ulong, GameRoom>>();
         foreach (var id in _joinable)
         {
-            gameRooms.Add(new Tuple<ulong, GameRoom>(id, _gameRooms[id]));
+            if (CanUsernameJoin(id, requesterUsername))
+                gameRooms.Add(new Tuple<ulong, GameRoom>(id, _gameRooms[id]));
         }
 
         return gameRooms;
@@ -102,7 +103,7 @@ public class GameRoomsData
             if (_visible[id])
                 gameRooms.Add(new Tuple<ulong, GameRoom>(id, _gameRooms[id]));
         }
-        
+
         return gameRooms;
     }
 }
