@@ -6,12 +6,12 @@
 
 <MudLayout>
     <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"/>
-        <MudText Typo="Typo.h5" Class="ml-4">VIA Chess</MudText>
-        <MudLink Href="/">Home</MudLink>
-            <MudLink Href="CreateUser" Class="ml-4">Create User</MudLink>
-            <MudLink Href="StartGame" Class="ml-4">Play</MudLink>
-            <MudLink Href="/" Disabled="true" Class="ml-4">About</MudLink>
+        <MudAvatar Image="OIP.jpg"/>
+        <MudText Typo="Typo.h5" Class="ml-4 mr-4">VIA Chess</MudText>
+        <MudLink Href="/"><MudText Typo="Typo.button">HOME</MudText></MudLink>
+            <MudLink Href="CreateUser" Class="ml-4 mr-2"><MudText Typo="Typo.button">REGISTER</MudText></MudLink>
+            <MudLink Href="StartGame" Class="ml-4 mr-2"><MudText Typo="Typo.button">PLAY</MudText></MudLink>
+            <MudLink Href="/" Disabled="true" Class="ml-4 mr-2"><MudText Typo="Typo.button">ABOUT</MudText></MudLink>
         <MudSpacer/>
         <LoginButtons/>
     </MudAppBar>

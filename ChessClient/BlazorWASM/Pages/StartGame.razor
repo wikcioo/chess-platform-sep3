@@ -17,40 +17,54 @@
 @using Position = Rudzoft.ChessLib.Position
 @inject IDialogService DialogService
 @inject IJSRuntime Js
+@inject NavigationManager navMgr
 @page "/StartGame"
 
 <audio id="move" src="sounds/move.mp3"></audio>
 <audio id="notify" src="sounds/notify.mp3"></audio>
+<MudContainer>
+    <MudPaper Class="d-flex justify-center pa-4" Style="@($"color:{Colors.BlueGrey.Darken1}; background:{Colors.BlueGrey.Darken4};")">
+       
+        <MudItem xs="12" sm="5" Class="pa-10">
+             <MudText Typo="Typo.h4"> Play with AI </MudText>
+            <MudSelect Dense="true" T="int" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
+                <MudSelectItem T="int" Value="1">Level 1</MudSelectItem>
+                <MudSelectItem T="int" Value="2">Level 2</MudSelectItem>
+                <MudSelectItem T="int" Value="3">Level 3</MudSelectItem>
+                <MudSelectItem T="int" Value="4">Level 4</MudSelectItem>
+                <MudSelectItem T="int" Value="5">Level 5</MudSelectItem>
+                <MudSelectItem T="int" Value="6">Level 6</MudSelectItem>
+                <MudSelectItem T="int" Value="7">Level 7</MudSelectItem>
+            </MudSelect>
 
-<MudPaper Class="d-flex justify-center flex-grow-1 gap-4"  Style="@($"color:{Colors.BlueGrey.Darken1}; background:{Colors.BlueGrey.Darken4};")">
-    
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_stockfishActivated)" @onclick="PlayStockfish">Play</MudButton>
 
-    <MudItem md="12" lg="6">
-        <MudSelect Dense="true" T="int" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
-            <MudSelectItem T="int" Value="1">Level 1</MudSelectItem>
-            <MudSelectItem T="int" Value="2">Level 2</MudSelectItem>
-            <MudSelectItem T="int" Value="3">Level 3</MudSelectItem>
-            <MudSelectItem T="int" Value="4">Level 4</MudSelectItem>
-            <MudSelectItem T="int" Value="5">Level 5</MudSelectItem>
-            <MudSelectItem T="int" Value="6">Level 6</MudSelectItem>
-            <MudSelectItem T="int" Value="7">Level 7</MudSelectItem>
-        </MudSelect>
+            <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
+                <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
+                <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
+            </MudRadioGroup>
 
-
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_stockfishActivated)" @onclick="PlayStockfish">Play</MudButton>
-        <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
-            <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
-            <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
-        </MudRadioGroup>
-        <MudNumericField T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
-        <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
-        <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
-        <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+            <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
+            <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
+            <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
-    </MudItem>
+        </MudItem>
+            
+        <MudItem xs="12" sm="1"Style="@($"background:{Colors.Grey.Darken4}")"/>
 
-</MudPaper>
+        
+
+        <MudItem xs="12" sm="5" Class="pa-10">
+                 <MudText Typo="Typo.h4"> Join Game Room </MudText>
+            <MudNumericField T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
+            <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
+            <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
+            <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
+        </MudItem>
+    </MudPaper>
+</MudContainer>
 
 @code {
     
@@ -103,18 +117,25 @@
         _gameRoomInt = responseGame.GameRoom;
     }
 
-        
+    public async Task NavigateToGamePage()
+    {
+
+        navMgr.NavigateTo("/ChessGame");
+    }
+
     public void PlayStockfish()
     {
         if (_selectedLevel is > 0 and < 9)
             _stockfishActivated = true;
+        navMgr.NavigateTo("/ChessGame");
     }
+    
      private async Task JoinGame()
     {
         var call = _client.JoinGame(new RequestJoinGame()
         {
             GameRoom = _gameRoomInt,
-            Username = "Bob"
+            Username = "Bob" 
         });
 
         while (await call.ResponseStream.MoveNext(CancellationToken.None))
@@ -124,6 +145,7 @@
         }
 
             StateHasChanged();
+         navMgr.NavigateTo("/ChessGame");
         }
     }
     
