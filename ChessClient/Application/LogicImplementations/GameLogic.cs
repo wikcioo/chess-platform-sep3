@@ -43,6 +43,12 @@ public class GameLogic : IGameLogic
         _gameClient = new Game.GameClient(channel);
     }
 
+    public GameLogic(IAuthService authService, Game.GameClient client)
+    {
+        _authService = authService;
+        _gameClient = client;
+    }
+
     public async Task<ResponseGameDto> CreateGame(RequestGameDto dto)
     {
         ClaimsPrincipal user = await _authService.GetAuthAsync();
