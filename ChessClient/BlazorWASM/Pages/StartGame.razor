@@ -2,6 +2,21 @@
 @using StockfishWrapper
 @using Microsoft.AspNetCore.Components
 @using Domain.Enums
+@using Rudzoft.ChessLib
+@using Rudzoft.ChessLib.Types
+@using Rudzoft.ChessLib.Fen
+@using Application.LogicInterfaces
+@using Position = Rudzoft.ChessLib.Position
+@using Domain.DTOs
+@using Grpc.Core
+@using Rudzoft.ChessLib.Enums
+@inject IDialogService DialogService
+@inject IJSRuntime Js
+@inject ISnackbar Snackbar
+@inject IGameLogic GameLogic
+@inject NavigationManager NavMgr
+@* @implements IDisposable *@
+
 
 @page "/StartGame"
 
@@ -10,12 +25,12 @@
     <MudTabPanel Text="Computer">
         <MudContainer MaxWidth="MaxWidth.Medium">
             <MudPaper Class="mud-theme-tertiary text-white">
-                <MudRadioGroup Style="color: aliceblue" T="@GameSides" > <MudText Class="ml-5 mt-5">Choose a side:</MudText>
+                <MudRadioGroup Style="color: aliceblue" @bind-SelectedOption="_isWhiteSide" T="@GameSides" > <MudText Class="ml-5 mt-5">Choose a side:</MudText>
                     <MudRadio Class="ml-5" T="@GameSides" Color="Color.Primary" Option="@GameSides.White">White</MudRadio>
                     <MudRadio Class="ml-5" T="@GameSides" Color="Color.Primary" Option="@GameSides.Black">Black</MudRadio>
                     <MudRadio Class="ml-5" T="@GameSides" Color="Color.Primary" Option="@GameSides.Random">Random</MudRadio>
                 </MudRadioGroup>
-                <MudSelect Class="ml-5" Margin="Margin.Dense" T="string" Label="Select a level:" Variant="Variant.Filled"> 
+                <MudSelect Class="ml-5" Margin="Margin.Dense"  @bind-Value="@_selectedLevel" T="string" Label="Select a level:" Variant="Variant.Filled"> 
                     <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
                     <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
                     <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi3.Value)">Level 3</MudSelectItem>
@@ -25,43 +40,137 @@
                     <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
                     <MudSelectItem Style="color: #1a1e21" T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
                 </MudSelect>
-                <MudNumericField Class="ml-5" T="uint" Label="Base time" Variant="Variant.Filled" Min="60"/>
-                <MudNumericField Class="ml-5" T="uint" Label="Increment time" Variant="Variant.Filled" Min="0"/>
-                <MudButton Class="ml-5" Variant="Variant.Filled" Color="Color.Primary">Create game</MudButton>
-                <MudNumericField Class="ml-5" T="ulong" Label="Room id" Variant="Variant.Text" Min="0"/>
-                <MudButton Class="ml-5" Variant="Variant.Filled" Color="Color.Primary">Join</MudButton>
+                <MudNumericField Class="ml-5" T="uint"  @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
+                <MudNumericField Class="ml-5" T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+                <MudButton Class="ml-5" Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
+                <MudNumericField Class="ml-5" T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
+                <MudButton Class="ml-5" Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
             </MudPaper>
         </MudContainer>
     </MudTabPanel>
     
     <MudTabPanel Text="Friend">
-         <MudContainer MaxWidth="MaxWidth.Medium">
-         <MudPaper Class="mud-theme-primary text-white">
-             <MudExpansionPanels Class="mud-theme-primary" MultiExpansion="true">
-                 <MudExpansionPanel Class="mud-theme-tertiary" Text="Create Game" MaxHeight="300"> 
-                     <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!"/>
-                     <MudNumericField T="uint" Label="Base time" Variant="Variant.Filled" Min="60"/>
-                     <MudNumericField T="uint" Label="Increment time" Variant="Variant.Filled" Min="0"/>
-                     <MudButton Variant="Variant.Filled" Color="Color.Primary">Create game</MudButton>
-                 </MudExpansionPanel>
-                 <MudExpansionPanel Class="mud-theme-tertiary" Text="Join Game" MaxHeight="500">
-                     <MudNumericField T="ulong" Label="Room id" Variant="Variant.Text" Min="0"/>
-                     <MudButton Variant="Variant.Filled" Color="Color.Primary">Join</MudButton>
-                 </MudExpansionPanel>
-             </MudExpansionPanels>
-         </MudPaper>
-         </MudContainer>
+        <MudContainer MaxWidth="MaxWidth.Medium">
+            <MudPaper Class="mud-theme-primary text-white">
+                <MudExpansionPanels Class="mud-theme-primary" MultiExpansion="true">
+                    <MudExpansionPanel Class="mud-theme-tertiary" Text="Create Game" MaxHeight="300"> 
+                        <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponentName"/>
+                        <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
+                        <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+                        <MudButton Variant="Variant.Filled" @onclick="CreateGame" Color="Color.Primary">Create game</MudButton>
+                    </MudExpansionPanel>
+                    <MudExpansionPanel Class="mud-theme-tertiary" Text="Join Game" MaxHeight="500">
+                        <MudNumericField T="ulong"  @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
+                        <MudButton Variant="Variant.Filled" @onclick="JoinGame" Color="Color.Primary">Join</MudButton>
+                    </MudExpansionPanel>
+                </MudExpansionPanels>
+            </MudPaper>
+        </MudContainer>
     </MudTabPanel>
+    
+    
     <MudTabPanel Text="Random">
          <MudContainer MaxWidth="MaxWidth.Medium">
          <MudPaper Class="mud-theme-tertiary text-white">
              <MudNumericField Class="mt-5 ml-5" T="ulong" Label="Room id" Variant="Variant.Text" Min="0"/>
-             <MudButton Class="mt-5 ml-5" Variant="Variant.Filled" Color="Color.Primary">Join</MudButton>
+             <MudButton Class="mt-5 ml-5 mb-5" Variant="Variant.Filled" @onclick="JoinGame" Color="Color.Primary">Join</MudButton>
          </MudPaper>
          </MudContainer>
     </MudTabPanel>
 </MudTabs>
 
 @code {
+    private readonly IPosition _position = new Position(new Board(), new PieceValue());
+
+    //Form input bindings
+    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
+    private OpponentTypes _opponentType = OpponentTypes.Ai;
+    private ulong _gameRoomInt;
+    private GameSides _isWhiteSide = GameSides.White;
+    private string _opponentName = "";
+    private uint _timeControlBase = 120;
+    private uint _timeControlIncrement;
+    private bool _isGamePrivate;
     
+     private async Task CreateGame()
+    {
+        var opponentName = "";
+        try
+        {
+            opponentName = _opponentType switch 
+            {
+                OpponentTypes.Ai => _selectedLevel,
+                OpponentTypes.Friend => _opponentName,
+                OpponentTypes.Random => string.Empty,
+                _ => throw new ArgumentNullException()
+                };
+        }
+        catch (ArgumentNullException)
+        {
+            Notify("Choose a game type before starting a game!", Severity.Warning);
+        }
+
+        var request = new RequestGameDto
+        {
+            OpponentType = _opponentType,
+            Increment = _timeControlIncrement,
+            Side = _isWhiteSide,
+            OpponentName = opponentName,
+            Seconds = _timeControlBase,
+            IsVisible = !_isGamePrivate
+        };
+
+        try
+        {
+            var response = await GameLogic.CreateGame(request);
+
+            _gameRoomInt = response.GameRoom;
+
+            Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
+        }
+        catch (InvalidOperationException)
+        {
+            Notify("You have to be logged in to create a game!", Severity.Warning);
+        }
+        catch (HttpRequestException)
+        {
+            Notify("Network error, Failed to create a game.", Severity.Error);
+        }
+    }
+
+    private async Task JoinGame()
+    {
+        try
+        {
+    //workaround, initial position should be sent and not set
+            SetFenPosition(Fen.StartPositionFen);
+            GameLogic.JoinGame(new RequestJoinGameDto
+            {
+                GameRoom = _gameRoomInt,
+            });
+            NavMgr.NavigateTo("/ChessGame");
+        }
+        catch (ArgumentException)
+        {
+    //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
+            Notify("Game room not found.", Severity.Warning);
+        }
+        catch (RpcException)
+        {
+            Notify("Connection error. Failed to participate in game. ¯\\_(ツ)_/¯", Severity.Error);
+        }
+    }
+    
+    private void Notify(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+    }
+    
+    private void SetFenPosition(string fen)
+    {
+        FenData fenData = new FenData(fen);
+        State state = new State();
+        _position.Set(in fenData, ChessMode.Normal, state);
+        StateHasChanged();
+    }
 }
