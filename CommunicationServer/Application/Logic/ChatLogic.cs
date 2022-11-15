@@ -47,6 +47,6 @@ public class ChatLogic : IChatLogic
             return $"{senderUsername}-{receiverUsername}";
         }
 
-        return receiverUsername + senderUsername;
+        return $"{receiverUsername}-{senderUsername}";
     }
 }
