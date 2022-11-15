@@ -5,30 +5,30 @@
 @inject NavigationManager NavMgr
 <AuthorizeView>
     <NotAuthorized>
-        <MudPaper Class="pa-4" Style="@($"color:{Colors.BlueGrey.Darken4}; background:{Colors.BlueGrey.Darken4};")">
-        <div class="card">
-            <h3>Please login</h3>
-            <div class="field">
-                <label>Email:</label>
-                <input type="text" @bind="_email"/>
-            </div>
-            <div class="field">
-                <label style="text-align: center">Password:</label>
-                <input type="password" @bind="_password"/>
-            </div>
-            @if (!string.IsNullOrEmpty(_errorLabel))
-            {
-                <div class="field">
-                    <label style="color: red">
-                        @_errorLabel
-                    </label>
+        <MudPaper Class="pa-4 mud-theme-primary mud-text-primary">
+                <div class="card">
+                    <h3>Please login</h3>
+                    <div class="field">
+                        <label>Email:</label>
+                        <input type="text" @bind="_email"/>
+                    </div>
+                    <div class="field">
+                        <label style="text-align: center">Password:</label>
+                        <input type="password" @bind="_password"/>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_errorLabel))
+                    {
+                        <div class="field">
+                            <label style="color: red">
+                                @_errorLabel
+                            </label>
+                        </div>
+                    }
+                    <div class="field">
+                        <button class="acceptbtn" @onclick="LoginAsync">Log in</button>
+                    </div>
                 </div>
-            }
-            <div class="field">
-                <button class="acceptbtn" @onclick="LoginAsync">Log in</button>
-            </div>
-        </div>
-        </MudPaper>
+            </MudPaper>
     </NotAuthorized>
     <Authorized>
         <div class="card">
