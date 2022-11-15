@@ -26,7 +26,11 @@ public class GameRoomUnitTests
     [InlineData("ElonMusk")]
     public void ResignReturnsNotUserTurnWhenNotOneOfPlayersUsername(string username)
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         var ack = _gameRoom.Resign(new RequestResignDto()
         {
             Username = username
@@ -41,7 +45,11 @@ public class GameRoomUnitTests
     [Fact]
     public async Task OfferDrawReturnsNotUserTurnWhenNotOneOfPlayersUsername()
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         var ack = await _gameRoom.OfferDraw(new RequestDrawDto()
         {
             Username = "ElonMusk"
@@ -53,7 +61,11 @@ public class GameRoomUnitTests
     [Fact]
     public async Task OfferDrawReturnsDrawOfferExpiredIfNotAcceptedWithin10Seconds()
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         var ack = await _gameRoom.OfferDraw(new RequestDrawDto()
         {
             Username = PlayerWhite
@@ -65,7 +77,11 @@ public class GameRoomUnitTests
     [Fact]
     public void DrawOfferResponseReturnsSuccessIfDrawPendingAndValidUsername()
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         var ignore = _gameRoom.OfferDraw(new RequestDrawDto()
         {
             Username = PlayerWhite
@@ -83,7 +99,11 @@ public class GameRoomUnitTests
     [Fact]
     public void DrawOfferResponseReturnsNotUserTurnIfAcceptingWithInvalidUser()
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         var ignore = _gameRoom.OfferDraw(new RequestDrawDto()
         {
             Username = PlayerWhite
@@ -102,7 +122,11 @@ public class GameRoomUnitTests
     [InlineData(false)]
     public void OfferDrawReturnsDrawOfferDeclinedOrSuccessIfRespondedByTheOpponentWithinTenSeconds(bool accept)
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         var ack = _gameRoom.OfferDraw(new RequestDrawDto()
         {
             Username = PlayerWhite
@@ -120,7 +144,11 @@ public class GameRoomUnitTests
     [Fact]
     public void MakeMoveReturnsGameHasFinishedAfterResigning()
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         _gameRoom.Resign(new RequestResignDto()
         {
             Username = PlayerWhite
@@ -134,7 +162,11 @@ public class GameRoomUnitTests
     [Fact]
     public void MakeMoveReturnsInvalidMoveWhenMoveIsInvalid()
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         var ack = _gameRoom.MakeMove(new MakeMoveDto()
         {
             FromSquare = "e2",
@@ -148,7 +180,11 @@ public class GameRoomUnitTests
     [Fact]
     public void MakeMoveReturnsNotUserTurnWhenWrongPlayerMakesMove()
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         var ack = _gameRoom.MakeMove(new MakeMoveDto()
         {
             Username = PlayerBlack,
@@ -163,7 +199,11 @@ public class GameRoomUnitTests
     [Fact]
     public void MakeMoveReturnsSuccessWhenValidMakeMoveDto()
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         var ack = _gameRoom.MakeMove(new MakeMoveDto()
         {
             Username = PlayerWhite,
@@ -178,7 +218,11 @@ public class GameRoomUnitTests
     [Fact]
     public void GetFenReturnsCorrectFenPositionAfterMakeMoves()
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         List<Tuple<string, string>> moves = new List<Tuple<string, string>>()
         {
             new("e2", "e4"),
@@ -196,7 +240,12 @@ public class GameRoomUnitTests
     [Fact]
     public void ReturnsObservableListContainingInitialTimeEventAfterGameRoomInitialization()
     {
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
+        _gameRoom.Initialize();
         var list = _gameRoom.GetMovesAsObservable();
         Assert.Equal(GameStreamEvents.InitialTime, list.ToEnumerable().First().Event);
     }
@@ -209,7 +258,12 @@ public class GameRoomUnitTests
     public void ReceivesXTimeUpdateEventsInXSecondsWhileGameActive(int seconds)
     {
         var timeUpdateEventsCount = 0;
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
+        _gameRoom.Initialize();
         _gameRoom.MakeMove(new MakeMoveDto()
         {
             Username = PlayerWhite,
@@ -231,7 +285,11 @@ public class GameRoomUnitTests
     public void ReceivesNewFenPositionEventAfterMakeMove()
     {
         var newFenPositionEventsCount = 0;
-        _gameRoom = new GameRoom(PlayerWhite, PlayerBlack, TimeControlSeconds, TimeControlIncrement);
+        _gameRoom = new GameRoom(TimeControlSeconds, TimeControlIncrement)
+        {
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack
+        };
         _gameRoom.GameJoined += delegate(JoinedGameStreamDto dto)
         {
             if (dto.Event == GameStreamEvents.NewFenPosition)

@@ -9,4 +9,6 @@ public class JoinedGameStreamDto
     public double TimeLeftMs { get; set; }
     public bool IsWhite { get; set; }
     public GameStreamEvents Event { get; set; }
+    public string UsernameWhite { get; set; } = string.Empty;
+    public string UsernameBlack { get; set; } = string.Empty;
 }

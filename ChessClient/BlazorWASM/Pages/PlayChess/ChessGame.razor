@@ -38,9 +38,11 @@
 <MudGrid Justify="Justify.SpaceAround" Spacing="10">
     <MudItem md="12" lg="6">
         <MudContainer MaxWidth="MaxWidth.Small">
-            <TimerComponent Active="@(_isWhiteSide ? !_whiteTimerActive : _whiteTimerActive)" Seconds="@(_isWhiteSide ? _blackSeconds : _whiteSeconds)"/>
-            <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@_isWhiteSide"/>
-            <TimerComponent Active="@(_isWhiteSide ? _whiteTimerActive : !_whiteTimerActive)" Seconds="@(_isWhiteSide ? _whiteSeconds : _blackSeconds)"/>
+            <TimerComponent Active="@(_isWhiteSide == GameSides.White ? !_whiteTimerActive : _whiteTimerActive)"
+                            Seconds="@(_isWhiteSide == GameSides.White ? _blackSeconds : _whiteSeconds)"/>
+            <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@(_isWhiteSide == GameSides.White)"/>
+            <TimerComponent Active="@(_isWhiteSide == GameSides.White ? _whiteTimerActive : !_whiteTimerActive)"
+                            Seconds="@(_isWhiteSide == GameSides.White ? _whiteSeconds : _blackSeconds)"/>
         </MudContainer>
     </MudItem>
     <MudItem md="12" lg="6">
@@ -55,18 +57,19 @@
                 <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
                 <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
             </MudSelect>
-            <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="bool">
-                <MudRadio T="bool" Color="Color.Default" Option="true">White</MudRadio>
-                <MudRadio T="bool" Color="Color.Dark" Option="false">Black</MudRadio>
+            <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="@GameSides">
+                <MudRadio T="@GameSides" Color="Color.Default" Option="@GameSides.White">White</MudRadio>
+                <MudRadio T="@GameSides" Color="Color.Dark" Option="@GameSides.Black">Black</MudRadio>
+                <MudRadio T="@GameSides" Color="Color.Dark" Option="@GameSides.Random">Random</MudRadio>
             </MudRadioGroup>
             <MudNumericField T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
-            <MudRadioGroup @bind-SelectedOption="_chosenGameType" T="string">
-                <MudRadio T="string" Color="Color.Default" Option=@("AI")>AI</MudRadio>
-                <MudRadio T="string" Color="Color.Default" Option=@("Friend")>Friend</MudRadio>
-                <MudRadio T="string" Color="Color.Default" Option=@("Random")>Random</MudRadio>
+            <MudRadioGroup @bind-SelectedOption="_opponentType" T="OpponentTypes">
+                <MudRadio T="@OpponentTypes" Color="Color.Default" Option="@OpponentTypes.Ai">AI</MudRadio>
+                <MudRadio T="@OpponentTypes" Color="Color.Default" Option="@OpponentTypes.Friend">Friend</MudRadio>
+                <MudRadio T="@OpponentTypes" Color="Color.Default" Option="@OpponentTypes.Random">Random</MudRadio>
             </MudRadioGroup>
-            <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponent"/>
+            <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponentName"/>
             <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
             <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
             <MudCheckBox @bind-Checked="@_isGamePrivate">Private</MudCheckBox>
@@ -92,10 +95,10 @@
 
     //Form input bindings
     private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
-    private string _chosenGameType = "AI";
+    private OpponentTypes _opponentType = OpponentTypes.Ai;
     private ulong _gameRoomInt;
-    private bool _isWhiteSide = true;
-    private string _opponent = "";
+    private GameSides _isWhiteSide = GameSides.White;
+    private string _opponentName = "";
     private uint _timeControlBase = 120;
     private uint _timeControlIncrement;
     private bool _isGamePrivate;
@@ -142,14 +145,14 @@
 
     private async Task CreateGame()
     {
-        string opponent = String.Empty;
+        var opponentName = "";
         try
         {
-            opponent = _chosenGameType switch 
+            opponentName = _opponentType switch 
             {
-                "AI" => _selectedLevel,
-                "Friend" => _opponent,
-                "Random" => String.Empty,
+                OpponentTypes.Ai => _selectedLevel,
+                OpponentTypes.Friend => _opponentName,
+                OpponentTypes.Random => string.Empty,
                 _ => throw new ArgumentNullException()
                 };
         }
@@ -160,12 +163,11 @@
 
         var request = new RequestGameDto
         {
-            GameType = _chosenGameType,
+            OpponentType = _opponentType,
             Increment = _timeControlIncrement,
-            IsWhite = _isWhiteSide,
-            Opponent = opponent,
+            Side = _isWhiteSide,
+            OpponentName = opponentName,
             Seconds = _timeControlBase,
-            Username = String.Empty, // is set in game logic
             IsVisible = !_isGamePrivate
         };
 
@@ -289,7 +291,8 @@
 
     private void OnGameFirstJoined(JoinedGameStreamDto dto)
     {
-        _isWhiteSide = dto.IsWhite;
+        Enum.TryParse(GameLogic.OnWhiteSide ? "White" : "Black", out GameSides side);
+        _isWhiteSide = side;
     }
 
     private void OnEndOfTheGameReached(JoinedGameStreamDto dto)

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Application.LogicInterfaces;
 using Domain.DTOs;
+using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -17,7 +18,7 @@ public class GameLogic : IGameLogic
 {
     private readonly IAuthService _authService;
     private readonly Game.GameClient _gameClient;
-    
+    private EmptyGameMessage _empty = new();
     public bool IsDrawOfferPending { get; set; } = false;
     public bool OnWhiteSide { get; set; } = true;
     public bool WhiteTurn { get; private set; } = true;
@@ -25,6 +26,7 @@ public class GameLogic : IGameLogic
 
     //Todo Possibility of replacing StreamUpdate with action and only needed information instead of dto
     public delegate void StreamUpdate(JoinedGameStreamDto dto);
+
     public event StreamUpdate? TimeUpdated;
     public event StreamUpdate? NewFenReceived;
     public event StreamUpdate? ResignationReceived;
@@ -34,10 +36,17 @@ public class GameLogic : IGameLogic
     public event StreamUpdate? DrawOfferAccepted;
     public event StreamUpdate? EndOfTheGameReached;
     public event StreamUpdate? GameFirstJoined;
+
     public GameLogic(IAuthService authService, GrpcChannel channel)
     {
         _authService = authService;
         _gameClient = new Game.GameClient(channel);
+    }
+
+    public GameLogic(IAuthService authService, Game.GameClient client)
+    {
+        _authService = authService;
+        _gameClient = client;
     }
 
     public async Task<ResponseGameDto> CreateGame(RequestGameDto dto)
@@ -47,16 +56,15 @@ public class GameLogic : IGameLogic
 
         if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
             throw new InvalidOperationException("User not logged in.");
-        
+
         try
         {
             var grpcResponse = await _gameClient.StartGameAsync(new RequestGame()
             {
-                GameType = dto.GameType,
+                OpponentType = dto.OpponentType.ToString(),
                 Increment = dto.Increment,
-                //TODO Add a randomizer for side when not chosen
-                IsWhite = dto.IsWhite ?? true,
-                Opponent = dto.Opponent,
+                Side = dto.Side.ToString(),
+                OpponentName = dto.OpponentName,
                 Seconds = dto.Seconds,
                 Username = user.Identity?.Name,
                 IsVisible = dto.IsVisible
@@ -65,7 +73,7 @@ public class GameLogic : IGameLogic
             ResponseGameDto response = MessageToDtoParser.ToDto(grpcResponse);
 
             OnWhiteSide = response.IsWhite;
-            
+
             return response;
         }
         catch (RpcException e)
@@ -81,7 +89,7 @@ public class GameLogic : IGameLogic
         Console.WriteLine(user.Identity?.Name);
 
         AsyncServerStreamingCall<JoinedGameStream>? call;
-        
+
         try
         {
             call = _gameClient.JoinGame(new RequestJoinGame()
@@ -111,14 +119,17 @@ public class GameLogic : IGameLogic
                         TimeUpdate(response);
                         break;
                     case GameStreamEvents.TimeUpdate:
+                        if (response.GameEndType == (uint) GameEndTypes.TimeIsUp) call.Dispose();
                         TimeUpdate(response);
                         break;
                     case GameStreamEvents.ReachedEndOfTheGame:
+                        call.Dispose();
                         TimeUpdate(response);
                         NewFenReceived?.Invoke(response);
                         EndOfTheGameReached?.Invoke(response);
                         break;
                     case GameStreamEvents.Resignation:
+                        call.Dispose();
                         ResignationReceived?.Invoke(response);
                         break;
                     case GameStreamEvents.DrawOffer:
@@ -128,10 +139,10 @@ public class GameLogic : IGameLogic
                         DrawOfferTimeout(response);
                         break;
                     case GameStreamEvents.DrawOfferAcceptation:
+                        call.Dispose();
                         DrawOfferAcceptation(response);
                         break;
                     case GameStreamEvents.InitialTime:
-                        response.IsWhite = response.FenString.Equals(user.Identity?.Name);
                         InitialTime(response);
                         break;
                     default: throw new ArgumentOutOfRangeException();
@@ -149,27 +160,39 @@ public class GameLogic : IGameLogic
         TimeUpdated?.Invoke(dto);
     }
 
-    private void InitialTime(JoinedGameStreamDto dto)
+    private async void InitialTime(JoinedGameStreamDto dto)
     {
-        OnWhiteSide = dto.IsWhite;
+        var user = await _authService.GetAuthAsync();
+        var myName = user.Identity!.Name;
+        if (dto.UsernameBlack.Equals(myName))
+        {
+            OnWhiteSide = false;
+        }
+
+        if (dto.UsernameWhite.Equals(myName))
+        {
+            OnWhiteSide = true;
+        }
+
         GameFirstJoined?.Invoke(dto);
         InitialTimeReceived?.Invoke(dto);
     }
-    
-    private void DrawOffer(JoinedGameStreamDto dto)
+
+    private async void DrawOffer(JoinedGameStreamDto dto)
     {
-        if (dto.IsWhite != OnWhiteSide)
+        var user = await _authService.GetAuthAsync();
+        if (dto.UsernameWhite.Equals(user.Identity!.Name) || dto.UsernameBlack.Equals(user.Identity!.Name))
             IsDrawOfferPending = true;
-        
+
         DrawOffered?.Invoke(dto);
     }
-    
+
     private void DrawOfferTimeout(JoinedGameStreamDto dto)
     {
         IsDrawOfferPending = false;
         DrawOfferTimedOut?.Invoke(dto);
     }
-    
+
     private void DrawOfferAcceptation(JoinedGameStreamDto dto)
     {
         IsDrawOfferPending = false;
@@ -180,36 +203,36 @@ public class GameLogic : IGameLogic
     {
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
-        
-        
+
+
         var token = _authService.GetJwtToken();
-        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
         var call = await _gameClient.MakeMoveAsync(new RequestMakeMove
         {
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
             GameRoom = GameRoomId.Value,
-            MoveType = (uint)move.MoveType(),
-            Promotion = (uint)move.PromotedPieceType().AsInt()
+            MoveType = (uint) move.MoveType(),
+            Promotion = (uint) move.PromotedPieceType().AsInt()
         }, headers);
-        return (int)call.Status;
+        return (int) call.Status;
     }
 
     public async Task<AckTypes> OfferDraw()
     {
         var user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
-        
+
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
 
-        
-        if (!isLoggedIn) 
+
+        if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in");
 
 
         var token = _authService.GetJwtToken();
-        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
         var ack = await _gameClient.OfferDrawAsync(new RequestDraw
         {
             Username = user.Identity!.Name, GameRoom = GameRoomId.Value
@@ -226,14 +249,15 @@ public class GameLogic : IGameLogic
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
 
-        
+
         if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in.");
 
         var token = _authService.GetJwtToken();
-        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
-        var ack =  await _gameClient.ResignAsync(new RequestResign { Username = user.Identity!.Name, GameRoom = GameRoomId.Value }, headers);
-         return (AckTypes) ack.Status;
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var ack = await _gameClient.ResignAsync(
+            new RequestResign {Username = user.Identity!.Name, GameRoom = GameRoomId.Value}, headers);
+        return (AckTypes) ack.Status;
     }
 
     public async Task<AckTypes> SendDrawResponse(bool accepted)
@@ -244,11 +268,11 @@ public class GameLogic : IGameLogic
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
 
-        if (!isLoggedIn) 
+        if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in.");
 
         var token = _authService.GetJwtToken();
-        var headers = new Metadata { { "Authorization", $"Bearer {token}" } };
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
         var ack = await _gameClient.DrawOfferResponseAsync(new ResponseDraw
         {
             Username = user.Identity!.Name, GameRoom = GameRoomId.Value, Accept = accepted
@@ -258,7 +282,46 @@ public class GameLogic : IGameLogic
         {
             IsDrawOfferPending = false;
         }
-        
+
         return (AckTypes) ack.Status;
+    }
+
+    public async Task<IList<SpectateableGameRoomDataDto>> GetAllSpectateableGames()
+    {
+        var response = await _gameClient.GetSpectateableGamesAsync(_empty);
+        var roomList = response.GameRoomsData;
+
+        return roomList.Select(room => new SpectateableGameRoomDataDto
+            {
+                GameRoom = room.GameRoom,
+                Increment = room.Increment,
+                Seconds = room.Seconds,
+                UsernameWhite = room.UsernameWhite,
+                UsernameBlack = room.UsernameBlack
+            })
+            .ToList();
+    }
+
+    public async Task<IList<JoinableGameRoomDataDto>> GetAllJoinableGames()
+    {
+        var token = _authService.GetJwtToken();
+        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
+        var response = await _gameClient.GetJoinableGamesAsync(_empty, headers);
+        var roomList = response.GameRoomsData;
+        IList<JoinableGameRoomDataDto> joinableRoomList = new List<JoinableGameRoomDataDto>();
+        foreach (var room in roomList)
+        {
+            Enum.TryParse(room.Side, out GameSides side);
+            joinableRoomList.Add(new JoinableGameRoomDataDto
+            {
+                GameRoom = room.GameRoom,
+                Increment = room.Increment,
+                Seconds = room.Seconds,
+                Side = side,
+                Username = room.Username
+            });
+        }
+
+        return joinableRoomList;
     }
 }
