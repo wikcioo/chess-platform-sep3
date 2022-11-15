@@ -371,6 +371,7 @@
 
     private void OnInitialTimeReceived(JoinedGameStreamDto dto)
     {
+        _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
         PlaySound("notify");
         Notify("Game joined. Have fun!", Severity.Success);
         _whiteSeconds = dto.TimeLeftMs / 1000;
