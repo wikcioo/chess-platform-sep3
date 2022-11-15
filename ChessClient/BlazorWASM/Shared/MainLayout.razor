@@ -1,20 +1,8 @@
 ﻿@inherits LayoutComponentBase
-@using Login 
-@using MudBlazor
-@inject NavigationManager NavMgr
-<MudThemeProvider Theme="MyCustomTheme"/>
+<MudThemeProvider/>
 
 <MudLayout>
-    <MudAppBar Elevation="1">
-        <MudAvatar Image="OIP.jpg"/>
-        <MudText Typo="Typo.h5" Class="ml-4 mr-4">VIA Chess</MudText>
-        <MudLink Href="/"><MudText Typo="Typo.button">HOME</MudText></MudLink>
-            <MudLink Href="CreateUser" Class="ml-4 mr-2"><MudText Typo="Typo.button">REGISTER</MudText></MudLink>
-            <MudLink Href="StartGame" Class="ml-4 mr-2"><MudText Typo="Typo.button">PLAY</MudText></MudLink>
-            <MudLink Href="/" Disabled="true" Class="ml-4 mr-2"><MudText Typo="Typo.button">ABOUT</MudText></MudLink>
-        <MudSpacer/>
-        <LoginButtons/>
-    </MudAppBar>
+    <AppBar/>
     <MudMainContent>
         @Body
     </MudMainContent>
@@ -31,28 +19,5 @@
         StateHasChanged();
     }
 
-    // for a custom theme palette
-
-    MudTheme MyCustomTheme = new MudTheme()
-    {
-        Palette = new Palette()
-        {
-            Primary = Colors.Teal.Darken2,
-            Secondary = Colors.LightGreen.Darken3,
-            Tertiary = Colors.Grey.Darken4,
-            AppbarBackground = Colors.BlueGrey.Darken4,
-            Background = Colors.Grey.Darken4,
-            TextPrimary = Colors.BlueGrey.Lighten5,
-            ActionDisabled = Colors.LightGreen.Lighten5,
-        },
-
-        LayoutProperties = new LayoutProperties()
-        {
-            AppbarHeight = "60px",
-            DefaultBorderRadius = "1px",
-
-
-        }
-    };
 
 }
