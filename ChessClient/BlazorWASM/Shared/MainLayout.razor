@@ -1,23 +1,37 @@
 ﻿@inherits LayoutComponentBase
-<MudThemeProvider/>
+<MudThemeProvider Theme="_themeManager.Theme" />
+<MudAppBar Elevation="_themeManager.AppBarElevation"></MudAppBar>
+<MudDrawer @bind-Open="_themeManagerOpen" ClipMode="_themeManager.DrawerClipMode" Elevation="_themeManager.DrawerElevation"></MudDrawer>
 
 <MudLayout>
+    <MudThemeManagerButton OnClick="@((e) => OpenThemeManager(true))" />
+    <MudThemeManager Open="_themeManagerOpen" OpenChanged="OpenThemeManager" Theme="_themeManager" ThemeChanged="UpdateTheme" />
     <AppBar/>
     <MudMainContent>
         @Body
     </MudMainContent>
 </MudLayout>
 
-<MudDialogProvider/>
-<MudSnackbarProvider/>
-
 
 @code {
+    
+    private ThemeManagerTheme _themeManager = new ThemeManagerTheme();
+    public bool _themeManagerOpen = false;
+
+    void OpenThemeManager(bool value)
+    {
+        _themeManagerOpen = value;
+    }
+
+    void UpdateTheme(ThemeManagerTheme value)
+    {
+        _themeManager = value;
+        StateHasChanged();
+    }
 
     protected override void OnInitialized()
     {
         StateHasChanged();
     }
-
 
 }
