@@ -54,6 +54,11 @@
                 <MudExpansionPanels Class="mud-theme-primary" MultiExpansion="true">
                     <MudExpansionPanel Class="mud-theme-tertiary" Text="Create Game" MaxHeight="300"> 
                         <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponentName"/>
+                        <MudRadioGroup Style="color: aliceblue" @bind-SelectedOption="_isWhiteSide" T="@GameSides" > <MudText Class="ml-5 mt-5">Choose a side:</MudText>
+                            <MudRadio Class="ml-5" T="@GameSides" Color="Color.Primary" Option="@GameSides.White">White</MudRadio>
+                            <MudRadio Class="ml-5" T="@GameSides" Color="Color.Primary" Option="@GameSides.Black">Black</MudRadio>
+                            <MudRadio Class="ml-5" T="@GameSides" Color="Color.Primary" Option="@GameSides.Random">Random</MudRadio>
+                            </MudRadioGroup>
                         <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
                         <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
                         <MudButton Variant="Variant.Filled" @onclick="CreateGame" Color="Color.Primary">Create game</MudButton>
