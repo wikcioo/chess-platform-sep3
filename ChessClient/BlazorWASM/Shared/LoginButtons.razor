@@ -2,8 +2,6 @@
 @using MudBlazor
 @inject NavigationManager NavMgr
 @inject IAuthService AuthService
-@namespace Login
-
 <AuthorizeView>
     <Authorized>
  <MudIconButton Icon="@Icons.Filled.Logout" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Logout())" />
