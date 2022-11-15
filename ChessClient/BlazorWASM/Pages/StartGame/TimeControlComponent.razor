@@ -1,0 +1,44 @@
+<MudGrid Justify="Justify.SpaceEvenly" Spacing="1">
+    <MudItem>
+        <MudNumericField T="uint" @bind-Value="TimeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
+    </MudItem>
+    <MudItem>
+        <MudNumericField T="uint" @bind-Value="TimeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private uint _timeControlBase = 120;
+    private uint _timeControlIncrement = 0;
+
+    [Parameter]
+    public uint TimeControlBase
+    {
+        get => _timeControlBase;
+        set
+        {
+            if (_timeControlBase == value) return;
+            _timeControlBase = value;
+            TimeControlBaseChanged.InvokeAsync(value);
+        }
+    }
+
+    [Parameter]
+    public uint TimeControlIncrement
+    {
+        get => _timeControlIncrement;
+        set
+        {
+            if (_timeControlIncrement == value) return;
+            _timeControlIncrement = value;
+            TimeControlIncrementChanged.InvokeAsync(value);
+        }
+    }
+
+    [Parameter]
+    public EventCallback<uint> TimeControlBaseChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<uint> TimeControlIncrementChanged { get; set; }
+
+}
