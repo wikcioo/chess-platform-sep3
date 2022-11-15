@@ -1,10 +1,12 @@
 @using Application.LogicInterfaces
 @using Domain.DTOs.Chat
 @using MudBlazor
+@using Application.LogicImplementations
+@using Rudzoft.ChessLib.Extensions
 @inject IChatLogic ChatLogic
 @implements IDisposable
 
-<MudContainer Class="pa-0" MaxWidth="MaxWidth.Small">
+<MudContainer Class="pa-0">
     <MudPaper Class="overflow-x-auto" Height="400px">@((MarkupString) _resultMsg)</MudPaper>
     <MudTextField Immediate="true" T="string" InputType="InputType.Text" placeholder="Enter message" @bind-Value="_messageBody" OnKeyPress="OnKeyPress"/>
     <MudButton OnClick="WriteMessageAsync" Color="Color.Secondary">Send</MudButton>
@@ -12,16 +14,13 @@
 
 
 @code {
-
-    [Parameter]
-    public string Username { get; set; }
-
     private string _messageBody = "";
 
     [Parameter]
-    public string Receiver { get; set; }
+    public string Receiver { get; set; } = string.Empty;
 
     private string _resultMsg = "";
+
 
     protected override void OnInitialized()
     {
@@ -33,13 +32,17 @@
         ChatLogic.MessageReceived -= OnMessageReceived;
     }
 
+
     private async Task WriteMessageAsync()
     {
+        if (Receiver.IsNullOrEmpty())
+        {
+            throw new InvalidOperationException("Player not connected");
+        }
         if (IsValid())
         {
             await ChatLogic.WriteMessageAsync(new MessageDto
             {
-                Username = Username,
                 Body = _messageBody,
                 Receiver = Receiver
             });

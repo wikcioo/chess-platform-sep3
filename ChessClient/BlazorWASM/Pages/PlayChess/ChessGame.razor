@@ -76,7 +76,7 @@
             <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
         </MudContainer>
         <MudContainer Class="mt-4" MaxWidth="MaxWidth.Small">
-            <ChatWindow Username="@_currentUser" Receiver="@_opponent"></ChatWindow>
+            <ChatWindow Receiver="@_opponentName"></ChatWindow>
         </MudContainer>
     </MudItem>
 </MudGrid>
