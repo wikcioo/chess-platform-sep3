@@ -16,6 +16,7 @@
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
 @inject IGameLogic GameLogic
+@inject IChatLogic ChatLogic
 @implements IDisposable
 
 
@@ -120,6 +121,8 @@
         GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
         GameLogic.EndOfTheGameReached -= OnEndOfTheGameReached;
         GameLogic.GameFirstJoined -= OnGameFirstJoined;
+
+        GameLogic.InitialTimeReceived -= ChatLogic.OnInitialTimeReceived;
     }
 
     protected override async Task OnInitializedAsync()
@@ -141,6 +144,8 @@
         GameLogic.DrawOfferAccepted += OnDrawOfferAccepted;
         GameLogic.EndOfTheGameReached += OnEndOfTheGameReached;
         GameLogic.GameFirstJoined += OnGameFirstJoined;
+        
+        GameLogic.InitialTimeReceived += ChatLogic.OnInitialTimeReceived;
     }
 
     private async Task CreateGame()

@@ -86,8 +86,6 @@ public class GameLogic : IGameLogic
     {
         ClaimsPrincipal user = await _authService.GetAuthAsync();
 
-        Console.WriteLine(user.Identity?.Name);
-
         AsyncServerStreamingCall<JoinedGameStream>? call;
 
         try

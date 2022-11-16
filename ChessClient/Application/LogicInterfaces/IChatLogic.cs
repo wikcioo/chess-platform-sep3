@@ -5,7 +5,7 @@ namespace Application.LogicInterfaces;
 
 public interface IChatLogic
 {
-    public event Action<MessageDto> MessageReceived;
+    public event Action<string> MessageReceived;
     Task WriteMessageAsync(MessageDto dto);
-    Task StartMessagingAsync(string opponentUsername);
+    void OnInitialTimeReceived(JoinedGameStreamDto dto);
 }

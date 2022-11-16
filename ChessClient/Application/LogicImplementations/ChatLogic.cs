@@ -14,7 +14,10 @@ public class ChatLogic : IChatLogic
     private Chat.ChatClient _client;
     private readonly IAuthService _authService;
 
-    public event Action<MessageDto> MessageReceived;
+    private bool _isConnected;
+    public event Action<string> MessageReceived;
+    private AsyncServerStreamingCall<Message> _call;
+    private string _resultMsg = "";
 
     public ChatLogic(GrpcChannel channel, IAuthService authService)
     {
@@ -36,27 +39,33 @@ public class ChatLogic : IChatLogic
             });
     }
 
-    public async Task StartMessagingAsync(string opponentUsername)
+    private async Task StartMessagingAsync(string opponentUsername, string currentUsername)
+    {
+        _call = _client.StartMessaging(new RequestMessage
+        {
+            Username = currentUsername,
+            Receiver = opponentUsername
+        });
+        while (await _call.ResponseStream.MoveNext())
+        {
+            var message = _call.ResponseStream.Current;
+            _resultMsg += $"<div>{message.Username}:{message.Body}\n</div>";
+            MessageReceived.Invoke(_resultMsg);
+        }
+    }
+
+    public async void OnInitialTimeReceived(JoinedGameStreamDto dto)
     {
         ClaimsPrincipal user = await _authService.GetAuthAsync();
 
         if (user.Identity == null)
             throw new InvalidOperationException("User not logged in.");
-
-        AsyncServerStreamingCall<Message> call = _client.StartMessaging(new RequestMessage
+        if (_call != null)
         {
-            Username = user.Identity.Name!,
-            Receiver = opponentUsername
-        });
-        while (await call.ResponseStream.MoveNext())
-        {
-            var message = call.ResponseStream.Current;
-            MessageReceived.Invoke(new MessageDto
-            {
-                Username = message.Username,
-                Body = message.Body,
-                Receiver = message.Receiver
-            });
+            _call.Dispose();
+            _resultMsg = "";
         }
+        StartMessagingAsync(dto.UsernameWhite.Equals(user.Identity.Name!) ? dto.UsernameBlack : dto.UsernameWhite,
+            user.Identity.Name!);
     }
 }

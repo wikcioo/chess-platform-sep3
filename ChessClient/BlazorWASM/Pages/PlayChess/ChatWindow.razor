@@ -39,6 +39,7 @@
         {
             throw new InvalidOperationException("Player not connected");
         }
+
         if (IsValid())
         {
             await ChatLogic.WriteMessageAsync(new MessageDto
@@ -51,9 +52,9 @@
         }
     }
 
-    private void OnMessageReceived(MessageDto dto)
+    private void OnMessageReceived(string chatLog)
     {
-        _resultMsg += $"<div>{dto.Username}:{dto.Body}\n</div>";
+        _resultMsg = chatLog;
         StateHasChanged();
     }
 
