@@ -1,13 +1,13 @@
 ﻿@inherits LayoutComponentBase
-<MudThemeProvider IsDarkMode="false"/>
+<MudThemeProvider Theme="CustomTheme" IsDarkMode="false"/>
 <MudAppBar Elevation="_themeManager.AppBarElevation"></MudAppBar>
 <MudDrawer @bind-Open="_themeManagerOpen" ClipMode="_themeManager.DrawerClipMode" Elevation="_themeManager.DrawerElevation"></MudDrawer>
 
 <MudLayout>
-    <div style="position: fixed; top: 0; left: 0; height: 100vh; width: 100vh;"><img src="bg-1.png"/></div>
     <MudThemeManagerButton OnClick="@((e) => OpenThemeManager(true))"/>
     <MudThemeManager Open="_themeManagerOpen" OpenChanged="OpenThemeManager" Theme="_themeManager" ThemeChanged="UpdateTheme"/>
     <AppBar/>
+    <div class="bg" style=""><img src="backgrounds/symmetrical-saturated-big.png"/></div>
     <MudMainContent>
         @Body
     </MudMainContent>
@@ -59,10 +59,11 @@
         //     PrimaryContrastText = Colors.Grey.Lighten5,
         // },
         
-        // Palette = new Palette()
-        // {
-        //     Background = Colors.Shades.Transparent
-        // }
+        Palette = new Palette()
+        {
+            Surface = Colors.Grey.Lighten5,
+            Primary = "#0E5E6F"
+        },
     };
 
 }
