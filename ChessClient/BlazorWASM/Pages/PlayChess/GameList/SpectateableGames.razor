@@ -1,0 +1,47 @@
+@using MudBlazor
+@using Domain.DTOs
+@using Domain.DTOs.GameRoomData
+@using Application.LogicInterfaces
+@using Domain.Models
+@inject IGameLogic GameLogic
+@inject NavigationManager NavMgr
+<MudTable Items="@_spectateableGames" Hover="true">
+    <HeaderContent>
+        <MudTh>Game Id</MudTh>
+        <MudTh>White Player</MudTh>
+        <MudTh>Black Player</MudTh>
+        <MudTh>Time Control</MudTh>
+        <MudTh>Spectate Game</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Id">@context.GameRoom</MudTd>
+        <MudTd DataLabel="White Player">@context.UsernameWhite</MudTd>
+        <MudTd DataLabel="Black Player">@context.UsernameBlack</MudTd>
+        <MudTd DataLabel="Time Control">@(context.Seconds + "+" + context.Increment)</MudTd>
+        <MudTd DataLabel="Spectate">
+            <MudButton @onclick="() => SpectateGame(context.GameRoom)">Spectate</MudButton>
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager/>
+    </PagerContent>
+</MudTable>
+
+@code {
+    private IList<SpectateableGameRoomDataDto>? _spectateableGames;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _spectateableGames = await GameLogic.GetAllSpectateableGames();
+    }
+
+    private void SpectateGame(ulong i)
+    {
+        NavMgr.NavigateTo("/ChessGame");
+        GameLogic.JoinGame(new RequestJoinGameDto
+        {
+            GameRoom = i
+        });
+    }
+
+}
