@@ -1,5 +1,5 @@
 
-<MudSwitch @bind-Checked="IsPublic" Color="Color.Success" UnCheckedColor="Color.Warning" Label="@(IsPublic ? "Public" : "Private")"/>
+<MudSwitch @bind-Checked="IsPublic" Color="Color.Success" UnCheckedColor="Color.Warning" LabelPosition="LabelPosition.Start" Label="@(IsPublic ? " Public" : "Private")"/>
 
 @code {
     private bool _isPublic = false;
