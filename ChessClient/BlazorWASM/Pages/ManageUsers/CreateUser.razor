@@ -5,12 +5,12 @@
 @inject IUserService UserService
 
 <MudContainer MaxWidth="MaxWidth.Small">
-    <MudPaper Class="pa-4 ma-10">
+    <MudPaper Class="pa-7 ma-10">
         <MudText Typo="Typo.h5" Align="Align.Center">Create User</MudText>
-        <MudTextField @bind-Value="_username" Label="Username"/>
-        <MudTextField @bind-Value="_email" Label="Email" InputType="InputType.Email"/>
-        <MudTextField @bind-Value="_password" Label="Password" InputType="InputType.Password"/>
-        <MudTextField @bind-Value="_role" Label="Role"/>
+        <MudTextField @bind-Value="_username" Variant="Variant.Filled" Label="Username"/>
+        <MudTextField @bind-Value="_email" Label="Email" Variant="Variant.Filled" InputType="InputType.Email"/>
+        <MudTextField @bind-Value="_password" Label="Password" Variant="Variant.Filled" InputType="InputType.Password"/>
+        <MudTextField @bind-Value="_role" Variant="Variant.Filled" Label="Role"/>
         @if (!string.IsNullOrEmpty(_resultMsg))
         {
             <MudAlert Severity="Severity.Info" Class="mt-4" Variant="Variant.Filled">@_resultMsg</MudAlert>
