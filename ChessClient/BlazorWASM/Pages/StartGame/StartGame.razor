@@ -32,9 +32,11 @@
         @if (_opponentType is OpponentTypes.Friend or OpponentTypes.Ai)
         {
             <ChooseSideComponent @bind-IsWhiteSide="_isWhiteSide"/>
-            <IsPublicGameComponent @bind-IsPublic="_isGamePublic"/>
         }
-        <TimeControlComponent @bind-TimeControlBase="_timeControlBase" @bind-TimeControlIncrement="_timeControlIncrement"/>
+        <MudElement Class="d-flex justify-between">
+            <TimeControlComponent @bind-TimeControlBase="_timeControlBase" @bind-TimeControlIncrement="_timeControlIncrement"/>
+            <IsPublicGameComponent @bind-IsPublic="_isGamePublic"/>
+        </MudElement>
         <CreateGameButtonComponent OnCreateGame="CreateGame"/>
     </MudStack>
 </MudContainer>
@@ -51,7 +53,13 @@
     private uint _timeControlBase = 120;
     private uint _timeControlIncrement;
     private bool _isGamePublic = false;
+    private bool open = false;
 
+    private void ToggleDrawer()
+    {
+        open = !open;
+        StateHasChanged();
+    }
 
     private void OnTabChange(int tabIndex)
     {
