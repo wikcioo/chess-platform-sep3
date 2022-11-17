@@ -7,7 +7,7 @@
 @implements IDisposable
 
 <MudContainer Class="pa-0">
-    <MudPaper Class="overflow-x-auto" Height="400px">@((MarkupString) _resultMsg)</MudPaper>
+    <MudPaper Class="overflow-x-auto" Height="400px">@((MarkupString) _chatLog)</MudPaper>
     <MudTextField Immediate="true" T="string" InputType="InputType.Text" placeholder="Enter message" @bind-Value="_messageBody" OnKeyPress="OnKeyPress"/>
     <MudButton OnClick="WriteMessageAsync" Color="Color.Secondary">Send</MudButton>
 </MudContainer>
@@ -19,7 +19,7 @@
     [Parameter]
     public string Receiver { get; set; } = string.Empty;
 
-    private string _resultMsg = "";
+    private string _chatLog = "";
 
 
     protected override void OnInitialized()
@@ -54,7 +54,7 @@
 
     private void OnMessageReceived(string chatLog)
     {
-        _resultMsg = chatLog;
+        _chatLog = chatLog;
         StateHasChanged();
     }
 
