@@ -1,0 +1,41 @@
+@using Microsoft.AspNetCore.Components
+@using Domain.Enums
+
+<MudRadioGroup @bind-SelectedOption="IsWhiteSide" T="@GameSides">
+    <div class="d-flex flex-row justify-space-around">
+        <MudRadio Class="m-0" Size="Size.Large" T="@GameSides" Placement="Placement.Top" Color="Color.Primary" Option="@GameSides.White">
+            <MudPaper Elevation="10" Height="4rem" Width="4rem" Style="background-color: white "/>
+        </MudRadio>
+        <MudRadio Class="m-0" Size="Size.Large" T="@GameSides" Placement="Placement.Top" Color="Color.Primary" Option="@GameSides.Black">
+            <MudPaper Elevation="10" Height="4rem" Width="4rem" Style="background-color: #272c34ff"/>
+        </MudRadio>
+        <MudRadio Class="m-0" Size="Size.Large" T="@GameSides" Placement="Placement.Top" Color="Color.Primary" Option="@GameSides.Random">
+            <MudPaper Elevation="10" Height="4rem" Class="d-flex justify-center align-center" Style="background-color: lightgray" Width="4rem">
+                <MudIcon Icon="@Icons.Filled.QuestionMark" Color="Color.Primary" Style="font-size: 3rem"/>
+            </MudPaper>
+        </MudRadio>
+    </div>
+</MudRadioGroup>
+
+@code {
+
+    private GameSides _isWhiteSide = GameSides.White;
+
+    [Parameter]
+    public GameSides IsWhiteSide
+    {
+        get => _isWhiteSide;
+        set
+        {
+            if (_isWhiteSide == value) return;
+            _isWhiteSide = value;
+            IsWhiteSideChanged.InvokeAsync(value);
+        }
+    }
+
+
+    [Parameter]
+    public EventCallback<GameSides> IsWhiteSideChanged { get; set; }
+
+
+}

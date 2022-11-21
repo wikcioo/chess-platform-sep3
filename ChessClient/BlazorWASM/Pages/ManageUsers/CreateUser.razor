@@ -1,35 +1,23 @@
 @page "/CreateUser"
 @using HttpClients.ClientInterfaces
 @using Domain.Models
+@using MudBlazor
 @inject IUserService UserService
-<div class="card">
-    <h3>CreateUser</h3>
-    <div class="form-group field">
-        <div class="form-group field">
-            <label>Username:</label>
-            <input type="text" @bind="_username"/>
-        </div>
-        <div class="form-group field">
-            <label>Email:</label>
-            <input type="email" @bind="_email"/>
-        </div>
-        <div class="form-group field">
-            <label>Password:</label>
-            <input type="password" @bind="_password"/>
-        </div>
-        <div class="form-group field">
-            <label>Role:</label>
-            <input type="text" @bind="_role"/>
-        </div>
+
+<MudContainer MaxWidth="MaxWidth.Small">
+    <MudPaper Class="pa-7 ma-10">
+        <MudText Typo="Typo.h5" Align="Align.Center">Create User</MudText>
+        <MudTextField @bind-Value="_username" Variant="Variant.Filled" Label="Username"/>
+        <MudTextField @bind-Value="_email" Label="Email" Variant="Variant.Filled" InputType="InputType.Email"/>
+        <MudTextField @bind-Value="_password" Label="Password" Variant="Variant.Filled" InputType="InputType.Password"/>
+        <MudTextField @bind-Value="_role" Variant="Variant.Filled" Label="Role"/>
         @if (!string.IsNullOrEmpty(_resultMsg))
         {
-            <label style="color:@_color">@_resultMsg</label>
+            <MudAlert Severity="Severity.Info" Class="mt-4" Variant="Variant.Filled">@_resultMsg</MudAlert>
         }
-    </div>
-    <div class="button-row">
-        <button @onclick="CreateAsync" disabled="@(IsValid())" class="acceptbtn">Create</button>
-    </div>
-</div>
+        <MudButton Class="mt-4" OnClick="CreateAsync" Variant="Variant.Filled" Disabled="IsValid()">Create</MudButton>
+    </MudPaper>
+</MudContainer>
 
 @code {
     private string _username = "";
