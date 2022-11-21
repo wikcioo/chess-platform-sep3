@@ -14,7 +14,6 @@ public class ChatLogic : IChatLogic
     private Chat.ChatClient _client;
     private readonly IAuthService _authService;
 
-    private bool _isConnected;
     public event Action<string> MessageReceived;
     private AsyncServerStreamingCall<Message> _call;
     private string _resultMsg = "";
