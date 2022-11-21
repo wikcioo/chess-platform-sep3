@@ -16,7 +16,7 @@ public class ChatLogic : IChatLogic
 
     public event Action<string> MessageReceived;
     private AsyncServerStreamingCall<Message> _call;
-    private string _resultMsg = "";
+    private string _chatLog = "";
 
     public ChatLogic(GrpcChannel channel, IAuthService authService)
     {
@@ -48,8 +48,8 @@ public class ChatLogic : IChatLogic
         while (await _call.ResponseStream.MoveNext())
         {
             var message = _call.ResponseStream.Current;
-            _resultMsg += $"<div>{message.Username}:{message.Body}\n</div>";
-            MessageReceived.Invoke(_resultMsg);
+            _chatLog += $"<div>{message.Username}:{message.Body}\n</div>";
+            MessageReceived.Invoke(_chatLog);
         }
     }
 
@@ -62,7 +62,7 @@ public class ChatLogic : IChatLogic
         if (_call != null)
         {
             _call.Dispose();
-            _resultMsg = "";
+            _chatLog = "";
         }
         StartMessagingAsync(dto.UsernameWhite.Equals(user.Identity.Name!) ? dto.UsernameBlack : dto.UsernameWhite,
             user.Identity.Name!);
