@@ -12,6 +12,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.8" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.8" PrivateAssets="all" />
         <PackageReference Include="MudBlazor" Version="6.0.17" />
+        <PackageReference Include="MudBlazor.ThemeManager" Version="1.0.7" />
         <PackageReference Include="Rudzoft.ChessLib" Version="0.0.3" />
     </ItemGroup>
 
@@ -32,7 +33,7 @@
 
     <ItemGroup>
       <AdditionalFiles Include="Pages\LogIn\Login.razor" />
-      <AdditionalFiles Include="Pages\LogIn\LoginButtons.razor" />
+      <AdditionalFiles Include="Shared\LoginButtons.razor" />
       <AdditionalFiles Include="Pages\ManageUsers\CreateUser.razor" />
       <AdditionalFiles Include="Pages\PlayChess\ChatWindow.razor" />
       <AdditionalFiles Include="Pages\PlayChess\ChessBoardComponent.razor" />
@@ -49,13 +50,22 @@
         <None Remove="Pages\PlayChess\ChessBoardComponent.razor.css" />
         <None Remove="Pages\PlayChess\SquareComponent.razor.css" />
         <None Remove="Pages\PlayChess\TimerComponent.razor.css" />
+        <None Remove="Shared\LoginButtons.razor.css" />
     </ItemGroup>
     
     
     <ItemGroup>
       <Content Include="Pages\LogIn\LoginButtons.razor.css" />
+      <Content Include="Pages\PlayChess\ChatWindow.razor.css" />
       <Content Include="Pages\PlayChess\ChessBoardComponent.razor.css" />
       <Content Include="Pages\PlayChess\SquareComponent.razor.css" />
       <Content Include="Pages\PlayChess\TimerComponent.razor.css" />
+      <Content Include="Shared\LoginButtons.razor.css" />
+    </ItemGroup>
+    
+    
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="wwwroot\css\bootstrap\bootstrap.min.css" />
+      <_ContentIncludedByDefault Remove="wwwroot\css\bootstrap\bootstrap.min.css.map" />
     </ItemGroup>
 </Project>

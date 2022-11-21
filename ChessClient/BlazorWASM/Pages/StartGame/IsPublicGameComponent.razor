@@ -1,0 +1,22 @@
+
+<MudSwitch @bind-Checked="IsPublic" Color="Color.Success" UnCheckedColor="Color.Warning" LabelPosition="LabelPosition.Start" Label="@(IsPublic ? " Public" : "Private")"/>
+
+@code {
+    private bool _isPublic = false;
+
+    [Parameter]
+    public bool IsPublic
+    {
+        get => _isPublic;
+        set
+        {
+            if (_isPublic == value ) return;
+            _isPublic = value;
+            StateHasChanged();
+            IsPublicChanged.InvokeAsync(value);
+        }
+    }
+
+    [Parameter]
+    public EventCallback<bool> IsPublicChanged { get; set; }
+}

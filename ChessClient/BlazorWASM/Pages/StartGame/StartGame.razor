@@ -1,0 +1,163 @@
+﻿@using StockfishWrapper
+@using Microsoft.AspNetCore.Components
+@using Domain.Enums
+@using Rudzoft.ChessLib
+@using Rudzoft.ChessLib.Types
+@using Rudzoft.ChessLib.Fen
+@using Application.LogicInterfaces
+@using Position = Rudzoft.ChessLib.Position
+@using Domain.DTOs
+@using Grpc.Core
+@using Rudzoft.ChessLib.Enums
+@inject ISnackbar Snackbar
+@inject IGameLogic GameLogic
+@inject NavigationManager NavMgr
+@* @implements IDisposable *@
+
+
+@page "/StartGame"
+
+<MudContainer Class="mt-10" MaxWidth="MaxWidth.Small">
+    <MudText Typo="Typo.h2" Align="Align.Center" Class="ma-5">Play Chess</MudText>
+    <MudStack Spacing="3">
+        <GameTypeComponent TabIndexChanged="OnTabChange"/>
+        @if (_opponentType is OpponentTypes.Ai)
+        {
+            <StockfishSelectComponent @bind-SelectedLevel="_selectedLevel"/>
+        }
+        @if (_opponentType is OpponentTypes.Friend)
+        {
+            <OpponentNameComponent @bind-OpponentName="_opponentName"/>
+        }
+        @if (_opponentType is OpponentTypes.Friend or OpponentTypes.Ai)
+        {
+            <ChooseSideComponent @bind-IsWhiteSide="_isWhiteSide"/>
+        }
+        <MudElement Class="d-flex justify-between">
+            <TimeControlComponent @bind-TimeControlBase="_timeControlBase" @bind-TimeControlIncrement="_timeControlIncrement"/>
+            <IsPublicGameComponent @bind-IsPublic="_isGamePublic"/>
+        </MudElement>
+        <CreateGameButtonComponent OnCreateGame="CreateGame"/>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private readonly IPosition _position = new Position(new Board(), new PieceValue());
+
+    //Form input bindings
+    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
+    private OpponentTypes _opponentType;
+    private ulong _gameRoomInt;
+    private GameSides _isWhiteSide = GameSides.White;
+    private string _opponentName = "";
+    private uint _timeControlBase = 120;
+    private uint _timeControlIncrement;
+    private bool _isGamePublic = false;
+    private bool open = false;
+
+    private void ToggleDrawer()
+    {
+        open = !open;
+        StateHasChanged();
+    }
+
+    private void OnTabChange(int tabIndex)
+    {
+        _opponentType = tabIndex switch
+        {
+            0 => OpponentTypes.Ai,
+            1 => OpponentTypes.Friend,
+            2 => OpponentTypes.Random,
+            _ => throw new ArgumentOutOfRangeException()};
+
+        StateHasChanged();
+    }
+
+    private async Task CreateGame()
+    {
+        var opponentName = "";
+
+
+        try
+        {
+            opponentName = _opponentType switch 
+            {
+                OpponentTypes.Ai => _selectedLevel,
+                OpponentTypes.Friend => _opponentName,
+                OpponentTypes.Random => string.Empty,
+                _ => throw new ArgumentNullException()
+                };
+        }
+        catch (ArgumentNullException)
+        {
+            Notify("Choose a game type before starting a game!", Severity.Warning);
+        }
+
+        var request = new RequestGameDto
+        {
+            OpponentType = _opponentType,
+            Increment = _timeControlIncrement,
+            Side = _isWhiteSide,
+            OpponentName = opponentName,
+            Seconds = _timeControlBase,
+            IsVisible = _isGamePublic
+        };
+
+        Console.WriteLine(request);
+
+        try
+        {
+            var response = await GameLogic.CreateGame(request);
+
+            _gameRoomInt = response.GameRoom;
+
+            Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
+        }
+        catch (InvalidOperationException)
+        {
+            Notify("You have to be logged in to create a game!", Severity.Warning);
+        }
+        catch (HttpRequestException)
+        {
+            Notify("Network error, Failed to create a game.", Severity.Error);
+        }
+    }
+
+    private async Task JoinGame()
+    {
+        try
+        {
+    //workaround, initial position should be sent and not set
+            SetFenPosition(Fen.StartPositionFen);
+            await GameLogic.JoinGame(new RequestJoinGameDto
+            {
+                GameRoom = _gameRoomInt,
+            });
+            NavMgr.NavigateTo("/ChessGame");
+        }
+        catch (ArgumentException)
+        {
+    //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
+            Notify("Game room not found.", Severity.Warning);
+        }
+        catch (RpcException)
+        {
+            Notify("Connection error. Failed to participate in game. ¯\\_(ツ)_/¯", Severity.Error);
+        }
+    }
+
+    private void Notify(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+    }
+
+    private void SetFenPosition(string fen)
+    {
+        FenData fenData = new FenData(fen);
+        State state = new State();
+        _position.Set(in fenData, ChessMode.Normal, state);
+        StateHasChanged();
+    }
+
+
+}
