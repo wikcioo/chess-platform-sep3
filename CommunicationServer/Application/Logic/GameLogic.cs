@@ -85,18 +85,18 @@ public class GameLogic : IGameLogic
         var gameRoom = _gameRoomsData.Get(dto.GameRoom);
         if ((_gameRoomsData.IsJoinable(dto.GameRoom) && _gameRoomsData.CanUsernameJoin(dto.GameRoom, dto.Username)))
         {
+            if (string.IsNullOrEmpty(gameRoom.PlayerWhite) && !dto.Username.Equals(gameRoom.PlayerBlack))
+            {
+                gameRoom.PlayerWhite = dto.Username;
+            }
+            else if (string.IsNullOrEmpty(gameRoom.PlayerBlack) && !dto.Username.Equals(gameRoom.PlayerWhite))
+            {
+                gameRoom.PlayerBlack = dto.Username;
+            }
+
             if (++_gameRoomsData.NumPlayersJoined[dto.GameRoom] == 2)
             {
                 _gameRoomsData.TransitionFromJoinableAndAddToSpectateableIfVisible(dto.GameRoom);
-                if (string.IsNullOrEmpty(gameRoom.PlayerWhite))
-                {
-                    gameRoom.PlayerWhite = dto.Username;
-                }
-                else if (string.IsNullOrEmpty(gameRoom.PlayerBlack))
-                {
-                    gameRoom.PlayerBlack = dto.Username;
-                }
-
                 gameRoom.Initialize();
             }
 
