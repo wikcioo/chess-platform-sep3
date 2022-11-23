@@ -110,11 +110,11 @@
             var response = await GameLogic.CreateGame(request);
 
             _gameRoomInt = response.GameRoom;
-            NavMgr.NavigateTo("/ChessGame");
-            GameLogic.JoinGame(new RequestJoinGameDto
+            await GameLogic.JoinGame(new RequestJoinGameDto
             {
                 GameRoom = response.GameRoom
             });
+            NavMgr.NavigateTo("/ChessGame");
             Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
         }
         catch (InvalidOperationException)
