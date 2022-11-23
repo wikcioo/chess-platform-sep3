@@ -34,29 +34,13 @@ public class ChatLogic : IChatLogic
             {
                 Username = user.Identity.Name!,
                 Body = dto.Body,
-                Receiver = dto.Receiver
+                GameRoom = dto.GameRoom
             });
     }
 
-    private async Task StartMessagingAsync(string opponentUsername, string currentUsername)
+    public async Task StartMessagingAsync(ulong gameRoom)
     {
-        _call = _client.StartMessaging(new RequestMessage
-        {
-            Username = currentUsername,
-            Receiver = opponentUsername
-        });
-        while (await _call.ResponseStream.MoveNext())
-        {
-            var message = _call.ResponseStream.Current;
-            _chatLog += $"<div>{message.Username}:{message.Body}\n</div>";
-            MessageReceived.Invoke(_chatLog);
-        }
-    }
-
-    public async void OnInitialTimeReceived(JoinedGameStreamDto dto)
-    {
-        ClaimsPrincipal user = await _authService.GetAuthAsync();
-
+        var user = await _authService.GetAuthAsync();
         if (user.Identity == null)
             throw new InvalidOperationException("User not logged in.");
         if (_call != null)
@@ -64,7 +48,17 @@ public class ChatLogic : IChatLogic
             _call.Dispose();
             _chatLog = "";
         }
-        StartMessagingAsync(dto.UsernameWhite.Equals(user.Identity.Name!) ? dto.UsernameBlack : dto.UsernameWhite,
-            user.Identity.Name!);
+
+        _call = _client.StartMessaging(new RequestMessage
+        {
+            Username = user.Identity.Name,
+            GameRoom = gameRoom
+        });
+        while (await _call.ResponseStream.MoveNext())
+        {
+            var message = _call.ResponseStream.Current;
+            _chatLog += $"<div>{message.Username}:{message.Body}\n</div>";
+            MessageReceived.Invoke(_chatLog);
+        }
     }
 }

@@ -7,5 +7,5 @@ public interface IChatLogic
 {
     public event Action<string> MessageReceived;
     Task WriteMessageAsync(MessageDto dto);
-    void OnInitialTimeReceived(JoinedGameStreamDto dto);
+    Task StartMessagingAsync(ulong gameRoom);
 }

@@ -17,14 +17,19 @@
     private string _messageBody = "";
 
     [Parameter]
-    public string Receiver { get; set; } = string.Empty;
+    public ulong? GameRoom { get; set; }
 
     private string _chatLog = "";
 
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        
         ChatLogic.MessageReceived += OnMessageReceived;
+        if (GameRoom != null)
+        {
+            ChatLogic.StartMessagingAsync((ulong) GameRoom);
+        }
     }
 
     public void Dispose()
@@ -35,17 +40,12 @@
 
     private async Task WriteMessageAsync()
     {
-        if (Receiver.IsNullOrEmpty())
-        {
-            throw new InvalidOperationException("Player not connected");
-        }
-
         if (IsValid())
         {
             await ChatLogic.WriteMessageAsync(new MessageDto
             {
                 Body = _messageBody,
-                Receiver = Receiver
+                GameRoom = (ulong)GameRoom
             });
             _messageBody = "";
             StateHasChanged();

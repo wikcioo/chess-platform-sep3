@@ -75,7 +75,7 @@
             <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
         </MudContainer>
         <MudContainer Class="mt-4" MaxWidth="MaxWidth.Small">
-            <ChatWindow Receiver="@_opponentName"></ChatWindow>
+            <ChatWindow GameRoom="@GameLogic.GameRoomId"></ChatWindow>
         </MudContainer>
     </MudItem>
 </MudGrid>
@@ -119,8 +119,6 @@
         GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
         GameLogic.EndOfTheGameReached -= OnEndOfTheGameReached;
         GameLogic.GameFirstJoined -= OnGameFirstJoined;
-
-        GameLogic.InitialTimeReceived -= ChatLogic.OnInitialTimeReceived;
     }
 
     protected override async Task OnInitializedAsync()
@@ -142,8 +140,6 @@
         GameLogic.DrawOfferAccepted += OnDrawOfferAccepted;
         GameLogic.EndOfTheGameReached += OnEndOfTheGameReached;
         GameLogic.GameFirstJoined += OnGameFirstJoined;
-        
-        GameLogic.InitialTimeReceived += ChatLogic.OnInitialTimeReceived;
     }
 
     private async Task CreateGame()
