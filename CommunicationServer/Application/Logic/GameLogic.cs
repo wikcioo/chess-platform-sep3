@@ -4,8 +4,8 @@ using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
+using Domain.Models;
 using Rudzoft.ChessLib.Fen;
-using StockfishWrapper;
 
 namespace Application.Logic;
 

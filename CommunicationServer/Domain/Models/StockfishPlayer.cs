@@ -1,4 +1,4 @@
-namespace StockfishWrapper;
+namespace Domain.Models;
 
 public class StockfishPlayer
 {

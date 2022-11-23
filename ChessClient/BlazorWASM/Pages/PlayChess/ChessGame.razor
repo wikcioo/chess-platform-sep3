@@ -1,7 +1,5 @@
 @page "/ChessGame"
 @using Rudzoft.ChessLib.Types
-@using StockfishWrapper
-@using MudBlazor
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
 @using Rudzoft.ChessLib.Fen
@@ -12,6 +10,7 @@
 @using Grpc.Core
 @using BlazorWASM.Pages.ChessComponents
 @using System.Security.Claims
+@using Domain.Models
 @inject IDialogService DialogService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
