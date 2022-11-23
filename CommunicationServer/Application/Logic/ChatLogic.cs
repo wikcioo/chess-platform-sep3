@@ -7,12 +7,11 @@ namespace Application.Logic;
 
 public class ChatLogic : IChatLogic
 {
-    private Dictionary<string, ChatRoom> _chatRooms = new();
+    private Dictionary<ulong, ChatRoom> _chatRooms = new();
 
     public void Add(MessageDto message)
     {
-        string key = GenerateKey(message.Username, message.Receiver);
-        Console.WriteLine(key);
+        var key = message.GameRoom;
         if (_chatRooms.ContainsKey(key))
         {
             ChatRoom chatRoom = _chatRooms[key];
@@ -20,7 +19,7 @@ public class ChatLogic : IChatLogic
         }
         else
         {
-            var newRoom = new ChatRoom(message.Username, message.Receiver);
+            var newRoom = new ChatRoom();
             _chatRooms.Add(key, newRoom);
             newRoom.Add(message);
         }
@@ -28,25 +27,20 @@ public class ChatLogic : IChatLogic
 
     public IObservable<MessageDto> GetMessagesAsObservable(RequestMessageDto request)
     {
-        string key = GenerateKey(request.Username, request.Receiver);
+        var key = request.GameRoom;
         if (_chatRooms.ContainsKey(key))
         {
             ChatRoom found = _chatRooms[key];
             return found.GetMessagedAsObservable();
         }
 
-        var newRoom = new ChatRoom(request.Username, request.Receiver);
+        var newRoom = new ChatRoom();
         _chatRooms.Add(key, newRoom);
         return newRoom.GetMessagedAsObservable();
     }
 
-    private static string GenerateKey(string senderUsername, string receiverUsername)
+    public void StartChatRoom(ulong key)
     {
-        if (String.CompareOrdinal(senderUsername, receiverUsername) < 0)
-        {
-            return $"{senderUsername}-{receiverUsername}";
-        }
-
-        return $"{receiverUsername}-{senderUsername}";
+        _chatRooms[key] = new ChatRoom();
     }
 }

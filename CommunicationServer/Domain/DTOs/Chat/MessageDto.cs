@@ -4,5 +4,5 @@ public class MessageDto
 {
     public string Username { get; init; }
     public string Body { get; init; }
-    public string Receiver { get; init; }
+    public ulong GameRoom { get; init; }
 }

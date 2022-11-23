@@ -25,15 +25,14 @@ public class ChatService : Chat.ChatBase
             {
                 await _chatLogic.GetMessagesAsObservable(new RequestMessageDto
                     {
-                        Receiver = request.Receiver,
-                        Username = request.Username
+                        GameRoom = request.GameRoom,
                     })
                     .ToAsyncEnumerable()
                     .ForEachAwaitAsync(async (x) => await responseStream.WriteAsync(new Message
                     {
                         Username = x.Username,
                         Body = x.Body,
-                        Receiver = x.Receiver
+                        GameRoom = x.GameRoom
                     }), context.CancellationToken)
                     .ConfigureAwait(false);
             }
@@ -53,7 +52,7 @@ public class ChatService : Chat.ChatBase
         {
             Username = request.Username,
             Body = request.Body,
-            Receiver = request.Receiver
+            GameRoom = request.GameRoom
         });
         return Task.FromResult(_empty);
     }

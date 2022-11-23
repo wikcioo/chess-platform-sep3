@@ -5,19 +5,9 @@ namespace Application.Entities;
 
 public class ChatRoom
 {
-    private List<string> _users;
-
     public event Action<MessageDto> MessageReceived;
     private List<MessageDto> _logs = new();
 
-    public ChatRoom(string user1, string user2)
-    {
-        _users = new List<string>
-        {
-            user1,
-            user2
-        };
-    }
 
     public void Add(MessageDto message)
     {
