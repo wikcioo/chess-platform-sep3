@@ -13,14 +13,15 @@ namespace Application.Tests;
 
 public class GameLogicUnitTests
 {
+    public IGameLogic GameLogic = new GameLogic(new StockfishHttpClient(new HttpClient()),new ChatLogic());
+
     [Theory]
     [InlineData("Alice", 0)]
     [InlineData("StockfishAi1", 1)]
     [InlineData(null, 2)]
     public void StartingGameReturnsCorrectResponseDto(string? opponent, ulong id)
     {
-        IGameLogic gameLogic = new GameLogic(new StockfishHttpClient(new HttpClient()));
-        var response = gameLogic.StartGame(new RequestGameDto()
+        var response = GameLogic.StartGame(new RequestGameDto()
         {
             Username = "Jeff",
             OpponentType = OpponentTypes.Friend,
@@ -38,7 +39,7 @@ public class GameLogicUnitTests
             GameRoom = id,
             Fen = Fen.StartPositionFen
         };
-        
+
         Assert.Equal(expectedResponse.Success, response.Result.Success);
         Assert.Equal(expectedResponse.Opponent, response.Result.Opponent);
         Assert.Equal(expectedResponse.IsWhite, response.Result.IsWhite);
@@ -49,10 +50,9 @@ public class GameLogicUnitTests
     [Fact]
     public void JoinRoomThrowsArgumentExceptionWhenNoRoomFound()
     {
-        IGameLogic gameLogic = new GameLogic(new StockfishHttpClient(new HttpClient()));
         Assert.Throws<KeyNotFoundException>(() =>
         {
-            gameLogic.JoinGame(new RequestJoinGameDto()
+            GameLogic.JoinGame(new RequestJoinGameDto()
             {
                 Username = "Jeff",
                 GameRoom = 0
@@ -63,32 +63,28 @@ public class GameLogicUnitTests
     [Fact]
     public void MakeMoveReturnsGameNotFoundWhenNoRoomFound()
     {
-        IGameLogic gameLogic = new GameLogic(new StockfishHttpClient(new HttpClient()));
-        var ack = gameLogic.MakeMove(new MakeMoveDto());
+        var ack = GameLogic.MakeMove(new MakeMoveDto());
         Assert.True(ack.Result == AckTypes.GameNotFound);
     }
-    
+
     [Fact]
     public void ResignReturnsGameNotFoundWhenNoRoomFound()
     {
-        IGameLogic gameLogic = new GameLogic(new StockfishHttpClient(new HttpClient()));
-        var ack = gameLogic.Resign(new RequestResignDto());
+        var ack = GameLogic.Resign(new RequestResignDto());
         Assert.True(ack.Result == AckTypes.GameNotFound);
     }
-    
+
     [Fact]
     public void OfferDrawReturnsGameNotFoundWhenNoRoomFound()
     {
-        IGameLogic gameLogic = new GameLogic(new StockfishHttpClient(new HttpClient()));
-        var ack = gameLogic.OfferDraw(new RequestDrawDto());
+        var ack = GameLogic.OfferDraw(new RequestDrawDto());
         Assert.True(ack.Result == AckTypes.GameNotFound);
     }
-    
+
     [Fact]
     public void DrawOfferResponseReturnsGameNotFoundWhenNoRoomFound()
     {
-        IGameLogic gameLogic = new GameLogic(new StockfishHttpClient(new HttpClient()));
-        var ack = gameLogic.DrawOfferResponse(new ResponseDrawDto());
+        var ack = GameLogic.DrawOfferResponse(new ResponseDrawDto());
         Assert.True(ack.Result == AckTypes.GameNotFound);
     }
 }

@@ -28,7 +28,7 @@ public class GameServiceUnitTests
             OpponentName = "Alice",
             Seconds = 600
         };
-        _gameService = new GameService(new GameLogic(new StockfishHttpClient(new HttpClient())));
+        _gameService = new GameService(new GameLogic(new StockfishHttpClient(new HttpClient()),new ChatLogic()));
     }
 
     //Starting a game
