@@ -13,10 +13,12 @@ public class GameLogic : IGameLogic
 {
     private readonly GameRoomsData _gameRoomsData = new();
     private readonly IStockfishService _stockfishService;
+    private readonly IChatLogic _chatLogic;
 
-    public GameLogic(IStockfishService stockfishService)
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic)
     {
         _stockfishService = stockfishService;
+        _chatLogic = chatLogic;
     }
 
     public Task<ResponseGameDto> StartGame(RequestGameDto dto)
@@ -64,6 +66,7 @@ public class GameLogic : IGameLogic
 
         gameRoom.Initialize();
         var id = _gameRoomsData.Add(gameRoom, dto.IsVisible, dto.OpponentType);
+        _chatLogic.StartChatRoom(id);
 
         if (gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
             RequestAiMove(id);
