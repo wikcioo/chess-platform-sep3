@@ -6,12 +6,13 @@
     text-align: center;
     justify-content: center;
     align-items: center;
+    aspect-ratio: 1;
 }
 
 .piece {
-    font-size: 40px;
-    display: inline;
     cursor: pointer;
+    width: 100%;
+    height: 100%;
 }
 
 .black-side {
@@ -35,7 +36,7 @@
 }
 
 .piece-icon img {
-    object-fit: cover;
+    object-fit: contain;
     aspect-ratio: 1;
 }
 
