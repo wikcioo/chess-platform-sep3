@@ -1,8 +1,8 @@
 .chess-board {
     display: grid;
-    width: 100%;
-    box-sizing: content-box;
-    grid-template-columns: repeat(8, calc(100% / 8));
+    width: auto;
+    box-sizing: border-box;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     grid-auto-rows: calc(100% / 8);
     aspect-ratio: 1;
     border: 10px solid black;
