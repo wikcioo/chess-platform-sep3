@@ -31,7 +31,17 @@
     {
         var sb = new StringBuilder();
 
-        sb.Append($"{TimeSpan.FromSeconds(secs).ToString(@"mm\:ss")}");
+        var timespan = TimeSpan.FromSeconds(secs);
+
+        if (timespan.Hours > 0)
+        {
+            sb.Append($"{TimeSpan.FromSeconds(secs).ToString(@"hh\:mm\:ss")}");
+        }
+        else
+        {
+            sb.Append($"{TimeSpan.FromSeconds(secs).ToString(@"mm\:ss")}");
+        }
+        
 
         return sb.ToString();
     }
