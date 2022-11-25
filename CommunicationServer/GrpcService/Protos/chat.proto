@@ -8,13 +8,13 @@ package chat;
 message Message {
   string username = 1;
   string body = 2;
-  string receiver = 3;
+  uint64 game_room = 3;
 }
 message Empty{}
 
 message RequestMessage {
   string username = 1;
-  string receiver = 2;
+  uint64 game_room = 2;
 }
 service Chat {
   rpc Write(Message) returns (Empty) {}

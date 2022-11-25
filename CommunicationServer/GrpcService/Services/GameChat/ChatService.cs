@@ -1,28 +1,39 @@
-﻿using Grpc.Core;
+﻿using Application.LogicInterfaces;
+using Domain.DTOs;
+using Domain.DTOs.Chat;
+using Grpc.Core;
 
 namespace GrpcService.Services.GameChat;
 
 public class ChatService : Chat.ChatBase
 {
-    private ChatRoomService _service;
+    private readonly IChatLogic _chatLogic;
     private readonly Empty _empty = new();
 
-    public ChatService(ChatRoomService chatRoomService)
+    public ChatService(IChatLogic chatRoomService)
     {
-        _service = chatRoomService;
+        _chatLogic = chatRoomService;
     }
 
-    public override async Task StartMessaging(RequestMessage request, IServerStreamWriter<Message> responseStream, ServerCallContext context)
+    public override async Task StartMessaging(RequestMessage request, IServerStreamWriter<Message> responseStream,
+        ServerCallContext context)
     {
-        
         //Add listen here
         while (!context.CancellationToken.IsCancellationRequested)
         {
             try
             {
-                await _service.GetMessagesAsObservable(request)
+                await _chatLogic.GetMessagesAsObservable(new RequestMessageDto
+                    {
+                        GameRoom = request.GameRoom,
+                    })
                     .ToAsyncEnumerable()
-                    .ForEachAwaitAsync(async (x) => await responseStream.WriteAsync(x), context.CancellationToken)
+                    .ForEachAwaitAsync(async (x) => await responseStream.WriteAsync(new Message
+                    {
+                        Username = x.Username,
+                        Body = x.Body,
+                        GameRoom = x.GameRoom
+                    }), context.CancellationToken)
                     .ConfigureAwait(false);
             }
             catch (Exception e)
@@ -37,8 +48,12 @@ public class ChatService : Chat.ChatBase
     public override Task<Empty> Write(Message request, ServerCallContext context)
     {
         //Invoke with the new message here
-        Console.WriteLine($"{request.Username}: {request.Body}");
-        _service.Add(request);
+        _chatLogic.Add(new MessageDto
+        {
+            Username = request.Username,
+            Body = request.Body,
+            GameRoom = request.GameRoom
+        });
         return Task.FromResult(_empty);
     }
 }

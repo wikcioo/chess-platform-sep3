@@ -1,8 +1,5 @@
 @page "/ChessGame"
 @using Rudzoft.ChessLib.Types
-@using StockfishWrapper
-@using Grpc.Net.Client
-@using MudBlazor
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
 @using Rudzoft.ChessLib.Fen
@@ -12,10 +9,13 @@
 @using Domain.Enums
 @using Grpc.Core
 @using BlazorWASM.Pages.ChessComponents
+@using System.Security.Claims
+@using Domain.Models
 @inject IDialogService DialogService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
 @inject IGameLogic GameLogic
+@inject IChatLogic ChatLogic
 @implements IDisposable
 
 
@@ -74,10 +74,18 @@
             <MudCheckBox @bind-Checked="@_isGamePrivate">Private</MudCheckBox>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
         </MudContainer>
+        <MudContainer Class="mt-4" MaxWidth="MaxWidth.Small">
+            <ChatWindow GameRoom="@GameLogic.GameRoomId"></ChatWindow>
+        </MudContainer>
     </MudItem>
 </MudGrid>
 
 @code {
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    private string _currentUser = "";
 
     private readonly IPosition _position = new Position(new Board(), new PieceValue());
     private double _whiteSeconds;
@@ -111,6 +119,14 @@
         GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
         GameLogic.EndOfTheGameReached -= OnEndOfTheGameReached;
         GameLogic.GameFirstJoined -= OnGameFirstJoined;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationState authState = await AuthState;
+        ClaimsPrincipal user = authState.User;
+        if (user.Identity == null) return;
+        _currentUser = user.Identity.Name!;
     }
 
     private void InitGameLogic()
@@ -203,7 +219,7 @@
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            return (int)AckTypes.GameNotFound;
+            return (int) AckTypes.GameNotFound;
         }
     }
 
@@ -220,7 +236,7 @@
             return;
         }
 
-        if (ack == (uint)AckTypes.Success) return;
+        if (ack == (uint) AckTypes.Success) return;
         Notify("Failed to resign", Severity.Error);
     }
 
@@ -283,22 +299,22 @@
         PlaySound("notify");
         switch (dto.GameEndType)
         {
-            case (uint)GameEndTypes.CheckMate:
+            case (uint) GameEndTypes.CheckMate:
                 if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
                     DisplayDefaultDialog("You got checkmated!");
                 else
                     DisplayDefaultDialog("You checkmated your opponent!");
                 break;
-            case (uint)GameEndTypes.Repetition:
+            case (uint) GameEndTypes.Repetition:
                 DisplayDefaultDialog("Draw by repetition!");
                 break;
-            case (uint)GameEndTypes.Pat:
+            case (uint) GameEndTypes.Pat:
                 DisplayDefaultDialog("Stalemate!");
                 break;
-            case (uint)GameEndTypes.FiftyMove:
+            case (uint) GameEndTypes.FiftyMove:
                 DisplayDefaultDialog("Draw by 50 moves!");
                 break;
-            case (uint)GameEndTypes.MaterialDrawn:
+            case (uint) GameEndTypes.MaterialDrawn:
                 DisplayDefaultDialog("Draw! Insufficient material!");
                 break;
         }
@@ -306,7 +322,7 @@
 
     private void OnTimeUpdated(JoinedGameStreamDto dto)
     {
-        if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp)
+        if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp)
         {
             if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
             {
@@ -354,6 +370,7 @@
 
     private void OnInitialTimeReceived(JoinedGameStreamDto dto)
     {
+        _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
         PlaySound("notify");
         Notify("Game joined. Have fun!", Severity.Success);
         _whiteSeconds = dto.TimeLeftMs / 1000;
@@ -382,7 +399,7 @@
 
     private void PlaySound(string sound)
     {
-        Js.InvokeAsync<string>("PlaySound", new object[] { sound });
+        Js.InvokeAsync<string>("PlaySound", new object[] {sound});
     }
 
     private void Notify(string message, Severity severity)
@@ -392,7 +409,8 @@
 
     private void DisplayDefaultDialog(string message)
     {
-        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var options = new DialogOptions {CloseOnEscapeKey = true};
         DialogService.Show<InformDialogComponent>(message, options);
     }
+
 }

@@ -43,9 +43,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddAuthorization();
 AuthorizationPolicies.AddPolicies(builder.Services);
 builder.Services.AddSingleton<HttpClient>();
-builder.Services.AddSingleton(new ChatRoomService());
+builder.Services.AddSingleton<IChatLogic, ChatLogic>();
 builder.Services.AddSingleton<IStockfishService, StockfishHttpClient>();
-builder.Services.AddSingleton<IGameLogic,GameLogic>();
+builder.Services.AddSingleton<IGameLogic, GameLogic>();
 
 var app = builder.Build();
 app.UseResponseCompression();

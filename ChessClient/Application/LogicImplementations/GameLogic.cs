@@ -9,7 +9,6 @@ using GrpcService;
 using HttpClients;
 using HttpClients.ClientInterfaces;
 using Rudzoft.ChessLib.Enums;
-using Rudzoft.ChessLib.Exceptions;
 using Rudzoft.ChessLib.Types;
 
 namespace Application.LogicImplementations;
@@ -21,8 +20,9 @@ public class GameLogic : IGameLogic
     private EmptyGameMessage _empty = new();
     public bool IsDrawOfferPending { get; set; } = false;
     public bool OnWhiteSide { get; set; } = true;
-    public bool WhiteTurn { get; private set; } = true;
     public ulong? GameRoomId { get; set; }
+
+    private AsyncServerStreamingCall<JoinedGameStream>? _call;
 
     //Todo Possibility of replacing StreamUpdate with action and only needed information instead of dto
     public delegate void StreamUpdate(JoinedGameStreamDto dto);
@@ -86,13 +86,11 @@ public class GameLogic : IGameLogic
     {
         ClaimsPrincipal user = await _authService.GetAuthAsync();
 
-        Console.WriteLine(user.Identity?.Name);
-
-        AsyncServerStreamingCall<JoinedGameStream>? call;
+        _call?.Dispose();
 
         try
         {
-            call = _gameClient.JoinGame(new RequestJoinGame()
+            _call = _gameClient.JoinGame(new RequestJoinGame()
             {
                 GameRoom = dto.GameRoom,
                 Username = user.Identity?.Name
@@ -106,11 +104,17 @@ public class GameLogic : IGameLogic
             throw new ArgumentException("Game room not found");
         }
 
+        ListenToJoinedGameStream();
+    }
+
+
+    private async Task ListenToJoinedGameStream()
+    {
         try
         {
-            while (await call.ResponseStream.MoveNext(CancellationToken.None))
+            while (await _call.ResponseStream.MoveNext(CancellationToken.None))
             {
-                var response = MessageToDtoParser.ToDto(call.ResponseStream.Current);
+                var response = MessageToDtoParser.ToDto(_call.ResponseStream.Current);
 
                 switch (response.Event)
                 {
@@ -119,17 +123,17 @@ public class GameLogic : IGameLogic
                         TimeUpdate(response);
                         break;
                     case GameStreamEvents.TimeUpdate:
-                        if (response.GameEndType == (uint) GameEndTypes.TimeIsUp) call.Dispose();
+                        if (response.GameEndType == (uint) GameEndTypes.TimeIsUp) _call.Dispose();
                         TimeUpdate(response);
                         break;
                     case GameStreamEvents.ReachedEndOfTheGame:
-                        call.Dispose();
+                        _call.Dispose();
                         TimeUpdate(response);
                         NewFenReceived?.Invoke(response);
                         EndOfTheGameReached?.Invoke(response);
                         break;
                     case GameStreamEvents.Resignation:
-                        call.Dispose();
+                        _call.Dispose();
                         ResignationReceived?.Invoke(response);
                         break;
                     case GameStreamEvents.DrawOffer:
@@ -139,7 +143,7 @@ public class GameLogic : IGameLogic
                         DrawOfferTimeout(response);
                         break;
                     case GameStreamEvents.DrawOfferAcceptation:
-                        call.Dispose();
+                        _call.Dispose();
                         DrawOfferAcceptation(response);
                         break;
                     case GameStreamEvents.InitialTime:

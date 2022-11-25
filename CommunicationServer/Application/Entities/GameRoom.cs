@@ -46,13 +46,16 @@ public class GameRoom
 
     public void Initialize()
     {
-        _gameData.Add(new JoinedGameStreamDto()
+
+        var streamDto = new JoinedGameStreamDto()
         {
             Event = GameStreamEvents.InitialTime,
             TimeLeftMs = _chessTimer.TimeControlBaseMs,
             UsernameWhite = PlayerWhite ?? "",
-            UsernameBlack =  PlayerBlack ?? ""
-        });
+            UsernameBlack = PlayerBlack ?? ""
+        };
+        _gameData.Add(streamDto);
+        GameJoined.Invoke(streamDto);
 
         _chessTimer.ThrowEvent += (_, _, dto) =>
         {

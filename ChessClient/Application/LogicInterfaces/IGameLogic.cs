@@ -9,6 +9,7 @@ namespace Application.LogicInterfaces;
 public interface IGameLogic
 {
     bool OnWhiteSide { get; set; }
+    ulong? GameRoomId { get; }
     bool IsDrawOfferPending { get; set; }
     public event GameLogic.StreamUpdate? TimeUpdated;
     public event GameLogic.StreamUpdate? NewFenReceived;

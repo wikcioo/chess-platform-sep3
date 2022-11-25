@@ -4,8 +4,8 @@ using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
+using Domain.Models;
 using Rudzoft.ChessLib.Fen;
-using StockfishWrapper;
 
 namespace Application.Logic;
 
@@ -13,10 +13,12 @@ public class GameLogic : IGameLogic
 {
     private readonly GameRoomsData _gameRoomsData = new();
     private readonly IStockfishService _stockfishService;
+    private readonly IChatLogic _chatLogic;
 
-    public GameLogic(IStockfishService stockfishService)
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic)
     {
         _stockfishService = stockfishService;
+        _chatLogic = chatLogic;
     }
 
     public Task<ResponseGameDto> StartGame(RequestGameDto dto)
@@ -64,6 +66,7 @@ public class GameLogic : IGameLogic
 
         gameRoom.Initialize();
         var id = _gameRoomsData.Add(gameRoom, dto.IsVisible, dto.OpponentType);
+        _chatLogic.StartChatRoom(id);
 
         if (gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
             RequestAiMove(id);
@@ -85,18 +88,18 @@ public class GameLogic : IGameLogic
         var gameRoom = _gameRoomsData.Get(dto.GameRoom);
         if ((_gameRoomsData.IsJoinable(dto.GameRoom) && _gameRoomsData.CanUsernameJoin(dto.GameRoom, dto.Username)))
         {
+            if (string.IsNullOrEmpty(gameRoom.PlayerWhite) && !dto.Username.Equals(gameRoom.PlayerBlack))
+            {
+                gameRoom.PlayerWhite = dto.Username;
+            }
+            else if (string.IsNullOrEmpty(gameRoom.PlayerBlack) && !dto.Username.Equals(gameRoom.PlayerWhite))
+            {
+                gameRoom.PlayerBlack = dto.Username;
+            }
+
             if (++_gameRoomsData.NumPlayersJoined[dto.GameRoom] == 2)
             {
                 _gameRoomsData.TransitionFromJoinableAndAddToSpectateableIfVisible(dto.GameRoom);
-                if (string.IsNullOrEmpty(gameRoom.PlayerWhite))
-                {
-                    gameRoom.PlayerWhite = dto.Username;
-                }
-                else if (string.IsNullOrEmpty(gameRoom.PlayerBlack))
-                {
-                    gameRoom.PlayerBlack = dto.Username;
-                }
-
                 gameRoom.Initialize();
             }
 

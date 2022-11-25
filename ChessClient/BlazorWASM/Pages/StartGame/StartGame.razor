@@ -1,5 +1,4 @@
-﻿@using StockfishWrapper
-@using Microsoft.AspNetCore.Components
+﻿@using Microsoft.AspNetCore.Components
 @using Domain.Enums
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Types
@@ -7,6 +6,7 @@
 @using Application.LogicInterfaces
 @using Position = Rudzoft.ChessLib.Position
 @using Domain.DTOs
+@using Domain.Models
 @using Grpc.Core
 @using Rudzoft.ChessLib.Enums
 @inject ISnackbar Snackbar
@@ -110,11 +110,11 @@
             var response = await GameLogic.CreateGame(request);
 
             _gameRoomInt = response.GameRoom;
-            NavMgr.NavigateTo("/ChessGame");
-            GameLogic.JoinGame(new RequestJoinGameDto
+            await GameLogic.JoinGame(new RequestJoinGameDto
             {
                 GameRoom = response.GameRoom
             });
+            NavMgr.NavigateTo("/ChessGame");
             Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
         }
         catch (InvalidOperationException)

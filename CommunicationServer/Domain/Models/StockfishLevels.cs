@@ -1,7 +1,6 @@
-using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 
-namespace StockfishWrapper;
+namespace Domain.Models;
 
 public class StockfishLevels
 {

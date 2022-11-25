@@ -1,52 +1,60 @@
-@using GrpcService
-@using Grpc.Core
-@using Grpc.Net.Client
-@inject GrpcChannel Channel
+@using Application.LogicInterfaces
+@using Domain.DTOs.Chat
+@using MudBlazor
+@using Application.LogicImplementations
+@using Rudzoft.ChessLib.Extensions
+@inject IChatLogic ChatLogic
+@implements IDisposable
 
+<MudContainer Class="pa-0">
+    <MudPaper Class="overflow-x-auto" Height="400px">@((MarkupString) _chatLog)</MudPaper>
+    <MudTextField Immediate="true" T="string" InputType="InputType.Text" placeholder="Enter message" @bind-Value="_messageBody" OnKeyPress="OnKeyPress"/>
+    <MudButton OnClick="WriteMessageAsync" Color="Color.Secondary">Send</MudButton>
+</MudContainer>
 
-<div class="chat-window">
-    <div class="message-history">@((MarkupString) _resultMsg)</div>
-    <div class="message-body">
-        <input oninput="(this.dispatchEvent(new CustomEvent('change', { bubbles: true })))" class="message-input" type="text" placeholder="Enter message" @bind="_messageBody" @onkeydown="OnKeyPress "/>
-        <button @onclick="WriteMessageAsync" enabled="@(IsValid())" class="acceptbtn">Send</button>
-    </div>
-</div>
 
 @code {
-
-    [Parameter]
-    public string Username { get; set; }
-
     private string _messageBody = "";
 
     [Parameter]
-    public string Receiver { get; set; }
+    public ulong? GameRoom { get; set; }
 
-    private Chat.ChatClient _client;
-    private AsyncServerStreamingCall<Message> _call;
-    private string _resultMsg = "";
+    private string _chatLog = "";
+
 
     protected override async Task OnInitializedAsync()
     {
-        _client = new Chat.ChatClient(Channel);
-        _call = _client.StartMessaging(new RequestMessage
+        
+        ChatLogic.MessageReceived += OnMessageReceived;
+        if (GameRoom != null)
         {
-            Username = Username,
-            Receiver = Receiver
-        });
-        while (await _call.ResponseStream.MoveNext())
+            ChatLogic.StartMessagingAsync((ulong) GameRoom);
+        }
+    }
+
+    public void Dispose()
+    {
+        ChatLogic.MessageReceived -= OnMessageReceived;
+    }
+
+
+    private async Task WriteMessageAsync()
+    {
+        if (IsValid())
         {
-            var message = _call.ResponseStream.Current;
-            _resultMsg += $"<div>{message.Username}:{message.Body}\n</div>";
+            await ChatLogic.WriteMessageAsync(new MessageDto
+            {
+                Body = _messageBody,
+                GameRoom = (ulong)GameRoom
+            });
+            _messageBody = "";
             StateHasChanged();
         }
     }
 
-    private async Task WriteMessageAsync()
+    private void OnMessageReceived(string chatLog)
     {
-        await _client.WriteAsync(
-            new Message {Username = Username, Body = _messageBody, Receiver = Receiver});
-        _messageBody = "";
+        _chatLog = chatLog;
         StateHasChanged();
     }
 
@@ -55,7 +63,7 @@
         return !string.IsNullOrEmpty(_messageBody);
     }
 
-    private async void OnKeyPress (KeyboardEventArgs e)
+    private async void OnKeyPress(KeyboardEventArgs e)
     {
         if (e.Code is not ("Enter" or "NumpadEnter")) return;
         if (IsValid())
