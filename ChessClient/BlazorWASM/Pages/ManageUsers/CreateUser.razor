@@ -1,7 +1,7 @@
-
 @page "/CreateUser"
 @using HttpClients.ClientInterfaces
 @using Domain.Models
+@using System.Text.Json
 @inject IUserService UserService
 @inject ISnackbar Snackbar
 
@@ -42,7 +42,9 @@
         }
         catch (Exception e)
         {
-            Notify(e.Message, Severity.Error);
+            var values = JsonSerializer.Deserialize<Dictionary<string, Object>>(e.Message);
+            if (values?["message"] != null)
+                Notify(values["message"].ToString() ?? "Error has occured", Severity.Error);
         }
     }
 
