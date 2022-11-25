@@ -112,7 +112,10 @@
     {
         try
         {
-            return await GameLogic.MakeMove(move);
+            var t = await GameLogic.MakeMove(move);
+            _whiteTimerActive = !_whiteTimerActive;
+            return t;
+
         }
         catch (InvalidOperationException e)
         {
@@ -233,8 +236,17 @@
         }
         else
         {
-            if (dto.IsWhite) _whiteSeconds = dto.TimeLeftMs / 1000;
-            else _blackSeconds = dto.TimeLeftMs / 1000;
+            if (dto.IsWhite)
+            {
+                _whiteSeconds = dto.TimeLeftMs / 1000;
+                _whiteTimerActive = true;
+            }
+            else
+            {
+                _blackSeconds = dto.TimeLeftMs / 1000;
+                _whiteTimerActive = false;
+            }
+            
             StateHasChanged();
         }
     }

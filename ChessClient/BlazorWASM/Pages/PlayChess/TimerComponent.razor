@@ -1,16 +1,28 @@
 @using System.Text
 @namespace BlazorWASM.Pages.ChessComponents
 
-<MudPaper>
-    <MudText Align="Align.Center" Typo="Typo.h4" Color="@(Active ? Color.Tertiary : Color.Primary)">
+<MudPaper Style="@("background-color:"+(Active ? "var(--mud-palette-tertiary)" : "var(--mud-palette-primary)"))">
+    if(
+    
+    <MudText Align="Align.Center" Typo="Typo.h5" Style="color: white">
         @PrintFormattedTime(Seconds)
     </MudText>
 </MudPaper>
 
 @code {
 
+    private bool _active;
+
     [Parameter]
-    public bool Active { get; set; }
+    public bool Active {
+        get => _active;
+        set
+        {
+            if (_active == value ) return;
+            _active = value;
+            StateHasChanged();
+        }
+    }
 
     [Parameter]
     public double Seconds { get; set; }
