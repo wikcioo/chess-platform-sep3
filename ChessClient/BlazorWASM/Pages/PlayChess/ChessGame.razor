@@ -7,44 +7,66 @@
 @using Position = Rudzoft.ChessLib.Position
 @using Domain.DTOs
 @using Domain.Enums
-@using Grpc.Core
 @using BlazorWASM.Pages.ChessComponents
 @using System.Security.Claims
-@using Domain.Models
 @inject IDialogService DialogService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
 @inject IGameLogic GameLogic
-@inject IChatLogic ChatLogic
 @implements IDisposable
 
 
 <audio id="move" src="sounds/move.mp3"></audio>
 <audio id="notify" src="sounds/notify.mp3"></audio>
 
-<MudButton @onclick="Resign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
-<MudButton @onclick="OfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
-@if (GameLogic.IsDrawOfferPending)
-{
-    <div>
-        <h3>You have a draw offer</h3>
-        <MudButton @onclick="() => SendDrawResponse(true)" Variant="Variant.Filled" Color="Color.Success">Accept</MudButton>
-        <MudButton @onclick="() => SendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
-    </div>
-}
 
-<MudGrid Justify="Justify.SpaceAround" Spacing="10">
-    <MudItem xs="12" lg="6">
-        <TimerComponent Active="@(_isWhiteSide == GameSides.White ? !_whiteTimerActive : _whiteTimerActive)"
-                        Seconds="@(_isWhiteSide == GameSides.White ? _blackSeconds : _whiteSeconds)"/>
-        <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@(_isWhiteSide == GameSides.White)"/>
-        <TimerComponent Active="@(_isWhiteSide == GameSides.White ? _whiteTimerActive : !_whiteTimerActive)"
-                        Seconds="@(_isWhiteSide == GameSides.White ? _whiteSeconds : _blackSeconds)"/>
-    </MudItem>
-    <MudItem xs="12" lg="6">
-        <ChatWindow GameRoom="@GameLogic.GameRoomId"></ChatWindow>
-    </MudItem>
-</MudGrid>
+<MudContainer Class="mt-10" MaxWidth="MaxWidth.Medium">
+    <MudGrid Style="align-items: center" Justify="Justify.SpaceAround" Spacing="7">
+        <MudItem xs="12" sm="9" md="8">
+            <MudGrid Justify="Justify.SpaceBetween">
+                <MudItem xs="8">
+                    <NicknameComponent/>
+                </MudItem>
+                <MudItem xs="4">
+                    <TimerComponent Active="@(_isWhiteSide == GameSides.White ? !_whiteTimerActive : _whiteTimerActive)"
+                                    Seconds="@(_isWhiteSide == GameSides.White ? _blackSeconds : _whiteSeconds)"/>
+                </MudItem>
+                <MudItem xs="12">
+                    <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@(_isWhiteSide == GameSides.White)"/>
+                </MudItem>
+                <MudItem xs="8">
+                    <NicknameComponent/>
+                </MudItem>
+                <MudItem xs="4">
+                    <TimerComponent Active="@(_isWhiteSide == GameSides.White ? _whiteTimerActive : !_whiteTimerActive)"
+                                    Seconds="@(_isWhiteSide == GameSides.White ? _whiteSeconds : _blackSeconds)"/>
+                </MudItem>
+            </MudGrid>
+        </MudItem>
+        <MudItem xs="12" sm="9" md="4">
+            <MudGrid>
+                <MudItem xs="6">
+                    <MudButton @onclick="Resign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudButton @onclick="OfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
+                    @if (GameLogic.IsDrawOfferPending)
+                    {
+                        <div>
+                            <h3>You have a draw offer</h3>
+                            <MudButton @onclick="() => SendDrawResponse(true)" Variant="Variant.Filled" Color="Color.Success">Accept</MudButton>
+                            <MudButton @onclick="() => SendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
+                        </div>
+                    }
+                </MudItem>
+                <MudItem xs="12">
+                    <ChatWindow GameRoom="@GameLogic.GameRoomId"></ChatWindow>
+                </MudItem>
+            </MudGrid>
+
+        </MudItem>
+    </MudGrid>
+</MudContainer>
 
 @code {
 
@@ -57,16 +79,10 @@
     private double _whiteSeconds;
     private double _blackSeconds;
     private bool _whiteTimerActive = true;
+    private string _opponentName = "I am Joe, your placeholder";
 
     //Form input bindings
-    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
-    private OpponentTypes _opponentType = OpponentTypes.Ai;
-    private ulong _gameRoomInt;
     private GameSides _isWhiteSide = GameSides.White;
-    private string _opponentName = "";
-    private uint _timeControlBase = 120;
-    private uint _timeControlIncrement;
-    private bool _isGamePrivate;
 
     protected override void OnInitialized()
     {
