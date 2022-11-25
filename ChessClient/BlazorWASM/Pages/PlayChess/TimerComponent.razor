@@ -2,8 +2,6 @@
 @namespace BlazorWASM.Pages.ChessComponents
 
 <MudPaper Style="@("background-color:"+(Active ? "var(--mud-palette-tertiary)" : "var(--mud-palette-primary)"))">
-    if(
-    
     <MudText Align="Align.Center" Typo="Typo.h5" Style="color: white">
         @PrintFormattedTime(Seconds)
     </MudText>
