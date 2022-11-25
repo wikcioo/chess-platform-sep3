@@ -15,12 +15,8 @@
     private string PrintFormattedTime(double secs)
     {
         var sb = new StringBuilder();
-
-        var minutes = Math.Floor(secs / 60);
-        var seconds = secs % 60;
-
-        sb.Append($"{minutes:00}");
-        sb.Append($":{Math.Round(seconds, 2)}");
+        
+        sb.Append($"{TimeSpan.FromSeconds(secs).ToString(@"mm\:ss")}");
 
         return sb.ToString();
     }
