@@ -22,4 +22,9 @@ public class ChatRoom
             (x) => MessageReceived -= x);
         return _logs.ToObservable().Concat(newLogs);
     }
+
+    public List<MessageDto> GetLog()
+    {
+        return _logs;
+    }
 }

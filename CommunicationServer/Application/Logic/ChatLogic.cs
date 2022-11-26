@@ -25,6 +25,11 @@ public class ChatLogic : IChatLogic
         }
     }
 
+    public List<MessageDto> GetLog(ulong gameRoom)
+    {
+        return _chatRooms[gameRoom].GetLog();
+    }
+
     public IObservable<MessageDto> GetMessagesAsObservable(RequestMessageDto request)
     {
         var key = request.GameRoom;
