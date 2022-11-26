@@ -68,6 +68,9 @@ public class GameLogic : IGameLogic
         var id = _gameRoomsData.Add(gameRoom, dto.IsVisible, dto.OpponentType);
         _chatLogic.StartChatRoom(id);
 
+        if (dto.OpponentType == OpponentTypes.Ai)
+            _gameRoomsData.NumPlayersJoined[id]++;
+
         if (gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
             RequestAiMove(id);
 
