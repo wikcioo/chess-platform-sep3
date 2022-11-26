@@ -28,13 +28,14 @@
         ChatLogic.MessageReceived += OnMessageReceived;
         if (GameRoom != null)
         {
-            ChatLogic.StartMessagingAsync((ulong) GameRoom);
+            await ChatLogic.StartMessagingAsync((ulong) GameRoom);
         }
     }
 
     public void Dispose()
     {
         ChatLogic.MessageReceived -= OnMessageReceived;
+        ChatLogic.DisposeAsync();
     }
 
 
