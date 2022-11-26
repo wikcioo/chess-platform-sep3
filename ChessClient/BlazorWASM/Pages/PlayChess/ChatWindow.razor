@@ -5,6 +5,8 @@
 @using Rudzoft.ChessLib.Extensions
 @inject IChatLogic ChatLogic
 @implements IDisposable
+@inject ISnackbar Snackbar
+
 
 <MudContainer Class="pa-0">
     <MudPaper Class="overflow-x-auto" Height="400px">@((MarkupString) _chatLog)</MudPaper>
@@ -40,6 +42,12 @@
 
     private async Task WriteMessageAsync()
     {
+        if (GameRoom != null)
+        {
+            Notify("You didn't join a game room!", Severity.Warning);
+            return;
+        }
+
         if (IsValid())
         {
             await ChatLogic.WriteMessageAsync(new MessageDto
@@ -70,6 +78,11 @@
         {
             await WriteMessageAsync();
         }
+    }
+    
+    private void Notify(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
     }
 
 }
