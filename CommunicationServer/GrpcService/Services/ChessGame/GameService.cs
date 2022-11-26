@@ -77,32 +77,6 @@ public class GameService : Game.GameBase
         }
     }
 
-    public override async Task<Acknowledge> MakeMove(RequestMakeMove request, ServerCallContext context)
-    {
-        var claim = context.GetHttpContext().User.Claims.FirstOrDefault(claim => claim.Type.Equals(ClaimTypes.Name));
-        if (claim == null)
-        {
-            return new Acknowledge()
-            {
-                Status = (uint) AckTypes.NotUserTurn
-            };
-        }
-
-        AckTypes ack = await _gameLogic.MakeMove(new MakeMoveDto()
-        {
-            GameRoom = request.GameRoom,
-            FromSquare = request.FromSquare,
-            ToSquare = request.ToSquare,
-            MoveType = request.MoveType,
-            Promotion = request.Promotion,
-            Username = claim.Value
-        });
-        return new Acknowledge()
-        {
-            Status = (uint) ack
-        };
-    }
-
     public override async Task<Acknowledge> Resign(RequestResign request, ServerCallContext context)
     {
         var claim = context.GetHttpContext().User.Claims.FirstOrDefault(claim => claim.Type.Equals(ClaimTypes.Name));

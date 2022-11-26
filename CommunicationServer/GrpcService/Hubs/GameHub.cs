@@ -45,4 +45,9 @@ public class GameHub : Hub<IGameHub>
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
     }
 
+    public async Task MakeMove(MakeMoveDto dto)
+    {
+        dto.Username = Context.User?.Identity?.Name;
+        var ack = await _gameLogic.MakeMove(dto);
+    }
 }

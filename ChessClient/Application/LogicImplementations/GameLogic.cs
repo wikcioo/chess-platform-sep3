@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Application.LogicInterfaces;
+using Application.Signalr;
 using Domain.DTOs;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
@@ -8,6 +9,7 @@ using Grpc.Net.Client;
 using GrpcService;
 using HttpClients;
 using HttpClients.ClientInterfaces;
+using Microsoft.AspNetCore.SignalR.Client;
 using Rudzoft.ChessLib.Enums;
 using Rudzoft.ChessLib.Types;
 
@@ -37,10 +39,14 @@ public class GameLogic : IGameLogic
     public event StreamUpdate? EndOfTheGameReached;
     public event StreamUpdate? GameFirstJoined;
 
-    public GameLogic(IAuthService authService, GrpcChannel channel)
+    //Signalr
+    private HubConnectionDto _hubDto;
+
+    public GameLogic(IAuthService authService, GrpcChannel channel, HubConnectionDto hubDto)
     {
         _authService = authService;
         _gameClient = new Game.GameClient(channel);
+        _hubDto = hubDto;
     }
 
     public GameLogic(IAuthService authService, Game.GameClient client)
@@ -208,18 +214,18 @@ public class GameLogic : IGameLogic
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
 
-
-        var token = _authService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var call = await _gameClient.MakeMoveAsync(new RequestMakeMove
+        if (_hubDto._hubConnection is not null)
         {
-            FromSquare = move.FromSquare().ToString(),
-            ToSquare = move.ToSquare().ToString(),
-            GameRoom = GameRoomId.Value,
-            MoveType = (uint) move.MoveType(),
-            Promotion = (uint) move.PromotedPieceType().AsInt()
-        }, headers);
-        return (int) call.Status;
+            await _hubDto._hubConnection.SendAsync("MakeMove", new MakeMoveDto
+            {
+                FromSquare = move.FromSquare().ToString(),
+                ToSquare = move.ToSquare().ToString(),
+                GameRoom = GameRoomId.Value,
+                MoveType = (uint) move.MoveType(),
+                Promotion = (uint) move.PromotedPieceType().AsInt()
+            });
+        }
+        return 0;
     }
 
     public async Task<AckTypes> OfferDraw()

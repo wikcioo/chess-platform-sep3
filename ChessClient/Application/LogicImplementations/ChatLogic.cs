@@ -1,4 +1,5 @@
 using Application.LogicInterfaces;
+using Application.Signalr;
 using Domain.DTOs.Chat;
 using HttpClients.ClientInterfaces;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -17,10 +18,12 @@ public class ChatLogic : IChatLogic
 
     private HubConnection? _hubConnection;
     private ulong _gameRoom;
+    private readonly HubConnectionDto _hubDto;
 
-    public ChatLogic(IAuthService authService)
+    public ChatLogic(IAuthService authService, HubConnectionDto hubDto)
     {
         _authService = authService;
+        _hubDto = hubDto;
     }
 
     public async Task WriteMessageAsync(MessageDto dto)
@@ -37,7 +40,7 @@ public class ChatLogic : IChatLogic
             .WithUrl("https://localhost:7289/gamehub",
                 options => { options.AccessTokenProvider = () => Task.FromResult(_authService.GetJwtToken())!; })
             .Build();
-
+        _hubDto._hubConnection = _hubConnection;
         _hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
         {
             _chatLog += $"<div>{user}:{message}\n</div>";
