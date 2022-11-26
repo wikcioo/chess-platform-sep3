@@ -47,9 +47,11 @@
         });
     }
 
-    private void JoinRandomGame()
+    private async void JoinRandomGame()
     {
-        if (_joinableGames != null && _joinableGames.Count > 0)
+        _joinableGames = await GameLogic.GetAllJoinableGames();
+        
+        if (_joinableGames.Count > 0)
         {
             NavMgr.NavigateTo("/ChessGame");
             var randomGameRoomId = _joinableGames[new Random().Next(_joinableGames.Count)].GameRoom;
