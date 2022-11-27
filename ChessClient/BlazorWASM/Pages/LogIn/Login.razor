@@ -2,6 +2,7 @@
 @using HttpClients.ClientInterfaces
 @using System.Text.Json.Nodes
 @inject IAuthService AuthService
+@inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 
 <AuthorizeView>
@@ -11,7 +12,6 @@
                 <MudText Typo="Typo.h5" Align="Align.Center">Please login</MudText>
                 <MudTextField InputType="InputType.Email" Label="Email" Variant="Variant.Filled" @bind-Value="_email"/>
                 <MudTextField InputType="InputType.Password" Label="Password" Variant="Variant.Filled" @bind-Value="_password"/>
-                <MudText Color="Color.Error">@_errorLabel</MudText>
                 <MudButton Class="mt-4" OnClick="LoginAsync" Variant="Variant.Filled" Color="Color.Success">Login</MudButton>
             </MudPaper>
         </MudContainer>
@@ -26,21 +26,18 @@
 @code {
     private string _email = "";
     private string _password = string.Empty;
-    private string _errorLabel = string.Empty;
 
     private bool _isShow = false;
 
     private async Task LoginAsync()
     {
-        _errorLabel = "";
-
         if (string.IsNullOrEmpty(_email))
         {
-            _errorLabel = "You need to specify your email!";
+            Notify("You need to specify your email!", Severity.Error);
         }
         else if (string.IsNullOrEmpty(_password))
         {
-            _errorLabel = "You need to specify your password!";
+            Notify("You need to specify your password!", Severity.Error);
         }
         else
         {
@@ -53,9 +50,13 @@
             {
                 Console.WriteLine(e);
                 var res = JsonNode.Parse(e.Message)!;
-                _errorLabel = $"Error: {res["message"]}";
+                Notify("" + res["message"], Severity.Error);
             }
         }
     }
-
+    
+    private void Notify(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity, options => options.CloseAfterNavigation = true);
+    }
 }
