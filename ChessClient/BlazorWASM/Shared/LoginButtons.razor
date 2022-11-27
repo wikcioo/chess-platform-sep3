@@ -1,14 +1,15 @@
 ﻿@using HttpClients.ClientInterfaces
 @using MudBlazor
+@using Application.Signalr
 @inject NavigationManager NavMgr
 @inject IAuthService AuthService
+@inject HubConnectionDto HubDto
 <AuthorizeView>
     <Authorized>
- <MudIconButton Icon="@Icons.Filled.Logout" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Logout())" />
+        <MudIconButton Icon="@Icons.Filled.Logout" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Logout())"/>
     </Authorized>
     <NotAuthorized>
-        
-         <MudIconButton Icon="@Icons.Filled.Login" Title="Login" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Login())" />
+        <MudIconButton Icon="@Icons.Filled.Login" Title="Login" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Login())"/>
     </NotAuthorized>
 </AuthorizeView>
 
@@ -22,7 +23,13 @@
     private async Task Logout()
     {
         await AuthService.LogoutAsync();
-        NavMgr.NavigateTo("/",true);
+        NavMgr.NavigateTo("/", true);
+        if (HubDto.HubConnection is not null)
+        {
+            await HubDto.HubConnection.StopAsync();
+            await HubDto.HubConnection.DisposeAsync();
+            Console.WriteLine("WHy even");
+        }
     }
 
 }
