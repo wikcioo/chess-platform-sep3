@@ -4,5 +4,5 @@ namespace Application.Signalr;
 
 public class HubConnectionDto
 {
-    public HubConnection? _hubConnection { get; set; }
+    public HubConnection? HubConnection { get; set; }
 }

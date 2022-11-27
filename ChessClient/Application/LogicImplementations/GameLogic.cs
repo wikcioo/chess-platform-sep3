@@ -214,17 +214,20 @@ public class GameLogic : IGameLogic
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
 
-        if (_hubDto._hubConnection is not null)
+        if (_hubDto.HubConnection == null)
         {
-            await _hubDto._hubConnection.SendAsync("MakeMove", new MakeMoveDto
-            {
-                FromSquare = move.FromSquare().ToString(),
-                ToSquare = move.ToSquare().ToString(),
-                GameRoom = GameRoomId.Value,
-                MoveType = (uint) move.MoveType(),
-                Promotion = (uint) move.PromotedPieceType().AsInt()
-            });
+            throw new InvalidOperationException("You are not logged in!");
         }
+
+        await _hubDto.HubConnection.SendAsync("MakeMove", new MakeMoveDto
+        {
+            FromSquare = move.FromSquare().ToString(),
+            ToSquare = move.ToSquare().ToString(),
+            GameRoom = GameRoomId.Value,
+            MoveType = (uint) move.MoveType(),
+            Promotion = (uint) move.PromotedPieceType().AsInt()
+        });
+
         return 0;
     }
 
