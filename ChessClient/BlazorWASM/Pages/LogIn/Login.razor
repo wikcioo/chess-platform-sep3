@@ -9,6 +9,7 @@
                 <MudText Typo="Typo.h5" Align="Align.Center">Please login</MudText>
                 <MudTextField InputType="InputType.Email" Label="Email" Variant="Variant.Filled" @bind-Value="_email"/>
                 <MudTextField InputType="InputType.Password" Label="Password" Variant="Variant.Filled" @bind-Value="_password"/>
+                <MudText Color="Color.Error">@_errorLabel</MudText>
                 <MudButton Class="mt-4" OnClick="LoginAsync" Variant="Variant.Filled" Color="Color.Success">Login</MudButton>
             </MudPaper>
         </MudContainer>
@@ -22,23 +23,35 @@
 
 @code {
     private string _email = "";
-    private string _password = String.Empty;
-    private string _errorLabel = String.Empty;
+    private string _password = string.Empty;
+    private string _errorLabel = string.Empty;
 
     private bool _isShow = false;
 
     private async Task LoginAsync()
     {
         _errorLabel = "";
-        try
+
+        if (string.IsNullOrEmpty(_email))
         {
-            await AuthService.LoginAsync(_email, _password);
-            NavMgr.NavigateTo("/");
+            _errorLabel = "You need to specify your email!";
         }
-        catch (Exception e)
+        else if (string.IsNullOrEmpty(_password))
         {
-            Console.WriteLine(e);
-            _errorLabel = $"Error: {e.Message}";
+            _errorLabel = "You need to specify your password!";
+        }
+        else
+        {
+            try
+            {
+                await AuthService.LoginAsync(_email, _password);
+                NavMgr.NavigateTo("/");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                _errorLabel = $"Error: {e.Message}";
+            }
         }
     }
 
