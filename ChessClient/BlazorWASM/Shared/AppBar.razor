@@ -12,10 +12,10 @@
     <MudSpacer/>
     <AuthorizeView>
         <NotAuthorized>
-            <MudText Color="Color.Inherit">Not logged in</MudText>
+            <MudText Class="mr-5" Color="Color.Inherit">Not logged in</MudText>
         </NotAuthorized>
         <Authorized>
-            <MudText Color="Color.Inherit">Logged in as: @context.User.Identity!.Name</MudText>
+            <MudText Class="mr-5" Color="Color.Inherit">Logged in as: @context.User.Identity!.Name</MudText>
         </Authorized>
     </AuthorizeView>
     <LoginButtons/>
