@@ -6,7 +6,9 @@
         <AuthorizeView Roles="admin">
             <MudButton Color="Color.Inherit" Href="CreateUser">Add Users</MudButton>
         </AuthorizeView>
-        <MudButton Color="Color.Inherit" Href="StartGame">Play</MudButton>
+        <AuthorizeView>
+            <MudButton Color="Color.Inherit" Href="StartGame">Play</MudButton>
+        </AuthorizeView>
         <MudButton Color="Color.Inherit" Href="GameList">Games</MudButton>
     </MudToolBar>
     <MudSpacer/>
