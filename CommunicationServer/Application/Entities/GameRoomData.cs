@@ -4,8 +4,7 @@ namespace Application.Entities;
 
 public class GameRoomsData
 {
-    private static readonly Stack<ulong> RecentlyFreedGameIds = new();
-    private static ulong _nextGameId = 0;
+    private static ulong _nextGameId = 1;
 
     private readonly Dictionary<ulong, GameRoom> _gameRooms = new();
     private readonly Dictionary<ulong, bool> _visible = new();
@@ -16,14 +15,11 @@ public class GameRoomsData
     public readonly Dictionary<ulong, uint> NumPlayersJoined = new();
     public readonly Dictionary<ulong, uint> NumSpectatorsJoined = new();
 
-    private static ulong GenerateNextGameId()
-    {
-        return RecentlyFreedGameIds.Count > 0 ? RecentlyFreedGameIds.Pop() : _nextGameId++;
-    }
+
 
     public ulong Add(GameRoom gameRoom, bool isVisible, OpponentTypes opponentType)
     {
-        var id = GenerateNextGameId();
+        var id = _nextGameId++;
         _gameRooms.Add(id, gameRoom);
         _visible.Add(id, isVisible);
         _opponentType.Add(id, opponentType);
@@ -50,7 +46,6 @@ public class GameRoomsData
         _joinable.Remove(id);
         NumPlayersJoined[id] = 0;
         NumSpectatorsJoined[id] = 0;
-        RecentlyFreedGameIds.Push(id);
     }
 
     public void TransitionFromJoinableAndAddToSpectateableIfVisible(ulong id)
