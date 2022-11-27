@@ -64,6 +64,19 @@ public class GameRoom
         };
     }
 
+    public void GetStartPos()
+    {
+        var streamDto = new JoinedGameStreamDto()
+        {
+            Event = GameStreamEvents.InitialTime,
+            TimeLeftMs = _chessTimer.TimeControlBaseMs,
+            UsernameWhite = PlayerWhite ?? "",
+            UsernameBlack = PlayerBlack ?? ""
+        };
+        _gameData.Add(streamDto);
+        GameJoined.Invoke(streamDto);
+    }
+
     public AckTypes MakeMove(MakeMoveDto dto)
     {
         if (!_gameIsActive) return AckTypes.GameHasFinished;

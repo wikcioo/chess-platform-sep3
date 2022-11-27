@@ -100,7 +100,7 @@ public class GameLogic : IGameLogic
             if (++_gameRoomsData.NumPlayersJoined[dto.GameRoom] == 2)
             {
                 _gameRoomsData.TransitionFromJoinableAndAddToSpectateableIfVisible(dto.GameRoom);
-                gameRoom.Initialize();
+                gameRoom.GetStartPos();
             }
 
             return gameRoom.GetMovesAsObservable();
