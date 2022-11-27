@@ -10,5 +10,13 @@
         <MudButton Color="Color.Inherit" Href="GameList">Games</MudButton>
     </MudToolBar>
     <MudSpacer/>
+    <AuthorizeView>
+        <NotAuthorized>
+            <MudText Class="mr-5" Color="Color.Inherit">Not logged in</MudText>
+        </NotAuthorized>
+        <Authorized>
+            <MudText Class="mr-5" Color="Color.Inherit">Logged in as: @context.User.Identity!.Name</MudText>
+        </Authorized>
+    </AuthorizeView>
     <LoginButtons/>
 </MudAppBar>
