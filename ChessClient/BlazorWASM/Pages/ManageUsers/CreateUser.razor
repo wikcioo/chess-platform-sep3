@@ -1,36 +1,36 @@
 @page "/CreateUser"
 @using HttpClients.ClientInterfaces
 @using Domain.Models
-@using MudBlazor
+@using System.Text.Json
 @inject IUserService UserService
+@inject ISnackbar Snackbar
 
-<MudContainer MaxWidth="MaxWidth.Small">
-    <MudPaper Class="pa-7 ma-10">
-        <MudText Typo="Typo.h5" Align="Align.Center">Create User</MudText>
-        <MudTextField @bind-Value="_username" Variant="Variant.Filled" Label="Username"/>
-        <MudTextField @bind-Value="_email" Label="Email" Variant="Variant.Filled" InputType="InputType.Email"/>
-        <MudTextField @bind-Value="_password" Label="Password" Variant="Variant.Filled" InputType="InputType.Password"/>
-        <MudTextField @bind-Value="_role" Variant="Variant.Filled" Label="Role"/>
-        @if (!string.IsNullOrEmpty(_resultMsg))
-        {
-            <MudAlert Severity="Severity.Info" Class="mt-4" Variant="Variant.Filled">@_resultMsg</MudAlert>
-        }
-        <MudButton Class="mt-4" OnClick="CreateAsync" Variant="Variant.Filled" Disabled="IsValid()">Create</MudButton>
-    </MudPaper>
-</MudContainer>
+<AuthorizeView Roles="admin">
+    <Authorized>
+        <MudContainer MaxWidth="MaxWidth.Small">
+            <MudPaper Class="pa-7 ma-10">
+                <MudText Typo="Typo.h5" Align="Align.Center">Create User</MudText>
+                <MudTextField @bind-Value="_username" Variant="Variant.Filled" Label="Username"/>
+                <MudTextField @bind-Value="_email" Label="Email" Variant="Variant.Filled" InputType="InputType.Email"/>
+                <MudTextField @bind-Value="_password" Label="Password" Variant="Variant.Filled" InputType="InputType.Password"/>
+                <MudTextField @bind-Value="_role" Variant="Variant.Filled" Label="Role"/>
+                <MudButton Class="mt-4" OnClick="CreateAsync" Variant="Variant.Filled" Disabled="IsNotValid()">Create</MudButton>
+            </MudPaper>
+        </MudContainer>
+    </Authorized>
+    <NotAuthorized>
+        <MudText Typo="Typo.h2" Align="Align.Center" Class="ma-5">You are not authorized to view this page.</MudText>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
     private string _username = "";
     private string _email = "";
     private string _password = "";
-    private string _resultMsg = "";
-    private string _color = "";
     private string _role = "";
 
     private async Task CreateAsync()
     {
-        _resultMsg = "";
-
         try
         {
             var user = await UserService.CreateAsync(new User(_username, _email, _password, _role));
@@ -38,20 +38,24 @@
             _email = "";
             _password = "";
             _role = "";
-            _resultMsg = $"User with email {user.Email} successfully created";
-            _color = "green";
+            Notify($"User with email {user.Email} successfully created", Severity.Success);
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            _resultMsg = e.Message;
-            _color = "red";
+            var values = JsonSerializer.Deserialize<Dictionary<string, Object>>(e.Message);
+            if (values?["message"] != null)
+                Notify(values["message"].ToString() ?? "Error has occured", Severity.Error);
         }
     }
 
-    private bool IsValid()
+    private bool IsNotValid()
     {
         return string.IsNullOrEmpty(_username) || string.IsNullOrEmpty(_email) || string.IsNullOrEmpty(_password) || string.IsNullOrEmpty(_role);
+    }
+
+    private void Notify(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
     }
 
 }
