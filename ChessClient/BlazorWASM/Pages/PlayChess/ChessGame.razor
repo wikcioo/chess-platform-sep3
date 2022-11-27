@@ -45,19 +45,31 @@
         </MudItem>
         <MudItem xs="12" sm="9" md="4">
             <MudGrid>
+                @if (GameLogic.IsDrawOfferPending)
+                {
+                    <MudItem Style="text-align: center" xs="12">
+                        <MudPaper Class="my-2 pa-2" Style="background-color: var(--mud-palette-primary); color: white">
+                            <MudGrid Spacing="2" Justify="Justify.SpaceBetween">
+                                <MudItem xs="12" sm="6" md="12">
+                                    <MudText Typo="Typo.subtitle1" Align="Align.Center">You have a draw offer!</MudText>
+                                </MudItem>
+                                <MudItem xs="6" sm="3" md="6">
+                                    <MudButton @onclick="() => SendDrawResponse(true)" Variant="Variant.Filled" FullWidth="true" Color="Color.Tertiary">Accept</MudButton>
+                                </MudItem>
+                                <MudItem xs="6" sm="3" md="6">
+                                    <MudButton @onclick="() => SendDrawResponse(false)" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Decline</MudButton>
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+                }
                 <MudItem xs="6">
-                    <MudButton @onclick="Resign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
+                    <MudButton @onclick="Resign" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
+                        Resign <MudIcon Icon="@Icons.Filled.OutlinedFlag" Size="Size.Small"></MudIcon>
+                    </MudButton>
                 </MudItem>
                 <MudItem xs="6">
-                    <MudButton @onclick="OfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
-                    @if (GameLogic.IsDrawOfferPending)
-                    {
-                        <div>
-                            <h3>You have a draw offer</h3>
-                            <MudButton @onclick="() => SendDrawResponse(true)" Variant="Variant.Filled" Color="Color.Success">Accept</MudButton>
-                            <MudButton @onclick="() => SendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
-                        </div>
-                    }
+                    <MudButton @onclick="OfferDraw" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Offer Draw</MudButton>
                 </MudItem>
                 <MudItem xs="12">
                     <ChatWindow GameRoom="@GameLogic.GameRoomId"></ChatWindow>
