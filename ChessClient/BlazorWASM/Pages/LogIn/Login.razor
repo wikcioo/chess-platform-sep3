@@ -1,7 +1,9 @@
 ﻿@page "/Login"
 @using HttpClients.ClientInterfaces
+@using System.Text.Json.Nodes
 @inject IAuthService AuthService
 @inject NavigationManager NavMgr
+
 <AuthorizeView>
     <NotAuthorized>
         <MudContainer MaxWidth="MaxWidth.Small">
@@ -50,7 +52,8 @@
             catch (Exception e)
             {
                 Console.WriteLine(e);
-                _errorLabel = $"Error: {e.Message}";
+                var res = JsonNode.Parse(e.Message)!;
+                _errorLabel = $"Error: {res["message"]}";
             }
         }
     }
