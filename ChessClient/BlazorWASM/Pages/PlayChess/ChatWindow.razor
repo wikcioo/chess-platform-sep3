@@ -47,7 +47,7 @@
 
     private async Task WriteMessageAsync()
     {
-        if (GameRoom != null)
+        if (GameRoom == null)
         {
             Notify("You didn't join a game room!", Severity.Warning);
             return;
