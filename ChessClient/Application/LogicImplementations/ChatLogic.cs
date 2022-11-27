@@ -14,9 +14,8 @@ public class ChatLogic : IChatLogic
     private string _chatLog = "";
 
     public bool IsConnected =>
-        _hubConnection?.State == HubConnectionState.Connected;
+        _hubDto.HubConnection?.State == HubConnectionState.Connected;
 
-    private HubConnection? _hubConnection;
     private ulong _gameRoom;
     private readonly HubConnectionDto _hubDto;
 
@@ -24,50 +23,48 @@ public class ChatLogic : IChatLogic
     {
         _authService = authService;
         _hubDto = hubDto;
+        if (_hubDto.HubConnection is not null)
+        {
+            _hubDto.HubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+            {
+                _chatLog += $"<div>{user}:{message}\n</div>";
+                MessageReceived.Invoke(_chatLog);
+            });
+            _hubDto.HubConnection.On<List<MessageDto>>("GetLog", (log) =>
+            {
+                foreach (var dto in log)
+                {
+                    _chatLog += $"<div>{dto.Username}:{dto.Body}\n</div>";
+                }
+
+                MessageReceived.Invoke(_chatLog);
+            });
+        }
     }
 
     public async Task WriteMessageAsync(MessageDto dto)
     {
-        if (_hubConnection is not null)
+        if (_hubDto.HubConnection is not null)
         {
-            await _hubConnection.SendAsync("SendMessage", dto.GameRoom, dto.Body);
+            await _hubDto.HubConnection.SendAsync("SendMessage", dto.GameRoom, dto.Body);
         }
     }
 
     public async Task StartMessagingAsync(ulong gameRoom)
     {
-        _hubConnection = new HubConnectionBuilder()
-            .WithUrl("https://localhost:7289/gamehub",
-                options => { options.AccessTokenProvider = () => Task.FromResult(_authService.GetJwtToken())!; })
-            .Build();
-        _hubDto._hubConnection = _hubConnection;
-        _hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+        if (_hubDto.HubConnection is not null)
         {
-            _chatLog += $"<div>{user}:{message}\n</div>";
-            MessageReceived.Invoke(_chatLog);
-        });
-        _hubConnection.On<List<MessageDto>>("GetLog", (log) =>
-        {
-            foreach (var dto in log)
-            {
-                _chatLog += $"<div>{dto.Username}:{dto.Body}\n</div>";
-            }
-
-            MessageReceived.Invoke(_chatLog);
-        });
-
-        await _hubConnection.StartAsync();
-        await _hubConnection.SendAsync("JoinRoom", gameRoom);
-        _gameRoom = gameRoom;
+            await _hubDto.HubConnection.SendAsync("JoinRoom", gameRoom);
+            _gameRoom = gameRoom;
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_hubConnection is not null)
+        if (_hubDto.HubConnection is not null)
         {
             _chatLog = "";
-            await _hubConnection.SendAsync("LeaveRoom", _gameRoom);
-            await _hubConnection.DisposeAsync();
+            await _hubDto.HubConnection.SendAsync("LeaveRoom", _gameRoom);
         }
     }
 }
