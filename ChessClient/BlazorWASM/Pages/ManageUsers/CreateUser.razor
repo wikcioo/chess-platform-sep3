@@ -2,6 +2,7 @@
 @using HttpClients.ClientInterfaces
 @using Domain.Models
 @using System.Text.Json
+@using System.ComponentModel.DataAnnotations
 @inject IUserService UserService
 @inject ISnackbar Snackbar
 
@@ -13,7 +14,10 @@
                 <MudTextField @bind-Value="_username" Variant="Variant.Filled" Label="Username"/>
                 <MudTextField @bind-Value="_email" Label="Email" Variant="Variant.Filled" InputType="InputType.Email"/>
                 <MudTextField @bind-Value="_password" Label="Password" Variant="Variant.Filled" InputType="InputType.Password"/>
-                <MudTextField @bind-Value="_role" Variant="Variant.Filled" Label="Role"/>
+                <MudSelect T="string" Variant="Variant.Filled" Label="Role" AnchorOrigin="Origin.BottomCenter" @bind-Value="_role">
+                    <MudSelectItem Value="@("User")"/>
+                    <MudSelectItem Value="@("Admin")"/>
+                </MudSelect> 
                 <MudButton Class="mt-4" OnClick="CreateAsync" Variant="Variant.Filled" Disabled="IsNotValid()">Create</MudButton>
             </MudPaper>
         </MudContainer>
@@ -31,20 +35,35 @@
 
     private async Task CreateAsync()
     {
-        try
+        if (_username.Length > 16)
         {
-            var user = await UserService.CreateAsync(new User(_username, _email, _password, _role));
-            _username = "";
-            _email = "";
-            _password = "";
-            _role = "";
-            Notify($"User with email {user.Email} successfully created", Severity.Success);
+            Notify("Username has to be less than 16 characters!", Severity.Error);
         }
-        catch (Exception e)
+        else if (!new EmailAddressAttribute().IsValid(_email))
         {
-            var values = JsonSerializer.Deserialize<Dictionary<string, Object>>(e.Message);
-            if (values?["message"] != null)
-                Notify(values["message"].ToString() ?? "Error has occured", Severity.Error);
+            Notify("Invalid email address!", Severity.Error);
+        }
+        else if (_password.Length < 3)
+        {
+            Notify("Password has to be at least 3 characters!", Severity.Error);
+        }
+        else
+        {
+            try
+            {
+                var user = await UserService.CreateAsync(new User(_username, _email, _password, _role.ToLower()));
+                _username = "";
+                _email = "";
+                _password = "";
+                _role = "";
+                Notify($"User with email {user.Email} successfully created", Severity.Success);
+            }
+            catch (Exception e)
+            {
+                var values = JsonSerializer.Deserialize<Dictionary<string, Object>>(e.Message);
+                if (values?["message"] != null)
+                    Notify(values["message"].ToString() ?? "Error has occured", Severity.Error);
+            }
         }
     }
 
