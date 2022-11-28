@@ -7,7 +7,10 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 
-<MudButton @onclick="JoinRandomGame">Play Random</MudButton>
+<MudContainer Style="display: flex; justify-content: space-between">
+    <MudButton @onclick="JoinRandomGame">Play Random</MudButton>
+    <MudIconButton Icon="@Icons.Filled.Refresh" @onclick="RefreshJoinableGames"></MudIconButton>
+</MudContainer>
 <MudTable Items="@_joinableGames" Hover="true">
     <HeaderContent>
         <MudTh>Game Id</MudTh>
@@ -35,6 +38,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await RefreshJoinableGames();
+    }
+
+    private async Task RefreshJoinableGames()
+    {
         _joinableGames = await GameLogic.GetAllJoinableGames();
     }
 
@@ -49,7 +57,7 @@
 
     private async void JoinRandomGame()
     {
-        _joinableGames = await GameLogic.GetAllJoinableGames();
+        await RefreshJoinableGames();
         
         if (_joinableGames.Count > 0)
         {
