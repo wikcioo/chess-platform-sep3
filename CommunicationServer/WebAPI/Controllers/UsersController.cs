@@ -47,4 +47,21 @@ public class UsersController : ControllerBase
             return StatusCode(500, e.Message);
         }
     }
+    
+    [HttpGet("/users")]
+    [Authorize]
+    public async Task<ActionResult<UserSearchResultDto>> GetAsync([FromQuery] string? username)
+    {
+        try
+        {
+            var searchResult = await _userLogic.GetInsensitiveAsync(new UserSearchParamsDto(username));
+            return Ok(searchResult);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
+    }
+    
 }
