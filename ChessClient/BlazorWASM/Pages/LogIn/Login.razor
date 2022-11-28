@@ -2,9 +2,13 @@
 @using HttpClients.ClientInterfaces
 @using Microsoft.AspNetCore.SignalR.Client
 @using Application.Signalr
+@using System.Text.Json.Nodes
 @inject IAuthService AuthService
+@inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 @inject HubConnectionDto HubDto
+
+
 <AuthorizeView>
     <NotAuthorized>
         <MudContainer MaxWidth="MaxWidth.Small">
@@ -25,36 +29,51 @@
 
 @code {
     private string _email = "";
-    private string _password = String.Empty;
-    private string _errorLabel = String.Empty;
+    private string _password = string.Empty;
 
     private bool _isShow = false;
 
     private async Task LoginAsync()
     {
-        _errorLabel = "";
-        try
+        if (string.IsNullOrEmpty(_email))
         {
-            await AuthService.LoginAsync(_email, _password);
-
-            if (HubDto.HubConnection is not null)
+            Notify("You need to specify your email!", Severity.Error);
+        }
+        else if (string.IsNullOrEmpty(_password))
+        {
+            Notify("You need to specify your password!", Severity.Error);
+        }
+        else
+        {
+            try
             {
-                await HubDto.HubConnection.DisposeAsync();
+                await AuthService.LoginAsync(_email, _password);
+
+                if (HubDto.HubConnection is not null)
+                {
+                    await HubDto.HubConnection.DisposeAsync();
+                }
+                HubDto.HubConnection = new HubConnectionBuilder()
+                    .WithUrl("https://localhost:7289/gamehub",
+                        options => { options.AccessTokenProvider = () => Task.FromResult(AuthService.GetJwtToken())!; })
+                    .Build();
+    //Required so the connection is not dropped
+                HubDto.HubConnection.On<string>("DummyConnection", _ => { });
+                await HubDto.HubConnection.StartAsync();
+                NavMgr.NavigateTo("/");
             }
-            HubDto.HubConnection = new HubConnectionBuilder()
-                .WithUrl("https://localhost:7289/gamehub",
-                    options => { options.AccessTokenProvider = () => Task.FromResult(AuthService.GetJwtToken())!; })
-                .Build();
-            //Required so the connection is not dropped
-            HubDto.HubConnection.On<string>("DummyConnection",_=>{});
-            await HubDto.HubConnection.StartAsync();
-            NavMgr.NavigateTo("/");
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                var res = JsonNode.Parse(e.Message)!;
+                Notify("" + res["message"], Severity.Error);
+            }
         }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            _errorLabel = $"Error: {e.Message}";
-        }
+    }
+
+    private void Notify(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity, options => options.CloseAfterNavigation = true);
     }
 
 }

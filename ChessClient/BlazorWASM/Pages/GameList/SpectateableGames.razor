@@ -5,6 +5,10 @@
 @using Domain.Models
 @inject IGameLogic GameLogic
 @inject NavigationManager NavMgr
+
+<MudContainer Style="display: flex; justify-content: flex-end">
+    <MudIconButton Icon="@Icons.Filled.Refresh" @onclick="RefreshSpectateableGames"></MudIconButton>
+</MudContainer>
 <MudTable Items="@_spectateableGames" Hover="true">
     <HeaderContent>
         <MudTh>Game Id</MudTh>
@@ -31,6 +35,11 @@
     private IList<SpectateableGameRoomDataDto>? _spectateableGames;
 
     protected override async Task OnInitializedAsync()
+    {
+        await RefreshSpectateableGames();
+    }
+
+    private async Task RefreshSpectateableGames()
     {
         _spectateableGames = await GameLogic.GetAllSpectateableGames();
     }
