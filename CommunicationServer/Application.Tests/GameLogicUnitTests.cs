@@ -16,10 +16,10 @@ public class GameLogicUnitTests
     public IGameLogic GameLogic = new GameLogic(new StockfishHttpClient(new HttpClient()),new ChatLogic());
 
     [Theory]
-    [InlineData("Alice", 0)]
-    [InlineData("StockfishAi1", 1)]
-    [InlineData(null, 2)]
-    public void StartingGameReturnsCorrectResponseDto(string? opponent, ulong id)
+    [InlineData("Alice")]
+    [InlineData("StockfishAi1")]
+    [InlineData(null)]
+    public void StartingGameReturnsCorrectResponseDto(string? opponent)
     {
         var response = GameLogic.StartGame(new RequestGameDto()
         {
@@ -36,14 +36,12 @@ public class GameLogicUnitTests
             Success = true,
             IsWhite = true,
             Opponent = opponent ?? "StockfishAI01",
-            GameRoom = id,
             Fen = Fen.StartPositionFen
         };
 
         Assert.Equal(expectedResponse.Success, response.Result.Success);
         Assert.Equal(expectedResponse.Opponent, response.Result.Opponent);
         Assert.Equal(expectedResponse.IsWhite, response.Result.IsWhite);
-        Assert.Equal(expectedResponse.GameRoom, response.Result.GameRoom);
         Assert.Equal(expectedResponse.Fen, response.Result.Fen);
     }
 
