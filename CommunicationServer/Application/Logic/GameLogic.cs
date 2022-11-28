@@ -5,6 +5,7 @@ using Domain.DTOs;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Domain.Models;
+using Microsoft.VisualBasic.CompilerServices;
 using Rudzoft.ChessLib.Fen;
 
 namespace Application.Logic;
@@ -23,7 +24,7 @@ public class GameLogic : IGameLogic
 
     public Task<ResponseGameDto> StartGame(RequestGameDto dto)
     {
-        GameRoom gameRoom = new(dto.Seconds, dto.Increment)
+        GameRoom gameRoom = new(dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType)
         {
             GameSide = dto.Side
         };
@@ -65,11 +66,11 @@ public class GameLogic : IGameLogic
         }
 
         gameRoom.Initialize();
-        var id = _gameRoomsData.Add(gameRoom, dto.IsVisible, dto.OpponentType);
+        var id = _gameRoomsData.Add(gameRoom);
         _chatLogic.StartChatRoom(id);
 
         if (dto.OpponentType == OpponentTypes.Ai)
-            _gameRoomsData.NumPlayersJoined[id]++;
+            gameRoom.NumPlayersJoined++;
 
         if (gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
             RequestAiMove(id);
@@ -89,7 +90,7 @@ public class GameLogic : IGameLogic
     public IObservable<JoinedGameStreamDto> JoinGame(RequestJoinGameDto dto)
     {
         var gameRoom = _gameRoomsData.Get(dto.GameRoom);
-        if ((_gameRoomsData.IsJoinable(dto.GameRoom) && _gameRoomsData.CanUsernameJoin(dto.GameRoom, dto.Username)))
+        if ((gameRoom.IsJoinable && _gameRoomsData.CanUsernameJoin(gameRoom, dto.Username)))
         {
             if (string.IsNullOrEmpty(gameRoom.PlayerWhite) && !dto.Username.Equals(gameRoom.PlayerBlack))
             {
@@ -100,18 +101,18 @@ public class GameLogic : IGameLogic
                 gameRoom.PlayerBlack = dto.Username;
             }
 
-            if (++_gameRoomsData.NumPlayersJoined[dto.GameRoom] == 2)
+            if (++gameRoom.NumPlayersJoined == 2)
             {
-                _gameRoomsData.TransitionFromJoinableAndAddToSpectateableIfVisible(dto.GameRoom);
+                gameRoom.IsJoinable = false;
                 gameRoom.Initialize();
             }
 
             return gameRoom.GetMovesAsObservable();
         }
 
-        if (_gameRoomsData.IsSpectateable(dto.GameRoom))
+        if (gameRoom.IsSpectatable)
         {
-            _gameRoomsData.NumSpectatorsJoined[dto.GameRoom]++;
+            gameRoom.NumSpectatorsJoined++;
             return gameRoom.GetMovesAsObservable();
         }
 
@@ -218,15 +219,15 @@ public class GameLogic : IGameLogic
     public IEnumerable<SpectateableGameRoomDataDto> GetSpectateableGameRoomData()
     {
         IList<SpectateableGameRoomDataDto> list = new List<SpectateableGameRoomDataDto>();
-        foreach (var tuple in _gameRoomsData.GetSpectateable())
+        foreach (var room in _gameRoomsData.GetSpectateable())
         {
             list.Add(new SpectateableGameRoomDataDto()
             {
-                GameRoom = tuple.Item1,
-                UsernameWhite = tuple.Item2.PlayerWhite!,
-                UsernameBlack = tuple.Item2.PlayerBlack!,
-                Seconds = tuple.Item2.GetInitialTimeControlSeconds,
-                Increment = tuple.Item2.GetInitialTimeControlIncrement
+                GameRoom = room.Id,
+                UsernameWhite = room.PlayerWhite!,
+                UsernameBlack = room.PlayerBlack!,
+                Seconds = room.GetInitialTimeControlSeconds,
+                Increment = room.GetInitialTimeControlIncrement
             });
         }
 
@@ -236,18 +237,18 @@ public class GameLogic : IGameLogic
     public IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData(string requesterUsername)
     {
         IList<JoinableGameRoomDataDto> list = new List<JoinableGameRoomDataDto>();
-        foreach (var tuple in _gameRoomsData.GetJoinable(requesterUsername))
+        foreach (var room in _gameRoomsData.GetJoinableByUsername(requesterUsername))
         {
-            var username = string.IsNullOrEmpty(tuple.Item2.PlayerWhite)
-                ? tuple.Item2.PlayerBlack!
-                : tuple.Item2.PlayerWhite!;
+            var username = string.IsNullOrEmpty(room.PlayerWhite)
+                ? room.PlayerBlack!
+                : room.PlayerWhite!;
             list.Add(new JoinableGameRoomDataDto()
             {
-                GameRoom = tuple.Item1,
+                GameRoom = room.Id,
                 Username = username,
-                Seconds = tuple.Item2.GetInitialTimeControlSeconds,
-                Increment = tuple.Item2.GetInitialTimeControlIncrement,
-                Side = tuple.Item2.GameSide
+                Seconds = room.GetInitialTimeControlSeconds,
+                Increment = room.GetInitialTimeControlIncrement,
+                Side = room.GameSide
             });
         }
 
