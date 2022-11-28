@@ -3,10 +3,22 @@
     <MudText Typo="Typo.h5">VIA Chess</MudText>
     <MudToolBar>
         <MudButton Color="Color.Inherit" Href="/">Home</MudButton>
-        <MudButton Color="Color.Inherit" Href="CreateUser">Register</MudButton>
-        <MudButton Color="Color.Inherit" Href="StartGame">Play</MudButton>
-        <MudButton Color="Color.Inherit" Href="GameList">Games</MudButton>
+        <AuthorizeView Roles="admin">
+            <MudButton Color="Color.Inherit" Href="CreateUser">Add Users</MudButton>
+        </AuthorizeView>
+        <AuthorizeView>
+            <MudButton Color="Color.Inherit" Href="StartGame">Play</MudButton>
+            <MudButton Color="Color.Inherit" Href="GameList">Games</MudButton>
+        </AuthorizeView>
     </MudToolBar>
     <MudSpacer/>
+    <AuthorizeView>
+        <NotAuthorized>
+            <MudText Class="mr-5" Color="Color.Inherit">Not logged in</MudText>
+        </NotAuthorized>
+        <Authorized>
+            <MudText Class="mr-5" Color="Color.Inherit">Logged in as: @context.User.Identity!.Name</MudText>
+        </Authorized>
+    </AuthorizeView>
     <LoginButtons/>
 </MudAppBar>

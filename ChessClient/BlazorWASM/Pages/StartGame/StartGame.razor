@@ -17,29 +17,36 @@
 
 @page "/StartGame"
 
-<MudContainer Class="mt-10" MaxWidth="MaxWidth.Small">
-    <MudText Typo="Typo.h2" Align="Align.Center" Class="ma-5">Play Chess</MudText>
-    <MudStack Spacing="3">
-        <GameTypeComponent TabIndexChanged="OnTabChange"/>
-        @if (_opponentType is OpponentTypes.Ai)
-        {
-            <StockfishSelectComponent @bind-SelectedLevel="_selectedLevel"/>
-        }
-        @if (_opponentType is OpponentTypes.Friend)
-        {
-            <OpponentNameComponent @bind-OpponentName="_opponentName"/>
-        }
-        @if (_opponentType is OpponentTypes.Friend or OpponentTypes.Ai)
-        {
-            <ChooseSideComponent @bind-IsWhiteSide="_isWhiteSide"/>
-        }
-        <MudElement Class="d-flex justify-between">
-            <TimeControlComponent @bind-TimeControlBase="_timeControlBase" @bind-TimeControlIncrement="_timeControlIncrement"/>
-            <IsPublicGameComponent @bind-IsPublic="_isGamePublic"/>
-        </MudElement>
-        <CreateGameButtonComponent OnCreateGame="CreateGame"/>
-    </MudStack>
-</MudContainer>
+<AuthorizeView>
+    <Authorized>
+        <MudContainer Class="mt-10" MaxWidth="MaxWidth.Small">
+            <MudText Typo="Typo.h2" Align="Align.Center" Class="ma-5">Play Chess</MudText>
+            <MudStack Spacing="3">
+                <GameTypeComponent TabIndexChanged="OnTabChange"/>
+                @if (_opponentType is OpponentTypes.Ai)
+                {
+                    <StockfishSelectComponent @bind-SelectedLevel="_selectedLevel"/>
+                }
+                @if (_opponentType is OpponentTypes.Friend)
+                {
+                    <OpponentNameComponent @bind-OpponentName="_opponentName"/>
+                }
+                @if (_opponentType is OpponentTypes.Friend or OpponentTypes.Ai)
+                {
+                    <ChooseSideComponent @bind-IsWhiteSide="_isWhiteSide"/>
+                }
+                <MudElement Class="d-flex justify-between">
+                    <TimeControlComponent @bind-TimeControlBase="_timeControlBase" @bind-TimeControlIncrement="_timeControlIncrement"/>
+                    <IsPublicGameComponent @bind-IsPublic="_isGamePublic"/>
+                </MudElement>
+                <CreateGameButtonComponent OnCreateGame="CreateGame"/>
+            </MudStack>
+        </MudContainer>
+    </Authorized>
+    <NotAuthorized>
+        <MudText Typo="Typo.h2" Align="Align.Center" Class="ma-5">You are not authorized to view this page.</MudText>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
     private readonly IPosition _position = new Position(new Board(), new PieceValue());

@@ -4,7 +4,13 @@
 @using Domain.DTOs.GameRoomData
 @using Rudzoft.ChessLib
 @inject IGameLogic GameLogic
+@inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
+
+<MudContainer Style="display: flex; justify-content: space-between">
+    <MudButton @onclick="JoinRandomGame">Play Random</MudButton>
+    <MudIconButton Icon="@Icons.Filled.Refresh" @onclick="RefreshJoinableGames"></MudIconButton>
+</MudContainer>
 <MudTable Items="@_joinableGames" Hover="true">
     <HeaderContent>
         <MudTh>Game Id</MudTh>
@@ -28,16 +34,17 @@
 </MudTable>
 
 @code {
-
-
-
     private IList<JoinableGameRoomDataDto>? _joinableGames;
 
     protected override async Task OnInitializedAsync()
     {
-        _joinableGames = await GameLogic.GetAllJoinableGames();
+        await RefreshJoinableGames();
     }
 
+    private async Task RefreshJoinableGames()
+    {
+        _joinableGames = await GameLogic.GetAllJoinableGames();
+    }
 
     private void JoinGame(ulong i)
     {
@@ -48,4 +55,30 @@
         });
     }
 
+    private async void JoinRandomGame()
+    {
+        await RefreshJoinableGames();
+        
+        if (_joinableGames.Count > 0)
+        {
+            NavMgr.NavigateTo("/ChessGame");
+            var randomGameRoomId = _joinableGames[new Random().Next(_joinableGames.Count)].GameRoom;
+            GameLogic.JoinGame(new RequestJoinGameDto
+            {
+                GameRoom = randomGameRoomId
+            });
+        }
+        else
+        {
+            Snackbar.Add("No active games to join!", Severity.Info, config =>
+            {
+                config.Action = "New Game";
+                config.Onclick = _ =>
+                {
+                    NavMgr.NavigateTo("/StartGame");
+                    return Task.CompletedTask;
+                };
+            });
+        }
+    }
 }

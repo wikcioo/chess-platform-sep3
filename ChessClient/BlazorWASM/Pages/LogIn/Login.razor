@@ -1,7 +1,10 @@
 ﻿@page "/Login"
 @using HttpClients.ClientInterfaces
+@using System.Text.Json.Nodes
 @inject IAuthService AuthService
+@inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
+
 <AuthorizeView>
     <NotAuthorized>
         <MudContainer MaxWidth="MaxWidth.Small">
@@ -22,24 +25,38 @@
 
 @code {
     private string _email = "";
-    private string _password = String.Empty;
-    private string _errorLabel = String.Empty;
+    private string _password = string.Empty;
 
     private bool _isShow = false;
 
     private async Task LoginAsync()
     {
-        _errorLabel = "";
-        try
+        if (string.IsNullOrEmpty(_email))
         {
-            await AuthService.LoginAsync(_email, _password);
-            NavMgr.NavigateTo("/");
+            Notify("You need to specify your email!", Severity.Error);
         }
-        catch (Exception e)
+        else if (string.IsNullOrEmpty(_password))
         {
-            Console.WriteLine(e);
-            _errorLabel = $"Error: {e.Message}";
+            Notify("You need to specify your password!", Severity.Error);
+        }
+        else
+        {
+            try
+            {
+                await AuthService.LoginAsync(_email, _password);
+                NavMgr.NavigateTo("/");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                var res = JsonNode.Parse(e.Message)!;
+                Notify("" + res["message"], Severity.Error);
+            }
         }
     }
-
+    
+    private void Notify(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity, options => options.CloseAfterNavigation = true);
+    }
 }
