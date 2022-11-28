@@ -7,100 +7,94 @@
 @using Position = Rudzoft.ChessLib.Position
 @using Domain.DTOs
 @using Domain.Enums
-@using Grpc.Core
 @using BlazorWASM.Pages.ChessComponents
 @using System.Security.Claims
-@using Domain.Models
 @inject IDialogService DialogService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
 @inject IGameLogic GameLogic
-@inject IChatLogic ChatLogic
 @implements IDisposable
-
 
 
 <audio id="move" src="sounds/move.mp3"></audio>
 <audio id="notify" src="sounds/notify.mp3"></audio>
 
-<MudButton @onclick="Resign" Variant="Variant.Filled" Color="Color.Primary">Resign</MudButton>
-<MudButton @onclick="OfferDraw" Variant="Variant.Filled" Color="Color.Primary">Offer Draw</MudButton>
-@if (GameLogic.IsDrawOfferPending)
-{
-    <div>
-        <h3>You have a draw offer</h3>
-        <MudButton @onclick="() => SendDrawResponse(true)" Variant="Variant.Filled" Color="Color.Success">Accept</MudButton>
-        <MudButton @onclick="() => SendDrawResponse(false)" Variant="Variant.Filled" Color="Color.Error">Decline</MudButton>
-    </div>
-}
 
-<MudGrid Justify="Justify.SpaceAround" Spacing="10">
-    <MudItem md="12" lg="6">
-        <MudContainer MaxWidth="MaxWidth.Small">
-            <TimerComponent Active="@(_isWhiteSide == GameSides.White ? !_whiteTimerActive : _whiteTimerActive)"
-                            Seconds="@(_isWhiteSide == GameSides.White ? _blackSeconds : _whiteSeconds)"/>
-            <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@(_isWhiteSide == GameSides.White)"/>
-            <TimerComponent Active="@(_isWhiteSide == GameSides.White ? _whiteTimerActive : !_whiteTimerActive)"
-                            Seconds="@(_isWhiteSide == GameSides.White ? _whiteSeconds : _blackSeconds)"/>
-        </MudContainer>
-    </MudItem>
-    <MudItem md="12" lg="6">
-        <MudContainer MaxWidth="MaxWidth.Small">
-            <MudSelect Dense="true" T="string" @bind-Value="@_selectedLevel" Label="Choose a Stockfish Level:" Variant="Variant.Text">
-                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
-                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
-                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi3.Value)">Level 3</MudSelectItem>
-                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi4.Value)">Level 4</MudSelectItem>
-                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi5.Value)">Level 5</MudSelectItem>
-                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi6.Value)">Level 6</MudSelectItem>
-                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi7.Value)">Level 7</MudSelectItem>
-                <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi8.Value)">Level 8</MudSelectItem>
-            </MudSelect>
-            <MudRadioGroup @bind-SelectedOption="_isWhiteSide" T="@GameSides">
-                <MudRadio T="@GameSides" Color="Color.Default" Option="@GameSides.White">White</MudRadio>
-                <MudRadio T="@GameSides" Color="Color.Dark" Option="@GameSides.Black">Black</MudRadio>
-                <MudRadio T="@GameSides" Color="Color.Dark" Option="@GameSides.Random">Random</MudRadio>
-            </MudRadioGroup>
-            <MudNumericField T="ulong" @bind-Value="_gameRoomInt" Label="Room id" Variant="Variant.Text" Min="0"/>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinGame">Join</MudButton>
-            <MudRadioGroup @bind-SelectedOption="_opponentType" T="OpponentTypes">
-                <MudRadio T="@OpponentTypes" Color="Color.Default" Option="@OpponentTypes.Ai">AI</MudRadio>
-                <MudRadio T="@OpponentTypes" Color="Color.Default" Option="@OpponentTypes.Friend">Friend</MudRadio>
-                <MudRadio T="@OpponentTypes" Color="Color.Default" Option="@OpponentTypes.Random">Random</MudRadio>
-            </MudRadioGroup>
-            <MudTextField T="string" Label="Opponent" Required="true" RequiredError="User name is required!" @bind-Value="_opponentName"/>
-            <MudNumericField T="uint" @bind-Value="_timeControlBase" Label="Base time" Variant="Variant.Filled" Min="60"/>
-            <MudNumericField T="uint" @bind-Value="_timeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
-            <MudCheckBox @bind-Checked="@_isGamePrivate">Private</MudCheckBox>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="CreateGame">Create game</MudButton>
-        </MudContainer>
-        <MudContainer Class="mt-4" MaxWidth="MaxWidth.Small">
-            <ChatWindow GameRoom="@GameLogic.GameRoomId"></ChatWindow>
-        </MudContainer>
-    </MudItem>
-</MudGrid>
+<MudContainer Class="mt-10" MaxWidth="MaxWidth.Medium">
+    <MudGrid Style="align-items: center" Justify="Justify.SpaceAround" Spacing="6">
+        <MudItem xs="12" sm="9" md="8">
+            <MudGrid Justify="Justify.SpaceBetween" Spacing="1">
+                <MudItem xs="8">
+                    <NicknameComponent Nickname="@_opponentName"/>
+                </MudItem>
+                <MudItem xs="4">
+                    <TimerComponent Active="@(_isWhiteSide == GameSides.White ? !_whiteTimerActive : _whiteTimerActive)"
+                                    Seconds="@(_isWhiteSide == GameSides.White ? _blackSeconds : _whiteSeconds)"/>
+                </MudItem>
+                <MudItem xs="12">
+                    <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@(_isWhiteSide == GameSides.White)"/>
+                </MudItem>
+                <MudItem xs="8">
+                    <NicknameComponent Nickname="@_currentUser"/>
+                </MudItem>
+                <MudItem xs="4">
+                    <TimerComponent Active="@(_isWhiteSide == GameSides.White ? _whiteTimerActive : !_whiteTimerActive)"
+                                    Seconds="@(_isWhiteSide == GameSides.White ? _whiteSeconds : _blackSeconds)"/>
+                </MudItem>
+            </MudGrid>
+        </MudItem>
+        <MudItem xs="12" sm="9" md="4">
+            <MudGrid>
+                @if (GameLogic.IsDrawOfferPending)
+                {
+                    <MudItem Style="text-align: center" xs="12">
+                        <MudPaper Class="my-2 pa-2 mud-theme-primary">
+                            <MudGrid Spacing="2" Justify="Justify.SpaceBetween">
+                                <MudItem Class="d-flex align-center" xs="12" sm="6" md="12">
+                                    <MudText Class="flex-1" Typo="Typo.subtitle1" Align="Align.Center">You have a draw offer!</MudText>
+                                </MudItem>
+                                <MudItem xs="6" sm="3" md="6">
+                                    <MudButton @onclick="() => SendDrawResponse(true)" Variant="Variant.Filled" FullWidth="true" Color="Color.Tertiary">Accept</MudButton>
+                                </MudItem>
+                                <MudItem xs="6" sm="3" md="6">
+                                    <MudButton @onclick="() => SendDrawResponse(false)" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Decline</MudButton>
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+                }
+                <MudItem xs="6">
+                    <MudButton @onclick="Resign" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
+                        Resign <MudIcon Icon="@Icons.Filled.OutlinedFlag" Size="Size.Small"></MudIcon>
+                    </MudButton>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudButton @onclick="OfferDraw" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Offer Draw</MudButton>
+                </MudItem>
+                <MudItem xs="12">
+                    <ChatWindow GameRoom="@GameLogic.GameRoomId"></ChatWindow>
+                </MudItem>
+            </MudGrid>
+
+        </MudItem>
+    </MudGrid>
+</MudContainer>
 
 @code {
 
     [CascadingParameter]
     public Task<AuthenticationState> AuthState { get; set; } = null!;
 
-    private string _currentUser = "";
+    private string _currentUser = "NotLoggedInMaster";
 
     private readonly IPosition _position = new Position(new Board(), new PieceValue());
     private double _whiteSeconds;
     private double _blackSeconds;
     private bool _whiteTimerActive = true;
+    private string _opponentName = "PlaceholderJoe";
 
     //Form input bindings
-    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
-    private OpponentTypes _opponentType = OpponentTypes.Ai;
-    private ulong _gameRoomInt;
     private GameSides _isWhiteSide = GameSides.White;
-    private string _opponentName = "";
-    private uint _timeControlBase = 120;
-    private uint _timeControlIncrement;
-    private bool _isGamePrivate;
 
     protected override void OnInitialized()
     {
@@ -142,84 +136,18 @@
         GameLogic.GameFirstJoined += OnGameFirstJoined;
     }
 
-    private async Task CreateGame()
-    {
-        var opponentName = "";
-        try
-        {
-            opponentName = _opponentType switch 
-            {
-                OpponentTypes.Ai => _selectedLevel,
-                OpponentTypes.Friend => _opponentName,
-                OpponentTypes.Random => string.Empty,
-                _ => throw new ArgumentNullException()
-                };
-        }
-        catch (ArgumentNullException)
-        {
-            Notify("Choose a game type before starting a game!", Severity.Warning);
-        }
-
-        var request = new RequestGameDto
-        {
-            OpponentType = _opponentType,
-            Increment = _timeControlIncrement,
-            Side = _isWhiteSide,
-            OpponentName = opponentName,
-            Seconds = _timeControlBase,
-            IsVisible = !_isGamePrivate
-        };
-
-        try
-        {
-            var response = await GameLogic.CreateGame(request);
-
-            _gameRoomInt = response.GameRoom;
-
-            Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
-        }
-        catch (InvalidOperationException)
-        {
-            Notify("You have to be logged in to create a game!", Severity.Warning);
-        }
-        catch (HttpRequestException)
-        {
-            Notify("Network error, Failed to create a game.", Severity.Error);
-        }
-    }
-
-    private async Task JoinGame()
-    {
-        try
-        {
-    //workaround, initial position should be sent and not set
-            SetFenPosition(Fen.StartPositionFen);
-            GameLogic.JoinGame(new RequestJoinGameDto
-            {
-                GameRoom = _gameRoomInt,
-            });
-        }
-        catch (ArgumentException)
-        {
-    //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
-            Notify("Game room not found.", Severity.Warning);
-        }
-        catch (RpcException)
-        {
-            Notify("Connection error. Failed to participate in game. ¯\\_(ツ)_/¯", Severity.Error);
-        }
-    }
-
     public async Task<int> MakeMove(Move move)
     {
         try
         {
-            return await GameLogic.MakeMove(move);
+            var t = await GameLogic.MakeMove(move);
+            _whiteTimerActive = !_whiteTimerActive;
+            return t;
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            return (int) AckTypes.GameNotFound;
+            return (int)AckTypes.GameNotFound;
         }
     }
 
@@ -236,7 +164,7 @@
             return;
         }
 
-        if (ack == (uint) AckTypes.Success) return;
+        if (ack == (uint)AckTypes.Success) return;
         Notify("Failed to resign", Severity.Error);
     }
 
@@ -299,22 +227,22 @@
         PlaySound("notify");
         switch (dto.GameEndType)
         {
-            case (uint) GameEndTypes.CheckMate:
+            case (uint)GameEndTypes.CheckMate:
                 if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
                     DisplayDefaultDialog("You got checkmated!");
                 else
                     DisplayDefaultDialog("You checkmated your opponent!");
                 break;
-            case (uint) GameEndTypes.Repetition:
+            case (uint)GameEndTypes.Repetition:
                 DisplayDefaultDialog("Draw by repetition!");
                 break;
-            case (uint) GameEndTypes.Pat:
+            case (uint)GameEndTypes.Pat:
                 DisplayDefaultDialog("Stalemate!");
                 break;
-            case (uint) GameEndTypes.FiftyMove:
+            case (uint)GameEndTypes.FiftyMove:
                 DisplayDefaultDialog("Draw by 50 moves!");
                 break;
-            case (uint) GameEndTypes.MaterialDrawn:
+            case (uint)GameEndTypes.MaterialDrawn:
                 DisplayDefaultDialog("Draw! Insufficient material!");
                 break;
         }
@@ -322,7 +250,7 @@
 
     private void OnTimeUpdated(JoinedGameStreamDto dto)
     {
-        if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp)
+        if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp)
         {
             if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
             {
@@ -335,8 +263,17 @@
         }
         else
         {
-            if (dto.IsWhite) _whiteSeconds = dto.TimeLeftMs / 1000;
-            else _blackSeconds = dto.TimeLeftMs / 1000;
+            if (dto.IsWhite)
+            {
+                _whiteSeconds = dto.TimeLeftMs / 1000;
+                _whiteTimerActive = true;
+            }
+            else
+            {
+                _blackSeconds = dto.TimeLeftMs / 1000;
+                _whiteTimerActive = false;
+            }
+            
             StateHasChanged();
         }
     }
@@ -399,7 +336,7 @@
 
     private void PlaySound(string sound)
     {
-        Js.InvokeAsync<string>("PlaySound", new object[] {sound});
+        Js.InvokeAsync<string>("PlaySound", new object[] { sound });
     }
 
     private void Notify(string message, Severity severity)
@@ -409,7 +346,7 @@
 
     private void DisplayDefaultDialog(string message)
     {
-        var options = new DialogOptions {CloseOnEscapeKey = true};
+        var options = new DialogOptions { CloseOnEscapeKey = true };
         DialogService.Show<InformDialogComponent>(message, options);
     }
 

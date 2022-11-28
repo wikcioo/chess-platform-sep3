@@ -5,12 +5,20 @@
 @using Rudzoft.ChessLib.Extensions
 @inject IChatLogic ChatLogic
 @implements IDisposable
+@inject ISnackbar Snackbar
 
-<MudContainer Class="pa-0">
-    <MudPaper Class="overflow-x-auto" Height="400px">@((MarkupString) _chatLog)</MudPaper>
-    <MudTextField Immediate="true" T="string" InputType="InputType.Text" placeholder="Enter message" @bind-Value="_messageBody" OnKeyPress="OnKeyPress"/>
-    <MudButton OnClick="WriteMessageAsync" Color="Color.Secondary">Send</MudButton>
-</MudContainer>
+
+<MudPaper Elevation="2" Class="d-flex flex-column overflow-x-auto pa-3" Height="450px">
+    <MudText Typo="Typo.subtitle1">Game chat</MudText>
+    <MudPaper Class="flex-grow-1  pa-1 mt-1 overflow-y-scroll overflow-x-hidden" Elevation="0">
+        <MudText Typo="Typo.body2">
+            @((MarkupString)_chatLog)
+        </MudText>
+    </MudPaper>
+    <MudStack Justify="Justify.SpaceAround" Row="true" Spacing="3" AlignItems="AlignItems.Baseline">
+        <MudTextField AdornmentColor="Color.Primary" Adornment="Adornment.End" AdornmentIcon="@Icons.Filled.Send" OnAdornmentClick="WriteMessageAsync" Margin="Margin.None"  Immediate="true" Style="background-color: var(--mud-palette-surface)" T="string" InputType="InputType.Text" placeholder="Enter message" @bind-Value="_messageBody" OnKeyPress="OnKeyPress"/>
+    </MudStack>
+</MudPaper>
 
 
 @code {
@@ -24,7 +32,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        
         ChatLogic.MessageReceived += OnMessageReceived;
         if (GameRoom != null)
         {
@@ -40,6 +47,12 @@
 
     private async Task WriteMessageAsync()
     {
+        if (GameRoom == null)
+        {
+            Notify("You didn't join a game room!", Severity.Warning);
+            return;
+        }
+
         if (IsValid())
         {
             await ChatLogic.WriteMessageAsync(new MessageDto
@@ -70,6 +83,11 @@
         {
             await WriteMessageAsync();
         }
+    }
+
+    private void Notify(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
     }
 
 }
