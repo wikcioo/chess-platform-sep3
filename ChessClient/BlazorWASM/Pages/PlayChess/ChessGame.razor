@@ -101,6 +101,8 @@
         SetFenPosition(Fen.StartPositionFen);
         InitGameLogic();
     }
+    
+    
 
     public void Dispose()
     {
@@ -113,6 +115,7 @@
         GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
         GameLogic.EndOfTheGameReached -= OnEndOfTheGameReached;
         GameLogic.GameFirstJoined -= OnGameFirstJoined;
+        GameLogic.LeaveRoom();
     }
 
     protected override async Task OnInitializedAsync()
@@ -153,19 +156,18 @@
 
     private async void Resign()
     {
-        AckTypes ack;
         try
         {
-            ack = await GameLogic.Resign();
+            await GameLogic.Resign();
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            return;
         }
 
-        if (ack == (uint)AckTypes.Success) return;
+        // if (ack == (uint)AckTypes.Success) return;
         Notify("Failed to resign", Severity.Error);
+
     }
 
     private async void OfferDraw()

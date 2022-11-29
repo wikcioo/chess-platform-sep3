@@ -44,10 +44,10 @@
         _spectateableGames = await GameLogic.GetAllSpectateableGames();
     }
 
-    private void SpectateGame(ulong i)
+    private async void SpectateGame(ulong i)
     {
         NavMgr.NavigateTo("/ChessGame");
-        GameLogic.JoinGame(new RequestJoinGameDto
+        await GameLogic.JoinGame(new RequestJoinGameDto
         {
             GameRoom = i
         });

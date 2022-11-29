@@ -46,10 +46,10 @@
         _joinableGames = await GameLogic.GetAllJoinableGames();
     }
 
-    private void JoinGame(ulong i)
+    private async void JoinGame(ulong i)
     {
         NavMgr.NavigateTo("/ChessGame");
-        GameLogic.JoinGame(new RequestJoinGameDto
+        await GameLogic.JoinGame(new RequestJoinGameDto
         {
             GameRoom = i
         });

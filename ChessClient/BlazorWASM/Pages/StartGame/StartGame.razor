@@ -7,7 +7,6 @@
 @using Position = Rudzoft.ChessLib.Position
 @using Domain.DTOs
 @using Domain.Models
-@using Grpc.Core
 @using Rudzoft.ChessLib.Enums
 @inject ISnackbar Snackbar
 @inject IGameLogic GameLogic
@@ -151,7 +150,7 @@
     //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
             Notify("Game room not found.", Severity.Warning);
         }
-        catch (RpcException)
+        catch (Exception)
         {
             Notify("Connection error. Failed to participate in game. ¯\\_(ツ)_/¯", Severity.Error);
         }
