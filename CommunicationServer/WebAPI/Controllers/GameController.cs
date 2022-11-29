@@ -20,12 +20,19 @@ public class GameController : ControllerBase
     }
 
     [HttpPost("/startGame")]
-    public async Task<ResponseGameDto> StartGame([FromBody] RequestGameDto request)
+    public async Task<ActionResult<ResponseGameDto>> StartGame([FromBody] RequestGameDto request)
     {
-        request.Username = User.Identity.Name;
-        var response = await _gameLogic.StartGame(request);
-
-        return response;
+        try
+        {
+            request.Username = User.Identity.Name;
+            var response = await _gameLogic.StartGame(request);
+            return Ok(response);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
     }
 
     [HttpPost("/joinGame")]
@@ -61,55 +68,77 @@ public class GameController : ControllerBase
     }
 
     [HttpPost("/resign")]
-    public async Task<AckTypes> Resign([FromBody] RequestResignDto request)
+    public async Task<ActionResult<AckTypes>> Resign([FromBody] RequestResignDto request)
     {
-        // var claim = context.GetHttpContext().User.Claims.FirstOrDefault(claim => claim.Type.Equals(ClaimTypes.Name));
-        // if (claim == null)
-        // {
-        //     return new AckTypes()
-        //     {
-        //         Status = (uint) AckTypes.NotUserTurn
-        //     };
-        // }
-
-        AckTypes ack = await _gameLogic.Resign(new RequestResignDto()
+        try
         {
-            GameRoom = request.GameRoom,
-            Username = User.Identity.Name
-        });
-        return ack;
+            AckTypes ack = await _gameLogic.Resign(new RequestResignDto()
+            {
+                GameRoom = request.GameRoom,
+                Username = User.Identity.Name
+            });
+
+
+            return Ok(ack);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
     }
 
     [HttpPost("/makeMove")]
-    public async Task<AckTypes> MakeMove([FromBody] MakeMoveDto dto)
+    public async Task<ActionResult<AckTypes>> MakeMove([FromBody] MakeMoveDto dto)
     {
-        dto.Username = User.Identity.Name;
-        var ack = await _gameLogic.MakeMove(dto);
-        return ack;
+        try
+        {
+            dto.Username = User.Identity.Name;
+            var ack = await _gameLogic.MakeMove(dto);
+
+
+            return Ok(ack);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
     }
 
     [HttpPost("/offerDraw")]
-    public async Task<AckTypes> OfferDraw([FromBody] RequestDrawDto request)
+    public async Task<ActionResult<AckTypes>> OfferDraw([FromBody] RequestDrawDto request)
     {
-        // var claim = context.GetHttpContext().User.Claims.FirstOrDefault(claim => claim.Type.Equals(ClaimTypes.Name));
-        // if (claim == null)
-        // {
-        //     return AckTypes.NotUserTurn;
-        // }
-
-        var ack = await _gameLogic.OfferDraw(new RequestDrawDto()
+        try
         {
-            GameRoom = request.GameRoom,
-            Username = User.Identity.Name
-        });
-        return ack;
+            var ack = await _gameLogic.OfferDraw(new RequestDrawDto()
+            {
+                GameRoom = request.GameRoom,
+                Username = User.Identity.Name
+            });
+
+            return Ok(ack);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
     }
 
     [HttpPost("/drawResponse")]
-    public async Task<AckTypes> DrawOfferResponse([FromBody] ResponseDrawDto request)
+    public async Task<ActionResult<AckTypes>> DrawOfferResponse([FromBody] ResponseDrawDto request)
     {
-        AckTypes ack = await _gameLogic.DrawOfferResponse(request);
-        return ack;
+        try
+        {
+            var ack = await _gameLogic.DrawOfferResponse(request);
+            return Ok(ack);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
     }
 
     [HttpGet("/spectateable")]
