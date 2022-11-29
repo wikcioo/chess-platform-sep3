@@ -9,6 +9,8 @@ import via.sep3.DatabaseAccessServer.domain.User;
 import via.sep3.DatabaseAccessServer.repository.UserRepository;
 
 import javax.annotation.Resource;
+import java.util.Iterator;
+import java.util.Map;
 
 @RestController
 public class UserController {
@@ -44,8 +46,17 @@ public class UserController {
 
     @GetMapping(path = "/users",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public Iterable<User> GetAll() {
-        return repository.findAll();
-    }
+    public Iterable<User> GetAll(@RequestParam Map<String,String> allRequestParams) {
 
+        Iterable<User> users;
+
+        if(allRequestParams.containsKey("username")) {
+            users = repository.findByUsernameContaining(allRequestParams.get("username"));
+        }
+        else {
+            users = repository.findAll();
+        }
+        users.forEach(u -> u.setPassword("")); // Sending password hashes back exposes the system for unnecessary risks
+        return users;
+    }
 }

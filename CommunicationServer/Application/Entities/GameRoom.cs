@@ -27,14 +27,36 @@ public class GameRoom
     private CancellationTokenSource _drawCts;
 
     public event Action<JoinedGameStreamDto> GameJoined = delegate { };
+
+    public ulong Id { get; set; }
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
+
+    public bool IsVisible { get; set; }
+    public bool IsJoinable { get; set; } = true;
+    public bool IsSpectatable => IsVisible && !IsJoinable;
+    public OpponentTypes GameType { get; set; }
+
+    public uint NumPlayersJoined { get; set; }
+    public uint NumSpectatorsJoined { get; set; }
 
     public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
     public uint GetInitialTimeControlSeconds => (_chessTimer.TimeControlBaseMs / 1000);
     public uint GetInitialTimeControlIncrement => (_chessTimer.TimeControlIncrementMs / 1000);
     public GameSides GameSide;
 
+    
+        
+    public GameRoom(uint timeControlSeconds, uint timeControlIncrement, bool isVisible , OpponentTypes gameType, string? fen = null)
+    {
+        _game = GameFactory.Create();
+        _game.NewGame(fen ?? Fen.StartPositionFen);
+        _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
+        IsVisible = isVisible;
+        GameType = gameType;
+        _whitePlaying = _game.CurrentPlayer().IsWhite;
+    }
+    
     public GameRoom(uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
     {
         _game = GameFactory.Create();

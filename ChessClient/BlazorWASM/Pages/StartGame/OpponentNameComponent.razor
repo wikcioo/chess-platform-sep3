@@ -1,6 +1,11 @@
+@using HttpClients.ClientInterfaces
+@using Microsoft.AspNetCore.Components
+@using Domain.DTOs
+@inject IUserService UserService;
+@inject ISnackbar Snackbar
 
-@* Make nicknames searchable, give database of player names *@
-<MudTextField T="string" Label="Your friend's nickname" Variant="Variant.Filled" Required="true" RequiredError="User name is required!" @bind-Value="OpponentName"/>
+
+<MudAutocomplete T="string" Label="Available opponents" @bind-Value="OpponentName" SearchFunc="@Search" Variant="Variant.Filled" ShowProgressIndicator="true" ProgressIndicatorColor="Color.Primary" />
 
 @code {
 
@@ -15,6 +20,32 @@
             _opponentName = value;
             OpponentNameChanged.InvokeAsync(value);
         }
+    }
+    
+    private async Task<IEnumerable<string>> Search(string username)
+    {
+        List<string> usernameList = new();
+
+        
+        if (!string.IsNullOrEmpty(username))
+        {
+            try
+            {
+                var result = await UserService.GetAsync(new UserSearchParamsDto(username));
+                usernameList = result.Select(u => u.Username).ToList();
+            }
+            catch (Exception e)
+            {
+                Notify(e.Message, Severity.Error);
+            }
+        }
+
+        return usernameList;
+    }
+    
+    private void Notify(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
     }
     
     [Parameter]

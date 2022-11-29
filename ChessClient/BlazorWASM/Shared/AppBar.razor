@@ -1,16 +1,16 @@
 <MudAppBar Color="Color.Primary" Elevation="2">
-    <MudAvatar Image="OIP.jpg"/>
-    <MudText Typo="Typo.h5">VIA Chess</MudText>
-    <MudToolBar>
-        <MudButton Color="Color.Inherit" Href="/">Home</MudButton>
-        <AuthorizeView Roles="admin">
-            <MudButton Color="Color.Inherit" Href="CreateUser">Add Users</MudButton>
-        </AuthorizeView>
-        <AuthorizeView>
-            <MudButton Color="Color.Inherit" Href="StartGame">Play</MudButton>
-            <MudButton Color="Color.Inherit" Href="GameList">Games</MudButton>
-        </AuthorizeView>
-    </MudToolBar>
+    <MudBreakpointProvider>
+        <MudHidden Breakpoint="Breakpoint.MdAndUp" Invert="true">
+            <MudAvatar Image="OIP.jpg"/>
+            <MudText Typo="Typo.h5">VIA Chess</MudText>
+            <MudToolBar>
+                <AppBarContents/>
+            </MudToolBar>
+        </MudHidden>
+        <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer"/>
+        </MudHidden>
+    </MudBreakpointProvider>
     <MudSpacer/>
     <AuthorizeView>
         <NotAuthorized>
@@ -22,3 +22,26 @@
     </AuthorizeView>
     <LoginButtons/>
 </MudAppBar>
+
+<MudDrawer @bind-Open="@_open" Color="Color.Surface" Elevation="3">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6">VIA Chess</MudText>
+    </MudDrawerHeader>
+    <MudDrawerContainer>
+        <MudStack>
+            <AppBarContents/>
+        </MudStack>
+    </MudDrawerContainer>
+</MudDrawer>
+
+
+@code {
+
+    bool _open = false;
+
+    void ToggleDrawer()
+    {
+        _open = !_open;
+    }
+
+}
