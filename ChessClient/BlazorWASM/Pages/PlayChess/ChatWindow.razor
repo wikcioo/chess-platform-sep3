@@ -33,16 +33,11 @@
     protected override void OnInitialized()
     {
         ChatLogic.MessageReceived += OnMessageReceived;
-        if (GameRoom != null)
-        {
-            ChatLogic.StartMessaging((ulong) GameRoom);
-        }
     }
 
     public void Dispose()
     {
         ChatLogic.MessageReceived -= OnMessageReceived;
-        ChatLogic.DisposeAsync();
     }
 
 
