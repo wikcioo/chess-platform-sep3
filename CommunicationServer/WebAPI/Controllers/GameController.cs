@@ -1,12 +1,9 @@
-using System.Security.Claims;
-using Application.Hubs;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 
 namespace WebAPI.Controllers;
 
@@ -16,12 +13,10 @@ namespace WebAPI.Controllers;
 public class GameController : ControllerBase
 {
     private readonly IGameLogic _gameLogic;
-    private readonly IHubContext<GameHub> _hubContext;
 
-    public GameController(IGameLogic gameLogic, IHubContext<GameHub> hubContext)
+    public GameController(IGameLogic gameLogic)
     {
         _gameLogic = gameLogic;
-        _hubContext = hubContext;
     }
 
     [HttpPost("/startGame")]
