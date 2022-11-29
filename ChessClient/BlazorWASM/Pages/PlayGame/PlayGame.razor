@@ -15,7 +15,8 @@
     </MudContainer>
     <MudSpacer/>
     <MudContainer Style="display: flex; justify-content: right">
-        <MudIconButton Icon="@Icons.Filled.Refresh" @onclick="RefreshJoinableGames"></MudIconButton>
+        <MudIconButton Icon="@Icons.Filled.Refresh"
+                       @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshJoinableGames(); })"/>
     </MudContainer>
     <JoinableGameListComponent JoinableGames="@_joinableGames"/>
 </MudContainer>
@@ -25,13 +26,12 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _joinableGames = await GameLogic.GetAllJoinableGames();
+        await RefreshJoinableGames();
     }
 
     private async Task RefreshJoinableGames()
     {
         _joinableGames = await GameLogic.GetAllJoinableGames();
-        Snackbar.Add("Refreshed", Severity.Success);
     }
 
     private void DisplayCreateGameDialog()

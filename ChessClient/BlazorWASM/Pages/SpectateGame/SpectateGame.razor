@@ -6,7 +6,8 @@
 
 <MudContainer Class="mt-10">
     <MudContainer Style="display: flex; justify-content: flex-end">
-        <MudIconButton Icon="@Icons.Filled.Refresh" @onclick="RefreshSpectateableGames"></MudIconButton>
+        <MudIconButton Icon="@Icons.Filled.Refresh"
+                       @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshSpectateableGames(); })"/>
     </MudContainer>
     <SpectateableGameListComponent SpectateableGames="@_spectateableGames"/>
 </MudContainer>
@@ -16,7 +17,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _spectateableGames = await GameLogic.GetAllSpectateableGames();
+        await RefreshSpectateableGames();
     }
 
     private async Task RefreshSpectateableGames()
