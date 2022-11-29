@@ -37,13 +37,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddScoped<IUserLogic, UserLogic>();
 builder.Services.AddScoped<IUserService, UserHttpClient>();
 
-builder.Services.AddScoped<IStockfishLogic, StockfishLogic>();
-builder.Services.AddScoped<IStockfishService, StockfishHttpClient>();
 
-builder.Services.AddScoped(
-    sp => 
-        new HttpClient { 
-            BaseAddress = new Uri("http://localhost:8080") 
+builder.Services.AddSingleton<IStockfishLogic, StockfishLogic>();
+builder.Services.AddSingleton<IStockfishService, StockfishHttpClient>();
+
+
+builder.Services.AddSingleton<IChatLogic, ChatLogic>();
+builder.Services.AddSingleton<IGameLogic, GameLogic>();
+builder.Services.AddTransient(
+    sp =>
+        new HttpClient
+        {
+            BaseAddress = new Uri("http://localhost:8080")
         }
 );
 
