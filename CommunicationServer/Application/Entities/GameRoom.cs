@@ -16,7 +16,6 @@ namespace Application.Entities;
 public class GameRoom
 {
     private readonly IGame _game;
-    private readonly List<JoinedGameStreamDto> _gameData = new();
     private readonly ChessTimer _chessTimer;
     private bool _whitePlaying;
     private bool _firstMovePlayed;
@@ -99,7 +98,6 @@ public class GameRoom
             UsernameWhite = PlayerWhite ?? "",
             UsernameBlack = PlayerBlack ?? ""
         };
-        _gameData.Add(streamDto);
         // GameJoined.Invoke(streamDto);
         _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
     }
@@ -168,7 +166,6 @@ public class GameRoom
             IsWhite = !_whitePlaying
         };
 
-        _gameData.Add(responseJoinedGameDto);
         // GameJoined.Invoke(responseJoinedGameDto);
         _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", responseJoinedGameDto);
 
