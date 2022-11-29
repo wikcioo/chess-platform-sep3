@@ -1,0 +1,41 @@
+@using Domain.DTOs
+@using Application.LogicInterfaces
+@using Domain.DTOs.GameRoomData
+@inject IGameLogic GameLogic
+@inject NavigationManager NavMgr
+
+<MudTable Items="@JoinableGames" Hover="true">
+    <HeaderContent>
+        <MudTh>Game Id</MudTh>
+        <MudTh>Opponent</MudTh>
+        <MudTh>Time Control</MudTh>
+        <MudTh>Opponent Side</MudTh>
+        <MudTh>Join Game</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Id">@context.GameRoom</MudTd>
+        <MudTd DataLabel="User">@context.Username</MudTd>
+        <MudTd DataLabel="Time Control">@(context.Seconds + "+" + context.Increment)</MudTd>
+        <MudTd DataLabel="Side">@context.Side</MudTd>
+        <MudTd DataLabel="Join">
+            <MudButton @onclick="() => JoinGame(context.GameRoom)">Join</MudButton>
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager/>
+    </PagerContent>
+</MudTable>
+
+@code {
+    [Parameter]
+    public IList<JoinableGameRoomDataDto>? JoinableGames { get; set; }
+
+    private void JoinGame(ulong i)
+    {
+        NavMgr.NavigateTo("/ChessGame");
+        GameLogic.JoinGame(new RequestJoinGameDto
+        {
+            GameRoom = i
+        });
+    }
+}
