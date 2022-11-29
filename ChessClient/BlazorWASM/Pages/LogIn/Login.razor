@@ -54,7 +54,7 @@
                     await HubDto.HubConnection.DisposeAsync();
                 }
                 HubDto.HubConnection = new HubConnectionBuilder()
-                    .WithUrl("https://localhost:7289/gamehub",
+                    .WithUrl("https://localhost:7233/gamehub",
                         options => { options.AccessTokenProvider = () => Task.FromResult(AuthService.GetJwtToken())!; })
                     .Build();
     //Required so the connection is not dropped
