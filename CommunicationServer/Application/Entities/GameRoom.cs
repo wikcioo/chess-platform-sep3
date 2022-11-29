@@ -94,7 +94,7 @@ public class GameRoom
         var streamDto = new JoinedGameStreamDto
         {
             FenString = _game.Pos.FenNotation,
-            Event = GameStreamEvents.InitialTime,
+            Event = GameStreamEvents.PlayerJoined,
             TimeLeftMs = _chessTimer.TimeControlBaseMs,
             UsernameWhite = PlayerWhite ?? "",
             UsernameBlack = PlayerBlack ?? ""

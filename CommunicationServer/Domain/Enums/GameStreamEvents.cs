@@ -8,6 +8,6 @@ public enum GameStreamEvents
     DrawOffer,
     DrawOfferTimeout,
     DrawOfferAcceptation,
-    InitialTime,
+    PlayerJoined,
     ReachedEndOfTheGame
 }
