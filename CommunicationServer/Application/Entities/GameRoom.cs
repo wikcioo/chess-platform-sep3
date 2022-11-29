@@ -19,7 +19,7 @@ public class GameRoom
     private readonly ChessTimer _chessTimer;
     private bool _whitePlaying;
     private bool _firstMovePlayed;
-    private bool _gameIsActive = true;
+    private bool _gameIsActive = false;
 
     // Offer draw related fields
     private string _drawOfferOrigin = string.Empty;
@@ -61,6 +61,10 @@ public class GameRoom
         GameType = gameType;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
         _hubContext = hubContext;
+        if (gameType == OpponentTypes.Ai)
+        {
+            _gameIsActive = true;
+        }
     }
 
     public void Initialize()
@@ -75,7 +79,6 @@ public class GameRoom
 
     public CurrentGameStateDto GetCurrentGameState()
     {
-
         var stateDto = new CurrentGameStateDto
         {
             FenString = _game.Pos.FenNotation,
@@ -90,6 +93,7 @@ public class GameRoom
 
     public void PlayerJoined()
     {
+        _gameIsActive = true;
         var streamDto = new JoinedGameStreamDto
         {
             FenString = _game.Pos.FenNotation,
