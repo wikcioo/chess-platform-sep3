@@ -1,15 +1,10 @@
-@using MudBlazor
 @using Domain.DTOs
 @using Domain.DTOs.GameRoomData
 @using Application.LogicInterfaces
-@using Domain.Models
 @inject IGameLogic GameLogic
 @inject NavigationManager NavMgr
 
-<MudContainer Style="display: flex; justify-content: flex-end">
-    <MudIconButton Icon="@Icons.Filled.Refresh" @onclick="RefreshSpectateableGames"></MudIconButton>
-</MudContainer>
-<MudTable Items="@_spectateableGames" Hover="true">
+<MudTable Items="@SpectateableGames" Hover="true">
     <HeaderContent>
         <MudTh>Game Id</MudTh>
         <MudTh>White Player</MudTh>
@@ -32,17 +27,8 @@
 </MudTable>
 
 @code {
-    private IList<SpectateableGameRoomDataDto>? _spectateableGames;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await RefreshSpectateableGames();
-    }
-
-    private async Task RefreshSpectateableGames()
-    {
-        _spectateableGames = await GameLogic.GetAllSpectateableGames();
-    }
+    [Parameter]
+    public IList<SpectateableGameRoomDataDto>? SpectateableGames { get; set; }
 
     private void SpectateGame(ulong i)
     {
@@ -52,5 +38,4 @@
             GameRoom = i
         });
     }
-
 }
