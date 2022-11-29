@@ -169,14 +169,14 @@
     {
         try
         {
-            await GameLogic.Resign();
+            var ack = await GameLogic.Resign();
+            if (ack == (uint) AckTypes.Success) return;
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
         }
 
-    // if (ack == (uint)AckTypes.Success) return;
         Notify("Failed to resign", Severity.Error);
     }
 

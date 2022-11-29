@@ -308,18 +308,40 @@ public class GameLogic : IGameLogic
         GameFirstJoined?.Invoke();
         NewPlayerJoined?.Invoke(dto);
     }
-    
-    public async Task Resign()
+
+    public async Task<AckTypes> Resign()
     {
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
 
-        if (_hubDto.HubConnection == null)
+        if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in.");
-        await _hubDto.HubConnection.SendAsync("Resign", new RequestResignDto()
+
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+        var dto = new ResponseDrawDto
         {
+            Username = user.Identity!.Name!,
             GameRoom = GameRoomId.Value
-        });
+        };
+        var response = await _client.PostAsJsonAsync("/resign", dto);
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(responseContent);
+        }
+
+        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })!;
+
+        return ack;
     }
 
     public async Task<AckTypes> SendDrawResponse(bool accepted)

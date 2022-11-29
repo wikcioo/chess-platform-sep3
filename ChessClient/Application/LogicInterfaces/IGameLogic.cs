@@ -26,7 +26,7 @@ public interface IGameLogic
     public Task JoinGame(RequestJoinGameDto dto);
     public Task<AckTypes> MakeMove(Move move);
     public Task<AckTypes> OfferDraw();
-    public Task Resign();
+    public Task<AckTypes> Resign();
     public Task<AckTypes> SendDrawResponse(bool accepted);
     public Task<IList<SpectateableGameRoomDataDto>> GetAllSpectateableGames();
     public Task<IList<JoinableGameRoomDataDto>> GetAllJoinableGames();
