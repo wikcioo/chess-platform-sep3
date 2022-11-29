@@ -1,5 +1,6 @@
 using Application.LogicInterfaces;
 using Application.Signalr;
+using Domain.DTOs;
 using Domain.DTOs.Chat;
 using HttpClients.ClientInterfaces;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -50,13 +51,9 @@ public class ChatLogic : IChatLogic
         }
     }
 
-    public async Task StartMessagingAsync(ulong gameRoom)
+    public void StartMessaging(ulong gameRoom)
     {
-        if (_hubDto.HubConnection is not null)
-        {
-            await _hubDto.HubConnection.SendAsync("JoinRoom", gameRoom);
-            _gameRoom = gameRoom;
-        }
+        _gameRoom = gameRoom;
     }
 
     public async ValueTask DisposeAsync()
