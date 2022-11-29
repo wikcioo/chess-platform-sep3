@@ -211,6 +211,7 @@
         try
         {
             ack = await GameLogic.SendDrawResponse(accepted);
+            GameLogic.IsDrawOfferPending = false;
         }
         catch (InvalidOperationException e)
         {

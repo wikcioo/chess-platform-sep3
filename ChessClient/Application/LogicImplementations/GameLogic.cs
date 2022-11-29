@@ -155,7 +155,7 @@ public class GameLogic : IGameLogic
                 break;
             case GameStreamEvents.PlayerJoined:
                 // _call.Dispose();
-                NewPlayerJoined(response);
+                PlayerJoined(response);
                 break;
             default: throw new ArgumentOutOfRangeException();
         }
@@ -359,7 +359,9 @@ public class GameLogic : IGameLogic
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
         var dto = new ResponseDrawDto
         {
-            Username = user.Identity!.Name, GameRoom = GameRoomId.Value, Accept = accepted
+            Username = user.Identity!.Name!,
+            GameRoom = GameRoomId.Value,
+            Accept = accepted
         };
         var response = await _client.PostAsJsonAsync("/drawResponse", dto);
         var responseContent = await response.Content.ReadAsStringAsync();
