@@ -148,10 +148,7 @@
         if (!move.IsType(MoveTypes.Normal)) return;
         if (Position != null)
         {
-            var piece = Position.MovedPiece(move);
-            Position.RemovePiece(move.FromSquare());
-            Position.AddPiece(new Piece(Pieces.NoPiece), move.FromSquare());
-            Position.AddPiece(piece, move.ToSquare());
+            Position.Board.MovePiece(move.FromSquare(), move.ToSquare());
             StateHasChanged();
         }
     }
