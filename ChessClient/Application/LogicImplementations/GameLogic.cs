@@ -34,7 +34,9 @@ public class GameLogic : IGameLogic
     public event StreamUpdate? DrawOfferTimedOut;
     public event StreamUpdate? DrawOfferAccepted;
     public event StreamUpdate? EndOfTheGameReached;
-    public event StreamUpdate? GameFirstJoined;
+    public event Action? GameFirstJoined;
+
+    public event Action<CurrentGameStateDto>? StateReceived;
 
     //Signalr
     private HubConnectionDto _hubDto;
@@ -97,13 +99,10 @@ public class GameLogic : IGameLogic
 
         await _hubDto.HubConnection.SendAsync("JoinGame", dto);
         GameRoomId = dto.GameRoom;
-        Console.WriteLine(GameRoomId);
         if (_hubDto.HubConnection is not null)
         {
             await _hubDto.HubConnection.SendAsync("JoinRoom", GameRoomId);
         }
-
-        GetCurrentGameState();
     }
 
 
@@ -171,12 +170,25 @@ public class GameLogic : IGameLogic
             throw new Exception(responseContent);
         }
 
-        var streamDto = JsonSerializer.Deserialize<JoinedGameStreamDto>(responseContent, new JsonSerializerOptions
+        var streamDto = JsonSerializer.Deserialize<CurrentGameStateDto>(responseContent, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         })!;
-        streamDto.Event = GameStreamEvents.NewFenPosition;
-        ListenToJoinedGameStream(streamDto);
+
+
+        var myName = user.Identity!.Name;
+        if (streamDto.UsernameBlack.Equals(myName))
+        {
+            OnWhiteSide = false;
+        }
+
+        if (streamDto.UsernameWhite.Equals(myName))
+        {
+            OnWhiteSide = true;
+        }
+
+        StateReceived?.Invoke(streamDto);
+        GameFirstJoined?.Invoke();
     }
 
     private async void InitialTime(JoinedGameStreamDto dto)
@@ -193,7 +205,7 @@ public class GameLogic : IGameLogic
             OnWhiteSide = true;
         }
 
-        GameFirstJoined?.Invoke(dto);
+        GameFirstJoined?.Invoke();
         InitialTimeReceived?.Invoke(dto);
     }
 

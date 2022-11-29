@@ -124,6 +124,7 @@
         ClaimsPrincipal user = authState.User;
         if (user.Identity == null) return;
         _currentUser = user.Identity.Name!;
+        GameLogic.GetCurrentGameState();
     }
 
     private void InitGameLogic()
@@ -137,8 +138,19 @@
         GameLogic.DrawOfferAccepted += OnDrawOfferAccepted;
         GameLogic.EndOfTheGameReached += OnEndOfTheGameReached;
         GameLogic.GameFirstJoined += OnGameFirstJoined;
+        GameLogic.StateReceived += OnGameStateReceived;
     }
 
+    public void OnGameStateReceived(CurrentGameStateDto dto)
+    {
+        _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
+        PlaySound("notify");
+        // Notify("Game joined. Have fun!", Severity.Success);
+        _whiteSeconds = dto.WhiteTimeLeftMs / 1000;
+        _blackSeconds = dto.BlackTimeLeftMs / 1000;
+        StateHasChanged();
+    }
+    
     public async Task<AckTypes> MakeMove(Move move)
     {
         try
@@ -150,7 +162,7 @@
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            return (int)AckTypes.GameNotFound;
+            return AckTypes.GameNotFound;
         }
     }
 
@@ -218,7 +230,7 @@
         }
     }
 
-    private void OnGameFirstJoined(JoinedGameStreamDto dto)
+    private void OnGameFirstJoined()
     {
         Enum.TryParse(GameLogic.OnWhiteSide ? "White" : "Black", out GameSides side);
         _isWhiteSide = side;

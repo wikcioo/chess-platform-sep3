@@ -8,6 +8,7 @@ namespace Application.LogicInterfaces;
 
 public interface IGameLogic
 {
+    public event Action<CurrentGameStateDto>? StateReceived;
     bool OnWhiteSide { get; set; }
     ulong? GameRoomId { get; }
     bool IsDrawOfferPending { get; set; }
@@ -19,7 +20,7 @@ public interface IGameLogic
     public event GameLogic.StreamUpdate? DrawOfferTimedOut;
     public event GameLogic.StreamUpdate? DrawOfferAccepted;
     public event GameLogic.StreamUpdate? EndOfTheGameReached;
-    public event GameLogic.StreamUpdate? GameFirstJoined;
+    public event Action? GameFirstJoined;
 
     public Task<ResponseGameDto> CreateGame(RequestGameDto dto);
     public Task JoinGame(RequestJoinGameDto dto);
