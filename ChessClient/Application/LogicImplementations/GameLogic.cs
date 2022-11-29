@@ -150,7 +150,7 @@ public class GameLogic : IGameLogic
         TimeUpdated?.Invoke(dto);
     }
 
-    public async void GetCurrentGameState()
+    public async Task GetCurrentGameState()
     {
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
@@ -176,7 +176,7 @@ public class GameLogic : IGameLogic
         })!;
 
 
-        var myName = user.Identity!.Name;
+        var myName = user.Identity!.Name!;
         if (streamDto.UsernameBlack.Equals(myName))
         {
             OnWhiteSide = false;

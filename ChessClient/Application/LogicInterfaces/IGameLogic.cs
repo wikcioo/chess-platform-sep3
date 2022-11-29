@@ -30,6 +30,6 @@ public interface IGameLogic
     public Task<AckTypes> SendDrawResponse(bool accepted);
     public Task<IList<SpectateableGameRoomDataDto>> GetAllSpectateableGames();
     public Task<IList<JoinableGameRoomDataDto>> GetAllJoinableGames();
-    void GetCurrentGameState();
+    Task GetCurrentGameState();
     void LeaveRoom();
 }
