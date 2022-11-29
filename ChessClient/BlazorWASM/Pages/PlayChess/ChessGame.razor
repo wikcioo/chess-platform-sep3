@@ -144,6 +144,7 @@
     {
         _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
         PlaySound("notify");
+        SetFenPosition(dto.FenString);
         Notify("Game joined. Have fun!", Severity.Success);
         _whiteSeconds = dto.WhiteTimeLeftMs / 1000;
         _blackSeconds = dto.BlackTimeLeftMs / 1000;
