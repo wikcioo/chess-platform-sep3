@@ -218,7 +218,7 @@ public class GameLogic : IGameLogic
         DrawOfferAccepted?.Invoke(dto);
     }
 
-    public async Task<int> MakeMove(Move move)
+    public async Task<AckTypes> MakeMove(Move move)
     {
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
@@ -228,16 +228,31 @@ public class GameLogic : IGameLogic
             throw new InvalidOperationException("You are not logged in!");
         }
 
-        await _hubDto.HubConnection.SendAsync("MakeMove", new MakeMoveDto
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+        var dto = new MakeMoveDto
         {
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
             GameRoom = GameRoomId.Value,
             MoveType = (uint) move.MoveType(),
             Promotion = (uint) move.PromotedPieceType().AsInt()
-        });
+        };
+        var response = await _client.PostAsJsonAsync("/makeMove", dto);
+        var responseContent = await response.Content.ReadAsStringAsync();
 
-        return 0;
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(responseContent);
+        }
+
+        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })!;
+
+        return ack;
     }
 
     public async Task<AckTypes> OfferDraw()

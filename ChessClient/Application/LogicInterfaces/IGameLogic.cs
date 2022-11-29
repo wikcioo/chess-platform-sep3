@@ -23,7 +23,7 @@ public interface IGameLogic
 
     public Task<ResponseGameDto> CreateGame(RequestGameDto dto);
     public Task JoinGame(RequestJoinGameDto dto);
-    public Task<int> MakeMove(Move move);
+    public Task<AckTypes> MakeMove(Move move);
     public Task<AckTypes> OfferDraw();
     public Task Resign();
     public Task<AckTypes> SendDrawResponse(bool accepted);

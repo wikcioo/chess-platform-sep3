@@ -139,7 +139,7 @@
         GameLogic.GameFirstJoined += OnGameFirstJoined;
     }
 
-    public async Task<int> MakeMove(Move move)
+    public async Task<AckTypes> MakeMove(Move move)
     {
         try
         {
