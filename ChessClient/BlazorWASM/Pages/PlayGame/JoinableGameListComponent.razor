@@ -30,12 +30,12 @@
     [Parameter]
     public IList<JoinableGameRoomDataDto>? JoinableGames { get; set; }
 
-    private void JoinGame(ulong i)
+    private async void JoinGame(ulong i)
     {
-        NavMgr.NavigateTo("/ChessGame");
-        GameLogic.JoinGame(new RequestJoinGameDto
+        await GameLogic.JoinGame(new RequestJoinGameDto
         {
             GameRoom = i
         });
+        NavMgr.NavigateTo("/ChessGame");
     }
 }
