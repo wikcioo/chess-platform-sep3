@@ -33,6 +33,23 @@ public class GameController : ControllerBase
         return response;
     }
 
+    [HttpPost("/joinGame")]
+    public ActionResult<AckTypes> JoinGame([FromBody] RequestJoinGameDto dto)
+    {
+        try
+        {
+            dto.Username = User.Identity.Name;
+            var ack = _gameLogic.JoinGame(dto);
+            return Ok(ack);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
+    }
+
+
     [HttpPost("/gameState")]
     public ActionResult<CurrentGameStateDto> GetCurrentGameState([FromBody] ulong gameRoomId)
     {
