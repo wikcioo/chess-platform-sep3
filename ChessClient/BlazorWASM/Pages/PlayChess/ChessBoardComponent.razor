@@ -8,35 +8,34 @@
 @namespace BlazorWASM.Pages.ChessComponents
 
 <div class="chess-board @(!IsWhiteSide ? "black-side" : "")">
-    
-@{
-    var index = 0;
-    var isBlackSquare = _isFirstSquareBlack;
-    _currentPieces = ParsePositionToPieces();
-    var kingSquareInCheck = KingSquareInCheck();
 
-    for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
-    {
-        for (var file = Files.FileA; file <= Files.FileH; file++)
+    @{
+        var index = 0;
+        var isBlackSquare = _isFirstSquareBlack;
+        _currentPieces = ParsePositionToPieces();
+        var kingSquareInCheck = KingSquareInCheck();
+
+        for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
         {
-            isBlackSquare = !isBlackSquare;
-            var squareId = new Square(rank,file).Value;
-            var hasMoveTo = _currentMoves.Any(move => move.ToSquare() == squareId && move.IsValidMove());
-            <SquareComponent
-                SquareId="@squareId"
-                HasMoveTo="@hasMoveTo"
-                IsBlackSquare="@isBlackSquare"
-                Piece="@_currentPieces[index]"
-                OnClick="@OnSquareClicked"
-                IsWhiteSide="@IsWhiteSide"
-                IsKingCheck="@(kingSquareInCheck == squareId)"
-            />
+            for (var file = Files.FileA; file <= Files.FileH; file++)
+            {
+                isBlackSquare = !isBlackSquare;
+                var squareId = new Square(rank, file).Value;
+                var hasMoveTo = _currentMoves.Any(move => move.ToSquare() == squareId && move.IsValidMove());
+                <SquareComponent
+                    SquareId="@squareId"
+                    HasMoveTo="@hasMoveTo"
+                    IsBlackSquare="@isBlackSquare"
+                    Piece="@_currentPieces[index]"
+                    OnClick="@OnSquareClicked"
+                    IsWhiteSide="@IsWhiteSide"
+                    IsKingCheck="@(kingSquareInCheck == squareId)"/>
 
-            index++;
+                index++;
+            }
+            isBlackSquare = !isBlackSquare;
         }
-        isBlackSquare = !isBlackSquare;
     }
-}
 
 </div>
 
@@ -45,18 +44,20 @@
     private IPosition? _position;
     private List<ExtMove> _legalMoves = new();
 
-    [Parameter] 
-    public IPosition? Position {
+    [Parameter]
+    public IPosition? Position
+    {
         get => _position;
         set
         {
             _position = value;
             GenerateMoves();
-        } }
+        }
+    }
 
-    [Parameter] 
+    [Parameter]
     public EventCallback<Move> OnMoveMade { get; set; }
-    
+
     [Parameter]
     public bool IsWhiteSide { get; set; }
 
@@ -74,41 +75,39 @@
     {
         if (Position is {InCheck: true })
             return Position.GetKingSquare(Position.SideToMove);
-        
+
         return Square.None;
     }
-    
+
 
     private List<Piece> ParsePositionToPieces()
     {
         List<Piece> chessPieces = EmptyList<Piece>();
-     
+
         if (Position == null)
             return chessPieces;
-        
+
         var index = 0;
-        
+
         for (var rank = Ranks.Rank8; rank >= Ranks.Rank1; rank--)
         {
             for (var file = Files.FileA; file <= Files.FileH; file++)
             {
                 var piece = Position.GetPiece(new Square(rank, file));
-                
-                chessPieces[index] =  piece;
-                
+
+                chessPieces[index] = piece;
+
                 index++;
             }
         }
         return chessPieces;
     }
-    
+
     private List<Move> GenerateMovesForSquare(ChessClickDto dto)
     {
-        var t1 = Stopwatch.StartNew();
         var moves = _legalMoves
             .FindAll(move => move.Move.FromSquare() == dto.SquareType)
             .Select(move => move.Move).ToList();
-        Console.WriteLine(t1.Elapsed.Ticks);
         return moves;
     }
 
@@ -116,15 +115,15 @@
     {
         _legalMoves = Position.GenerateMoves().ToList();
     }
-    
+
     private void OnSquareClicked(ChessClickDto dto)
     {
         if (dto.HasMoveTo)
         {
             MakeMove(dto);
-            return;            
+            return;
         }
-        
+
         if (dto.PieceType != Pieces.NoPiece)
         {
             if ((dto.PieceType.Value.AsInt() <= 6 && IsWhiteSide) || (dto.PieceType.Value.AsInt() >= 9 && !IsWhiteSide))
@@ -135,11 +134,26 @@
             _currentMoves = EmptyList<Move>();
         }
     }
-    
+
     private void MakeMove(ChessClickDto dto)
     {
         var move = _currentMoves.Find(move => move.ToSquare() == dto.SquareType);
-        OnMoveMade.InvokeAsync(move);
         _currentMoves = EmptyList<Move>();
+        MockMove(move);
+        OnMoveMade.InvokeAsync(move);
     }
+
+    private void MockMove(Move move)
+    {
+        if (!move.IsType(MoveTypes.Normal)) return;
+        if (Position != null)
+        {
+            var piece = Position.MovedPiece(move);
+            Position.RemovePiece(move.FromSquare());
+            Position.AddPiece(new Piece(Pieces.NoPiece), move.FromSquare());
+            Position.AddPiece(piece, move.ToSquare());
+            StateHasChanged();
+        }
+    }
+
 }
