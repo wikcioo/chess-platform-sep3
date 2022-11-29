@@ -92,13 +92,28 @@ public class GameLogic : IGameLogic
 
     public async Task JoinGame(RequestJoinGameDto dto)
     {
-        if (_hubDto.HubConnection == null)
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity;
+
+        if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
+            throw new InvalidOperationException("User not logged in.");
+        dto.Username = user.Identity!.Name!;
+        var response = await _client.PostAsJsonAsync("/joinGame", dto);
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException("You are not logged in!");
+            throw new Exception(responseContent);
         }
 
-        await _hubDto.HubConnection.SendAsync("JoinGame", dto);
+        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        })!;
         GameRoomId = dto.GameRoom;
+
         if (_hubDto.HubConnection is not null)
         {
             await _hubDto.HubConnection.SendAsync("JoinRoom", GameRoomId);
