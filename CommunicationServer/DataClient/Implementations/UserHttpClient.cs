@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using Application.DaoInterfaces;
+using Application.ClientInterfaces;
 using Domain.DTOs;
 using Domain.Models;
 

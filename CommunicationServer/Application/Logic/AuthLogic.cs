@@ -1,7 +1,7 @@
-﻿using Application.DaoInterfaces;
+﻿using Application.ClientInterfaces;
+using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.Models;
-using WebAPI.Services;
 
 namespace Application.Logic;
 

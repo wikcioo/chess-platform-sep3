@@ -1,6 +1,6 @@
 ﻿using Domain.Models;
 
-namespace WebAPI.Services;
+namespace Application.LogicInterfaces;
 
 public interface IAuthLogic
 {

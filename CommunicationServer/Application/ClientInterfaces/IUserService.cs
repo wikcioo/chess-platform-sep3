@@ -1,7 +1,7 @@
 using Domain.DTOs;
 using Domain.Models;
 
-namespace Application.DaoInterfaces;
+namespace Application.ClientInterfaces;
 
 public interface IUserService
 {
