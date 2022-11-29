@@ -41,7 +41,6 @@ public class GameHub : Hub<IGameHub>
     {
         dto.Username = Context.User?.Identity?.Name;
         var ack = _gameLogic.JoinGame(dto);
-        Console.WriteLine(ack);
     }
 
     public async Task LeaveRoom(ulong gameRoom)

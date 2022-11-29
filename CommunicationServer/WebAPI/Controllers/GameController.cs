@@ -34,7 +34,7 @@ public class GameController : ControllerBase
     }
 
     [HttpPost("/gameState")]
-    public ActionResult<ResponseGameDto> GetCurrentGameState([FromBody] ulong gameRoomId)
+    public ActionResult<CurrentGameStateDto> GetCurrentGameState([FromBody] ulong gameRoomId)
     {
         try
         {

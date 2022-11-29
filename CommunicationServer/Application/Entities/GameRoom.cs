@@ -66,17 +66,6 @@ public class GameRoom
 
     public void Initialize()
     {
-        var streamDto = new JoinedGameStreamDto()
-        {
-            Event = GameStreamEvents.InitialTime,
-            TimeLeftMs = _chessTimer.TimeControlBaseMs,
-            UsernameWhite = PlayerWhite ?? "",
-            UsernameBlack = PlayerBlack ?? ""
-        };
-        _gameData.Add(streamDto);
-        // GameJoined.Invoke(streamDto);
-        _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
-
         _chessTimer.ThrowEvent += (_, _, dto) =>
         {
             if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) _gameIsActive = false;
@@ -85,9 +74,24 @@ public class GameRoom
         };
     }
 
-    public JoinedGameStreamDto GetStartPos()
+    public CurrentGameStateDto GetCurrentGameState()
     {
-        var streamDto = new JoinedGameStreamDto()
+
+        var stateDto = new CurrentGameStateDto
+        {
+            FenString = _game.Pos.FenNotation,
+            WhiteTimeLeftMs = _chessTimer.WhiteRemainingTimeMs,
+            BlackTimeLeftMs = _chessTimer.BlackRemainingTimeMs,
+            UsernameWhite = PlayerWhite ?? "",
+            UsernameBlack = PlayerBlack ?? ""
+        };
+
+        return stateDto;
+    }
+
+    public void PlayerJoined()
+    {
+        var streamDto = new JoinedGameStreamDto
         {
             FenString = _game.Pos.FenNotation,
             Event = GameStreamEvents.InitialTime,
@@ -98,7 +102,6 @@ public class GameRoom
         _gameData.Add(streamDto);
         // GameJoined.Invoke(streamDto);
         _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
-        return streamDto;
     }
 
     public AckTypes MakeMove(MakeMoveDto dto)

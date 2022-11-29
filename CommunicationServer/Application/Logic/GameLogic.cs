@@ -108,7 +108,7 @@ public class GameLogic : IGameLogic
             if (++gameRoom.NumPlayersJoined == 2)
             {
                 gameRoom.IsJoinable = false;
-                gameRoom.GetStartPos();
+                gameRoom.PlayerJoined();
             }
 
             return AckTypes.Success;
@@ -259,8 +259,8 @@ public class GameLogic : IGameLogic
         return list;
     }
 
-    public JoinedGameStreamDto GetCurrentGameState(ulong gameRoomId)
+    public CurrentGameStateDto GetCurrentGameState(ulong gameRoomId)
     {
-        return _gameRoomsData.Get(gameRoomId).GetStartPos();
+        return _gameRoomsData.Get(gameRoomId).GetCurrentGameState();
     }
 }

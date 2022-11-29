@@ -15,5 +15,5 @@ public interface IGameLogic
     Task<AckTypes> DrawOfferResponse(ResponseDrawDto dto);
     IEnumerable<SpectateableGameRoomDataDto> GetSpectateableGameRoomData();
     IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData(string requesterUsername);
-    JoinedGameStreamDto GetCurrentGameState(ulong gameRoomId);
+    CurrentGameStateDto GetCurrentGameState(ulong gameRoomId);
 }
