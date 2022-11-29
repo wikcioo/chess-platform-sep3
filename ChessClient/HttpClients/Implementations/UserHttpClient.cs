@@ -3,6 +3,7 @@ using System.Text.Json;
 using Domain.Models;
 using HttpClients.ClientInterfaces;
 using System.Net.Http.Headers;
+using Domain.DTOs;
 
 namespace HttpClients.Implementations;
 
@@ -33,5 +34,35 @@ public class UserHttpClient : IUserService
             PropertyNameCaseInsensitive = true
         })!;
         return created;
+    }
+    
+    public async Task<IEnumerable<UserSearchResultDto>> GetAsync(UserSearchParamsDto paramsDto)
+    {
+        var query = ConstructQuery(paramsDto.Username);
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+        HttpResponseMessage response = await _client.GetAsync("/users"+query);
+        string result = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(result);
+        }
+
+        ICollection<UserSearchResultDto> users = JsonSerializer.Deserialize<ICollection<UserSearchResultDto>>(result, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        })!;
+        return users;
+    }
+    
+    private static string ConstructQuery(string? userName)
+    {
+        string query = "";
+        if (!string.IsNullOrEmpty(userName))
+        {
+            query += $"?username={userName}";
+        }
+        
+        return query;
     }
 }

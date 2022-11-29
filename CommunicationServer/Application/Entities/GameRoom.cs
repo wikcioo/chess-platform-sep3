@@ -30,9 +30,18 @@ public class GameRoom
     private CancellationTokenSource _drawCts;
 
     public event Action<JoinedGameStreamDto> GameJoined = delegate { };
+
+    public ulong Id { get; set; }
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
-    public ulong GameRoomId { get; set; } = 1;
+    public bool IsVisible { get; set; }
+    public bool IsJoinable { get; set; } = true;
+    public bool IsSpectatable => IsVisible && !IsJoinable;
+    public OpponentTypes GameType { get; set; }
+
+    public uint NumPlayersJoined { get; set; }
+    public uint NumSpectatorsJoined { get; set; }
+
     public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
     public uint GetInitialTimeControlSeconds => (_chessTimer.TimeControlBaseMs / 1000);
     public uint GetInitialTimeControlIncrement => (_chessTimer.TimeControlIncrementMs / 1000);
@@ -42,15 +51,17 @@ public class GameRoom
     //Testing
     private IHubContext<GameHub> _hubContext;
 
-    public GameRoom(uint timeControlSeconds, uint timeControlIncrement, IHubContext<GameHub> hubContext,
-        string? fen = null)
+
+    public GameRoom(uint timeControlSeconds, uint timeControlIncrement, bool isVisible, OpponentTypes gameType,
+        IHubContext<GameHub> hubContext, string? fen = null)
     {
-        _hubContext = hubContext;
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
         _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
-
+        IsVisible = isVisible;
+        GameType = gameType;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
+        _hubContext = hubContext;
     }
 
     public void Initialize()
@@ -64,13 +75,13 @@ public class GameRoom
         };
         _gameData.Add(streamDto);
         // GameJoined.Invoke(streamDto);
-        _hubContext.Clients.Group(GameRoomId.ToString()).SendAsync("GameStreamDto", streamDto);
+        _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
 
         _chessTimer.ThrowEvent += (_, _, dto) =>
         {
             if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) _gameIsActive = false;
             // GameJoined.Invoke(dto);
-            _hubContext.Clients.Group(GameRoomId.ToString()).SendAsync("GameStreamDto", dto);
+            _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", dto);
         };
     }
 
@@ -86,7 +97,7 @@ public class GameRoom
         };
         _gameData.Add(streamDto);
         // GameJoined.Invoke(streamDto);
-        _hubContext.Clients.Group(GameRoomId.ToString()).SendAsync("GameStreamDto", streamDto);
+        _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
         return streamDto;
     }
 
@@ -138,7 +149,7 @@ public class GameRoom
                 TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             };
             // GameJoined.Invoke(streamDto);
-            _hubContext.Clients.Group(GameRoomId.ToString()).SendAsync("GameStreamDto", streamDto);
+            _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
 
             return AckTypes.Success;
         }
@@ -156,7 +167,7 @@ public class GameRoom
 
         _gameData.Add(responseJoinedGameDto);
         // GameJoined.Invoke(responseJoinedGameDto);
-        _hubContext.Clients.Group(GameRoomId.ToString()).SendAsync("GameStreamDto", responseJoinedGameDto);
+        _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", responseJoinedGameDto);
 
         return AckTypes.Success;
     }
@@ -181,7 +192,7 @@ public class GameRoom
             IsWhite = PlayerWhite!.Equals(dto.Username)
         };
         // GameJoined.Invoke(streamDto);
-        _hubContext.Clients.Group(GameRoomId.ToString()).SendAsync("GameStreamDto", streamDto);
+        _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
         return AckTypes.Success;
     }
 
@@ -197,14 +208,15 @@ public class GameRoom
         _isDrawOfferAccepted = false;
         _drawResponseWithinTimespan = false;
 
-        var streamDto = new JoinedGameStreamDto{
+        var streamDto = new JoinedGameStreamDto
+        {
             Event = GameStreamEvents.DrawOffer,
             UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
             UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
         };
         // GameJoined.Invoke(streamDto);
 
-        await _hubContext.Clients.Group(GameRoomId.ToString()).SendAsync("GameStreamDto", streamDto);
+        await _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
         _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (true)
         {
@@ -234,7 +246,7 @@ public class GameRoom
         };
         // GameJoined.Invoke(streamDto2);
 
-        await _hubContext.Clients.Group(GameRoomId.ToString()).SendAsync("GameStreamDto", streamDto2);
+        await _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto2);
         return AckTypes.Success;
     }
 
@@ -350,5 +362,4 @@ public class GameRoom
             _ => throw new Exception("Invalid move type value.")
         };
     }
-
 }

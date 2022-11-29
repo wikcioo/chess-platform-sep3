@@ -45,4 +45,33 @@ public class UserHttpClient : IUserService
         })!;
         return created;
     }
+
+    public async Task<IEnumerable<User>> GetAsync(UserSearchParamsDto paramsDto)
+    {
+        var query = ConstructQuery(paramsDto.Username);
+        
+        HttpResponseMessage response = await _client.GetAsync("/users"+query);
+        string result = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(result);
+        }
+
+        ICollection<User> users = JsonSerializer.Deserialize<ICollection<User>>(result, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        })!;
+        return users;
+    }
+    
+    private static string ConstructQuery(string? userName)
+    {
+        string query = "";
+        if (!string.IsNullOrEmpty(userName))
+        {
+            query += $"?username={userName}";
+        }
+        
+        return query;
+    }
 }

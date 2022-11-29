@@ -31,7 +31,7 @@
                     <TimerComponent Active="@(_isWhiteSide == GameSides.White ? !_whiteTimerActive : _whiteTimerActive)"
                                     Seconds="@(_isWhiteSide == GameSides.White ? _blackSeconds : _whiteSeconds)"/>
                 </MudItem>
-                <MudItem xs="12">
+                <MudItem xs="12" Class="d-flex justify-center align-center">
                     <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@(_isWhiteSide == GameSides.White)"/>
                 </MudItem>
                 <MudItem xs="8">
@@ -291,6 +291,7 @@
         FenData fenData = new FenData(fen);
         State state = new State();
         _position.Set(in fenData, ChessMode.Normal, state);
+        
         StateHasChanged();
     }
 
