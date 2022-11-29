@@ -108,7 +108,7 @@
         GameLogic.TimeUpdated -= OnTimeUpdated;
         GameLogic.NewFenReceived -= OnNewFenReceived;
         GameLogic.ResignationReceived -= OnResignationReceived;
-        GameLogic.InitialTimeReceived -= OnInitialTimeReceived;
+        GameLogic.NewPlayerJoined -= OnPlayerJoined;
         GameLogic.DrawOffered -= OnDrawOffered;
         GameLogic.DrawOfferTimedOut -= OnDrawOfferTimedOut;
         GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
@@ -131,7 +131,7 @@
         GameLogic.TimeUpdated += OnTimeUpdated;
         GameLogic.NewFenReceived += OnNewFenReceived;
         GameLogic.ResignationReceived += OnResignationReceived;
-        GameLogic.InitialTimeReceived += OnInitialTimeReceived;
+        GameLogic.NewPlayerJoined += OnPlayerJoined;
         GameLogic.DrawOffered += OnDrawOffered;
         GameLogic.DrawOfferTimedOut += OnDrawOfferTimedOut;
         GameLogic.DrawOfferAccepted += OnDrawOfferAccepted;
@@ -144,7 +144,7 @@
     {
         _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
         PlaySound("notify");
-    // Notify("Game joined. Have fun!", Severity.Success);
+        Notify("Game joined. Have fun!", Severity.Success);
         _whiteSeconds = dto.WhiteTimeLeftMs / 1000;
         _blackSeconds = dto.BlackTimeLeftMs / 1000;
         StateHasChanged();
@@ -232,8 +232,6 @@
     {
         Enum.TryParse(GameLogic.OnWhiteSide ? "White" : "Black", out GameSides side);
         _isWhiteSide = side;
-        Console.WriteLine(GameLogic.OnWhiteSide);
-        Console.WriteLine(_isWhiteSide.ToString());
     }
 
     private void OnEndOfTheGameReached(JoinedGameStreamDto dto)
@@ -320,13 +318,11 @@
         }
     }
 
-    private void OnInitialTimeReceived(JoinedGameStreamDto dto)
+    private void OnPlayerJoined(JoinedGameStreamDto dto)
     {
         _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
         PlaySound("notify");
         Notify("Game joined. Have fun!", Severity.Success);
-        _whiteSeconds = dto.TimeLeftMs / 1000;
-        _blackSeconds = dto.TimeLeftMs / 1000;
         StateHasChanged();
     }
 

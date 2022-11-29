@@ -29,7 +29,7 @@ public class GameLogic : IGameLogic
     public event StreamUpdate? TimeUpdated;
     public event StreamUpdate? NewFenReceived;
     public event StreamUpdate? ResignationReceived;
-    public event StreamUpdate? InitialTimeReceived;
+    public event StreamUpdate? NewPlayerJoined;
     public event StreamUpdate? DrawOffered;
     public event StreamUpdate? DrawOfferTimedOut;
     public event StreamUpdate? DrawOfferAccepted;
@@ -152,6 +152,10 @@ public class GameLogic : IGameLogic
             case GameStreamEvents.DrawOfferAcceptation:
                 // _call.Dispose();
                 DrawOfferAcceptation(response);
+                break;
+            case GameStreamEvents.PlayerJoined:
+                // _call.Dispose();
+                NewPlayerJoined(response);
                 break;
             default: throw new ArgumentOutOfRangeException();
         }
@@ -299,6 +303,12 @@ public class GameLogic : IGameLogic
         return ack;
     }
 
+    public void PlayerJoined(JoinedGameStreamDto dto)
+    {
+        GameFirstJoined?.Invoke();
+        NewPlayerJoined?.Invoke(dto);
+    }
+    
     public async Task Resign()
     {
         if (!GameRoomId.HasValue)

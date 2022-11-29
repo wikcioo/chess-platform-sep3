@@ -15,7 +15,7 @@ public interface IGameLogic
     public event GameLogic.StreamUpdate? TimeUpdated;
     public event GameLogic.StreamUpdate? NewFenReceived;
     public event GameLogic.StreamUpdate? ResignationReceived;
-    public event GameLogic.StreamUpdate? InitialTimeReceived;
+    public event GameLogic.StreamUpdate? NewPlayerJoined;
     public event GameLogic.StreamUpdate? DrawOffered;
     public event GameLogic.StreamUpdate? DrawOfferTimedOut;
     public event GameLogic.StreamUpdate? DrawOfferAccepted;
