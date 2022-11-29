@@ -5,29 +5,43 @@
 <div class="@($"square {SquareStyle()}")" @onclick="OnClicked">
     <div class="@($"square-overlay{RenderOverlayStyle()}")"></div>
     <div class="piece @(!IsWhiteSide ? "black-side" : "")">
-        <div class="piece-icon">@((MarkupString)RenderPiece()) </div>
+        <div class="piece-icon">@_pieceRender</div>
     </div>
 </div>
 
 @code {
-    [Parameter] 
+
+    private MarkupString _pieceRender;
+
+    [Parameter]
     public Squares SquareId { get; set; }
 
-    [Parameter] 
+    [Parameter]
     public bool IsBlackSquare { get; set; }
-    
-    [Parameter] 
+
+    [Parameter]
     public bool IsKingCheck { get; set; }
 
-    [Parameter] 
+    [Parameter]
     public bool HasMoveTo { get; set; }
-    
-    [Parameter] 
-    public Piece? Piece { get; set; }
 
-    [Parameter] 
+    private Piece? _piece = Pieces.NoPiece;
+
+    [Parameter]
+    public Piece? Piece
+    {
+        get => _piece;
+        set
+        {
+            _piece = value;
+            RenderPiece(value);
+            StateHasChanged();
+        }
+    }
+
+    [Parameter]
     public EventCallback<ChessClickDto> OnClick { get; set; }
-    
+
     [Parameter]
     public bool IsWhiteSide { get; set; }
 
@@ -36,34 +50,36 @@
         OnClick.InvokeAsync(new ChessClickDto(Piece?.Value, SquareId, HasMoveTo));
     }
 
-    private string RenderPiece()
+    private void RenderPiece(Piece? piece)
     {
-        if (!Piece.HasValue || Piece.Value.Value == Pieces.NoPiece)
-            return "";
-
-        var pieceId = Piece.Value.Value;
-        
+        if (!piece.HasValue || piece.Value.Value == Pieces.NoPiece)
         {
-            string result = "<img style=\"width: 100%\" src=\"icons\\Chess";
-            //TODO: Add contribution to the creator
-            return result + pieceId switch
-            {
-                Pieces.WhitePawn => "_plt45.png\"/>",
-                Pieces.WhiteKnight => "_nlt45.png\"/>",
-                Pieces.WhiteBishop => "_blt45.png\"/>",
-                Pieces.WhiteRook => "_rlt45.png\"/>",
-                Pieces.WhiteQueen => "_qlt45.png\"/>",
-                Pieces.WhiteKing =>"_klt45.png\"/>",
-                Pieces.BlackPawn => "_pdt45.png\"/>",
-                Pieces.BlackKnight => "_ndt45.png\"/>",
-                Pieces.BlackBishop => "_bdt45.png\"/>",
-                Pieces.BlackRook => "_rdt45.png\"/>",
-                Pieces.BlackQueen => "_qdt45.png\"/>",
-                Pieces.BlackKing => "_kdt45.png\"/>",
-                Pieces.PieceNb => "",
-                _ => throw new ArgumentOutOfRangeException()
-                }; 
+            _pieceRender = new MarkupString(String.Empty);
+            return;
         }
+
+        var pieceId = piece.Value.Value;
+        
+        string result = "<img style=\"width: 100%\" src=\"icons\\Chess";
+        //TODO: Add contribution to the creator
+        result += pieceId switch
+        {
+            Pieces.WhitePawn => "_plt45.png\"/>",
+            Pieces.WhiteKnight => "_nlt45.png\"/>",
+            Pieces.WhiteBishop => "_blt45.png\"/>",
+            Pieces.WhiteRook => "_rlt45.png\"/>",
+            Pieces.WhiteQueen => "_qlt45.png\"/>",
+            Pieces.WhiteKing =>"_klt45.png\"/>",
+            Pieces.BlackPawn => "_pdt45.png\"/>",
+            Pieces.BlackKnight => "_ndt45.png\"/>",
+            Pieces.BlackBishop => "_bdt45.png\"/>",
+            Pieces.BlackRook => "_rdt45.png\"/>",
+            Pieces.BlackQueen => "_qdt45.png\"/>",
+            Pieces.BlackKing => "_kdt45.png\"/>",
+            Pieces.PieceNb => "",
+            _ => throw new ArgumentOutOfRangeException()
+            };
+        _pieceRender = new MarkupString(result);
     }
 
     private string RenderOverlayStyle()
@@ -78,7 +94,7 @@
 
         return "-capture";
     }
-    
+
     private string SquareStyle()
     {
         var classes = (IsBlackSquare) ? "dark" : "light";
@@ -89,4 +105,5 @@
         }
         return classes;
     }
+
 }
