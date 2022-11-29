@@ -1,0 +1,27 @@
+@page "/SpectateGame"
+@using Domain.DTOs.GameRoomData
+@using Application.LogicInterfaces
+@inject IGameLogic GameLogic
+@inject ISnackbar Snackbar
+
+<MudContainer Class="mt-10">
+    <MudContainer Style="display: flex; justify-content: flex-end">
+        <MudIconButton Icon="@Icons.Filled.Refresh" @onclick="RefreshSpectateableGames"></MudIconButton>
+    </MudContainer>
+    <SpectateableGameListComponent SpectateableGames="@_spectateableGames"/>
+</MudContainer>
+
+@code {
+    private IList<SpectateableGameRoomDataDto>? _spectateableGames;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _spectateableGames = await GameLogic.GetAllSpectateableGames();
+    }
+
+    private async Task RefreshSpectateableGames()
+    {
+        _spectateableGames = await GameLogic.GetAllSpectateableGames();
+        Snackbar.Add("Refreshed", Severity.Success);
+    }
+}
