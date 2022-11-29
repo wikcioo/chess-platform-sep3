@@ -3,6 +3,8 @@
 @using Rudzoft.ChessLib.Extensions
 @using Rudzoft.ChessLib
 @using Domain.DTOs
+@using System.Diagnostics
+@using System.Runtime.InteropServices.ComTypes
 @namespace BlazorWASM.Pages.ChessComponents
 
 <div class="chess-board @(!IsWhiteSide ? "black-side" : "")">
@@ -39,8 +41,18 @@
 </div>
 
 @code {
+
+    private IPosition? _position;
+    private List<ExtMove> _legalMoves = new();
+
     [Parameter] 
-    public IPosition? Position { get; set; }
+    public IPosition? Position {
+        get => _position;
+        set
+        {
+            _position = value;
+            GenerateMoves();
+        } }
 
     [Parameter] 
     public EventCallback<Move> OnMoveMade { get; set; }
@@ -92,11 +104,17 @@
     
     private List<Move> GenerateMovesForSquare(ChessClickDto dto)
     {
-        return Position
-            .GenerateMoves()
-            .ToList()
+        var t1 = Stopwatch.StartNew();
+        var moves = _legalMoves
             .FindAll(move => move.Move.FromSquare() == dto.SquareType)
             .Select(move => move.Move).ToList();
+        Console.WriteLine(t1.Elapsed.Ticks);
+        return moves;
+    }
+
+    private void GenerateMoves()
+    {
+        _legalMoves = Position.GenerateMoves().ToList();
     }
     
     private void OnSquareClicked(ChessClickDto dto)
