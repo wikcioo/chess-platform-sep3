@@ -73,7 +73,7 @@ public class GameLogic : IGameLogic
 
         if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
             throw new InvalidOperationException("User not logged in.");
-        dto.Username = user.Identity.Name;
+        dto.Username = user.Identity!.Name!;
         var response = await _client.PostAsJsonAsync("/startGame", dto);
         var responseContent = await response.Content.ReadAsStringAsync();
 
@@ -240,6 +240,7 @@ public class GameLogic : IGameLogic
             throw new InvalidOperationException("You are not logged in!");
         }
 
+        var user = await _authService.GetAuthAsync();
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
         var dto = new MakeMoveDto
@@ -248,7 +249,8 @@ public class GameLogic : IGameLogic
             ToSquare = move.ToSquare().ToString(),
             GameRoom = GameRoomId.Value,
             MoveType = (uint) move.MoveType(),
-            Promotion = (uint) move.PromotedPieceType().AsInt()
+            Promotion = (uint) move.PromotedPieceType().AsInt(),
+            Username = user.Identity!.Name!
         };
         var response = await _client.PostAsJsonAsync("/makeMove", dto);
         var responseContent = await response.Content.ReadAsStringAsync();
@@ -283,7 +285,8 @@ public class GameLogic : IGameLogic
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
         var dto = new RequestDrawDto()
         {
-            Username = user.Identity!.Name, GameRoom = GameRoomId.Value
+            Username = user.Identity!.Name!,
+            GameRoom = GameRoomId.Value
         };
         var response = await _client.PostAsJsonAsync("/offerDraw", dto);
         var responseContent = await response.Content.ReadAsStringAsync();
