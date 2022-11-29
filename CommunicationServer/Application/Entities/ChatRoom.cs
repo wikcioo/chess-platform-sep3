@@ -1,11 +1,10 @@
-﻿using System.Reactive.Linq;
-using Domain.DTOs.Chat;
+﻿using Domain.DTOs.Chat;
 
 namespace Application.Entities;
 
 public class ChatRoom
 {
-    public event Action<MessageDto> MessageReceived;
+    public event Action<MessageDto>? MessageReceived;
     private List<MessageDto> _logs = new();
 
 
@@ -15,13 +14,6 @@ public class ChatRoom
         MessageReceived?.Invoke(message);
     }
 
-    public IObservable<MessageDto> GetMessagedAsObservable()
-    {
-        var newLogs = Observable.FromEvent<MessageDto>(
-            (x) => MessageReceived += x,
-            (x) => MessageReceived -= x);
-        return _logs.ToObservable().Concat(newLogs);
-    }
 
     public List<MessageDto> GetLog()
     {

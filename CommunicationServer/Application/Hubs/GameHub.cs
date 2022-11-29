@@ -1,5 +1,4 @@
 ﻿using Application.LogicInterfaces;
-using Domain.DTOs;
 using Domain.DTOs.Chat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -10,12 +9,10 @@ namespace Application.Hubs;
 public class GameHub : Hub<IGameHub>
 {
     private readonly IChatLogic _chatLogic;
-    private readonly IGameLogic _gameLogic;
 
-    public GameHub(IChatLogic chatLogic, IGameLogic gameLogic)
+    public GameHub(IChatLogic chatLogic)
     {
         _chatLogic = chatLogic;
-        _gameLogic = gameLogic;
     }
 
     public async Task SendMessage(ulong gameRoom, string message)
@@ -42,14 +39,5 @@ public class GameHub : Hub<IGameHub>
     {
         var groupName = gameRoom.ToString();
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-    }
-
-
-    public async Task Resign(RequestResignDto request)
-    {
-        request.Username = Context.User?.Identity?.Name;
-
-        var ack = await _gameLogic.Resign(request);
-        await Clients.Caller.ResignationResult(ack);
     }
 }
