@@ -20,6 +20,7 @@ public class GameRoomsData
     public ulong Add(GameRoom gameRoom, bool isVisible, OpponentTypes opponentType)
     {
         var id = _nextGameId++;
+        gameRoom.GameRoomId = id;
         _gameRooms.Add(id, gameRoom);
         _visible.Add(id, isVisible);
         _opponentType.Add(id, opponentType);
