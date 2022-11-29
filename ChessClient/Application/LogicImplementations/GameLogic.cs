@@ -138,9 +138,6 @@ public class GameLogic : IGameLogic
                 // _call.Dispose();
                 DrawOfferAcceptation(response);
                 break;
-            case GameStreamEvents.InitialTime:
-                InitialTime(response);
-                break;
             default: throw new ArgumentOutOfRangeException();
         }
     }
@@ -189,24 +186,6 @@ public class GameLogic : IGameLogic
 
         StateReceived?.Invoke(streamDto);
         GameFirstJoined?.Invoke();
-    }
-
-    private async void InitialTime(JoinedGameStreamDto dto)
-    {
-        var user = await _authService.GetAuthAsync();
-        var myName = user.Identity!.Name;
-        if (dto.UsernameBlack.Equals(myName))
-        {
-            OnWhiteSide = false;
-        }
-
-        if (dto.UsernameWhite.Equals(myName))
-        {
-            OnWhiteSide = true;
-        }
-
-        GameFirstJoined?.Invoke();
-        InitialTimeReceived?.Invoke(dto);
     }
 
     private async void DrawOffer(JoinedGameStreamDto dto)

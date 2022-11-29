@@ -37,11 +37,6 @@ public class GameHub : Hub<IGameHub>
         await Clients.Caller.GetLog(_chatLogic.GetLog(gameRoom));
     }
 
-    public void JoinGame(RequestJoinGameDto dto)
-    {
-        dto.Username = Context.User?.Identity?.Name;
-        var ack = _gameLogic.JoinGame(dto);
-    }
 
     public async Task LeaveRoom(ulong gameRoom)
     {
@@ -49,11 +44,6 @@ public class GameHub : Hub<IGameHub>
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
     }
 
-    public async Task MakeMove(MakeMoveDto dto)
-    {
-        dto.Username = Context.User?.Identity?.Name;
-        var ack = await _gameLogic.MakeMove(dto);
-    }
 
     public async Task Resign(RequestResignDto request)
     {
