@@ -48,17 +48,17 @@
 
     private async void JoinGame(ulong i)
     {
-        NavMgr.NavigateTo("/ChessGame");
         await GameLogic.JoinGame(new RequestJoinGameDto
         {
             GameRoom = i
         });
+        NavMgr.NavigateTo("/ChessGame");
     }
 
     private async void JoinRandomGame()
     {
         await RefreshJoinableGames();
-        
+
         if (_joinableGames.Count > 0)
         {
             NavMgr.NavigateTo("/ChessGame");
@@ -81,4 +81,5 @@
             });
         }
     }
+
 }

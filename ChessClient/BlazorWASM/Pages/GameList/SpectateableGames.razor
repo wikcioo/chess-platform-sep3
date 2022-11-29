@@ -46,11 +46,11 @@
 
     private async void SpectateGame(ulong i)
     {
-        NavMgr.NavigateTo("/ChessGame");
         await GameLogic.JoinGame(new RequestJoinGameDto
         {
             GameRoom = i
         });
+        NavMgr.NavigateTo("/ChessGame");
     }
 
 }
