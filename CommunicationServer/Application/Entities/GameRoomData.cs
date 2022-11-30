@@ -5,7 +5,9 @@ namespace Application.Entities;
 public class GameRoomsData
 {
     private static ulong _nextGameId = 1;
+
     private readonly Dictionary<ulong, GameRoom> _gameRooms = new();
+
     public ulong Add(GameRoom gameRoom)
     {
         var id = _nextGameId++;
@@ -37,7 +39,8 @@ public class GameRoomsData
 
     public IEnumerable<GameRoom> GetJoinableByUsername(string requesterUsername)
     {
-        return _gameRooms.Select(pair => pair.Value).Where(room => room.IsJoinable && CanUsernameJoin(room, requesterUsername));
+        return _gameRooms.Select(pair => pair.Value)
+            .Where(room => room.IsJoinable && CanUsernameJoin(room, requesterUsername));
     }
 
     public IEnumerable<GameRoom> GetSpectateable()

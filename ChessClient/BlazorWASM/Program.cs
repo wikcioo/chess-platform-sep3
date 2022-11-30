@@ -1,10 +1,9 @@
 using Application.LogicImplementations;
 using Application.LogicInterfaces;
+using Application.Signalr;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using BlazorWASM;
-using Grpc.Net.Client;
-using Grpc.Net.Client.Web;
 using HttpClients.ClientInterfaces;
 using HttpClients.Implementations;
 using MudBlazor.Services;
@@ -26,11 +25,6 @@ builder.Services.AddScoped(
         }
 );
 
-builder.Services.AddSingleton(_ => GrpcChannel.ForAddress("http://localhost:5231", new GrpcChannelOptions
-{
-    HttpHandler = new GrpcWebHandler(new HttpClientHandler())
-}));
-
 builder.Services.AddMudServices(config =>
 {
     config.SnackbarConfiguration.PreventDuplicates = true;
@@ -44,10 +38,11 @@ builder.Services.AddMudServices(config =>
 });
 AuthorizationPolicies.AddPolicies(builder.Services);
 builder.Services.AddScoped<IUserService, UserHttpClient>();
+builder.Services.AddSingleton<HubConnectionDto>();
 // builder.Services.AddBlazorBootstrap();
 builder.Services.AddScoped<IAuthService, JwtAuthService>();
 builder.Services.AddScoped<IGameLogic, GameLogic>();
-builder.Services.AddScoped<IChatLogic, ChatLogic>();
+builder.Services.AddTransient<IChatLogic, ChatLogic>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthProvider>();
 
 builder.Services.AddAuthorizationCore();

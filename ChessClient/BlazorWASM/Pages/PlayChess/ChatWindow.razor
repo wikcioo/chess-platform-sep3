@@ -12,11 +12,11 @@
     <MudText Typo="Typo.subtitle1">Game chat</MudText>
     <MudPaper Class="flex-grow-1  pa-1 mt-1 overflow-y-scroll overflow-x-hidden" Elevation="0">
         <MudText Typo="Typo.body2">
-            @((MarkupString)_chatLog)
+            @((MarkupString) _chatLog)
         </MudText>
     </MudPaper>
     <MudStack Justify="Justify.SpaceAround" Row="true" Spacing="3" AlignItems="AlignItems.Baseline">
-        <MudTextField AdornmentColor="Color.Primary" Adornment="Adornment.End" AdornmentIcon="@Icons.Filled.Send" OnAdornmentClick="WriteMessageAsync" Margin="Margin.None"  Immediate="true" Style="background-color: var(--mud-palette-surface)" T="string" InputType="InputType.Text" placeholder="Enter message" @bind-Value="_messageBody" OnKeyPress="OnKeyPress"/>
+        <MudTextField AdornmentColor="Color.Primary" Adornment="Adornment.End" AdornmentIcon="@Icons.Filled.Send" OnAdornmentClick="WriteMessageAsync" Margin="Margin.None" Immediate="true" Style="background-color: var(--mud-palette-surface)" T="string" InputType="InputType.Text" placeholder="Enter message" @bind-Value="_messageBody" OnKeyPress="OnKeyPress"/>
     </MudStack>
 </MudPaper>
 
@@ -30,13 +30,9 @@
     private string _chatLog = "";
 
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         ChatLogic.MessageReceived += OnMessageReceived;
-        if (GameRoom != null)
-        {
-            ChatLogic.StartMessagingAsync((ulong) GameRoom);
-        }
     }
 
     public void Dispose()
@@ -58,7 +54,7 @@
             await ChatLogic.WriteMessageAsync(new MessageDto
             {
                 Body = _messageBody,
-                GameRoom = (ulong)GameRoom
+                GameRoom = (ulong) GameRoom
             });
             _messageBody = "";
             StateHasChanged();

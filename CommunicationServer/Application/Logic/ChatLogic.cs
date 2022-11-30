@@ -1,6 +1,5 @@
 ﻿using Application.Entities;
 using Application.LogicInterfaces;
-using Domain.DTOs;
 using Domain.DTOs.Chat;
 
 namespace Application.Logic;
@@ -25,19 +24,11 @@ public class ChatLogic : IChatLogic
         }
     }
 
-    public IObservable<MessageDto> GetMessagesAsObservable(RequestMessageDto request)
+    public List<MessageDto> GetLog(ulong gameRoom)
     {
-        var key = request.GameRoom;
-        if (_chatRooms.ContainsKey(key))
-        {
-            ChatRoom found = _chatRooms[key];
-            return found.GetMessagedAsObservable();
-        }
-
-        var newRoom = new ChatRoom();
-        _chatRooms.Add(key, newRoom);
-        return newRoom.GetMessagedAsObservable();
+        return _chatRooms[gameRoom].GetLog();
     }
+
 
     public void StartChatRoom(ulong key)
     {

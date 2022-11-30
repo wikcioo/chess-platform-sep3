@@ -1,9 +1,13 @@
 ﻿@page "/Login"
 @using HttpClients.ClientInterfaces
+@using Microsoft.AspNetCore.SignalR.Client
+@using Application.Signalr
 @using System.Text.Json.Nodes
 @inject IAuthService AuthService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
+@inject HubConnectionDto HubDto
+
 
 <AuthorizeView>
     <NotAuthorized>
@@ -44,6 +48,18 @@
             try
             {
                 await AuthService.LoginAsync(_email, _password);
+
+                if (HubDto.HubConnection is not null)
+                {
+                    await HubDto.HubConnection.DisposeAsync();
+                }
+                HubDto.HubConnection = new HubConnectionBuilder()
+                    .WithUrl("https://localhost:7233/gamehub",
+                        options => { options.AccessTokenProvider = () => Task.FromResult(AuthService.GetJwtToken())!; })
+                    .Build();
+    //Required so the connection is not dropped
+                HubDto.HubConnection.On<string>("DummyConnection", _ => { });
+                await HubDto.HubConnection.StartAsync();
                 NavMgr.NavigateTo("/");
             }
             catch (Exception e)
@@ -54,9 +70,10 @@
             }
         }
     }
-    
+
     private void Notify(string message, Severity severity)
     {
         Snackbar.Add(message, severity, options => options.CloseAfterNavigation = true);
     }
+
 }

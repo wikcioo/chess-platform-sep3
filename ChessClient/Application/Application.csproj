@@ -7,8 +7,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\CommunicationServer\Domain\Domain.csproj" />
-      <ProjectReference Include="..\HttpClients\HttpClients.csproj" />
+        <ProjectReference Include="..\..\CommunicationServer\Domain\Domain.csproj"/>
+        <ProjectReference Include="..\HttpClients\HttpClients.csproj"/>
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.10"/>
     </ItemGroup>
 
 </Project>

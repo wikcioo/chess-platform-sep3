@@ -102,17 +102,19 @@
         InitGameLogic();
     }
 
+
     public void Dispose()
     {
         GameLogic.TimeUpdated -= OnTimeUpdated;
         GameLogic.NewFenReceived -= OnNewFenReceived;
         GameLogic.ResignationReceived -= OnResignationReceived;
-        GameLogic.InitialTimeReceived -= OnInitialTimeReceived;
+        GameLogic.NewPlayerJoined -= OnPlayerJoined;
         GameLogic.DrawOffered -= OnDrawOffered;
         GameLogic.DrawOfferTimedOut -= OnDrawOfferTimedOut;
         GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
         GameLogic.EndOfTheGameReached -= OnEndOfTheGameReached;
         GameLogic.GameFirstJoined -= OnGameFirstJoined;
+        GameLogic.LeaveRoom();
     }
 
     protected override async Task OnInitializedAsync()
@@ -121,6 +123,7 @@
         ClaimsPrincipal user = authState.User;
         if (user.Identity == null) return;
         _currentUser = user.Identity.Name!;
+        await GameLogic.GetCurrentGameState();
     }
 
     private void InitGameLogic()
@@ -128,15 +131,27 @@
         GameLogic.TimeUpdated += OnTimeUpdated;
         GameLogic.NewFenReceived += OnNewFenReceived;
         GameLogic.ResignationReceived += OnResignationReceived;
-        GameLogic.InitialTimeReceived += OnInitialTimeReceived;
+        GameLogic.NewPlayerJoined += OnPlayerJoined;
         GameLogic.DrawOffered += OnDrawOffered;
         GameLogic.DrawOfferTimedOut += OnDrawOfferTimedOut;
         GameLogic.DrawOfferAccepted += OnDrawOfferAccepted;
         GameLogic.EndOfTheGameReached += OnEndOfTheGameReached;
         GameLogic.GameFirstJoined += OnGameFirstJoined;
+        GameLogic.StateReceived += OnGameStateReceived;
     }
 
-    public async Task<int> MakeMove(Move move)
+    public void OnGameStateReceived(CurrentGameStateDto dto)
+    {
+        _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
+        PlaySound("notify");
+        SetFenPosition(dto.FenString);
+        Notify("Game joined. Have fun!", Severity.Success);
+        _whiteSeconds = dto.WhiteTimeLeftMs / 1000;
+        _blackSeconds = dto.BlackTimeLeftMs / 1000;
+        StateHasChanged();
+    }
+
+    public async Task<AckTypes> MakeMove(Move move)
     {
         try
         {
@@ -147,24 +162,22 @@
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            return (int)AckTypes.GameNotFound;
+            return AckTypes.GameNotFound;
         }
     }
 
     private async void Resign()
     {
-        AckTypes ack;
         try
         {
-            ack = await GameLogic.Resign();
+            var ack = await GameLogic.Resign();
+            if (ack == (uint) AckTypes.Success) return;
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            return;
         }
 
-        if (ack == (uint)AckTypes.Success) return;
         Notify("Failed to resign", Severity.Error);
     }
 
@@ -199,6 +212,7 @@
         try
         {
             ack = await GameLogic.SendDrawResponse(accepted);
+            GameLogic.IsDrawOfferPending = false;
         }
         catch (InvalidOperationException e)
         {
@@ -216,7 +230,7 @@
         }
     }
 
-    private void OnGameFirstJoined(JoinedGameStreamDto dto)
+    private void OnGameFirstJoined()
     {
         Enum.TryParse(GameLogic.OnWhiteSide ? "White" : "Black", out GameSides side);
         _isWhiteSide = side;
@@ -227,22 +241,22 @@
         PlaySound("notify");
         switch (dto.GameEndType)
         {
-            case (uint)GameEndTypes.CheckMate:
+            case (uint) GameEndTypes.CheckMate:
                 if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
                     DisplayDefaultDialog("You got checkmated!");
                 else
                     DisplayDefaultDialog("You checkmated your opponent!");
                 break;
-            case (uint)GameEndTypes.Repetition:
+            case (uint) GameEndTypes.Repetition:
                 DisplayDefaultDialog("Draw by repetition!");
                 break;
-            case (uint)GameEndTypes.Pat:
+            case (uint) GameEndTypes.Pat:
                 DisplayDefaultDialog("Stalemate!");
                 break;
-            case (uint)GameEndTypes.FiftyMove:
+            case (uint) GameEndTypes.FiftyMove:
                 DisplayDefaultDialog("Draw by 50 moves!");
                 break;
-            case (uint)GameEndTypes.MaterialDrawn:
+            case (uint) GameEndTypes.MaterialDrawn:
                 DisplayDefaultDialog("Draw! Insufficient material!");
                 break;
         }
@@ -250,7 +264,7 @@
 
     private void OnTimeUpdated(JoinedGameStreamDto dto)
     {
-        if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp)
+        if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp)
         {
             if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
             {
@@ -273,7 +287,7 @@
                 _blackSeconds = dto.TimeLeftMs / 1000;
                 _whiteTimerActive = false;
             }
-            
+
             StateHasChanged();
         }
     }
@@ -289,7 +303,7 @@
         FenData fenData = new FenData(fen);
         State state = new State();
         _position.Set(in fenData, ChessMode.Normal, state);
-        
+
         StateHasChanged();
     }
 
@@ -306,13 +320,11 @@
         }
     }
 
-    private void OnInitialTimeReceived(JoinedGameStreamDto dto)
+    private void OnPlayerJoined(JoinedGameStreamDto dto)
     {
         _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
         PlaySound("notify");
         Notify("Game joined. Have fun!", Severity.Success);
-        _whiteSeconds = dto.TimeLeftMs / 1000;
-        _blackSeconds = dto.TimeLeftMs / 1000;
         StateHasChanged();
     }
 
@@ -337,7 +349,7 @@
 
     private void PlaySound(string sound)
     {
-        Js.InvokeAsync<string>("PlaySound", new object[] { sound });
+        Js.InvokeAsync<string>("PlaySound", new object[] {sound});
     }
 
     private void Notify(string message, Severity severity)
@@ -347,7 +359,7 @@
 
     private void DisplayDefaultDialog(string message)
     {
-        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var options = new DialogOptions {CloseOnEscapeKey = true};
         DialogService.Show<InformDialogComponent>(message, options);
     }
 

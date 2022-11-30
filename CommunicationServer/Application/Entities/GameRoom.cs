@@ -1,6 +1,8 @@
 using System.Reactive.Linq;
+using Application.Hubs;
 using Domain.DTOs;
 using Domain.Enums;
+using Microsoft.AspNetCore.SignalR;
 using Rudzoft.ChessLib;
 using Rudzoft.ChessLib.Enums;
 using Rudzoft.ChessLib.Factories;
@@ -8,16 +10,16 @@ using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.MoveGeneration;
 using Rudzoft.ChessLib.Types;
 
+
 namespace Application.Entities;
 
 public class GameRoom
 {
     private readonly IGame _game;
-    private readonly List<JoinedGameStreamDto> _gameData = new();
     private readonly ChessTimer _chessTimer;
     private bool _whitePlaying;
     private bool _firstMovePlayed;
-    private bool _gameIsActive = true;
+    private bool _gameIsActive = false;
 
     // Offer draw related fields
     private string _drawOfferOrigin = string.Empty;
@@ -31,7 +33,6 @@ public class GameRoom
     public ulong Id { get; set; }
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
-
     public bool IsVisible { get; set; }
     public bool IsJoinable { get; set; } = true;
     public bool IsSpectatable => IsVisible && !IsJoinable;
@@ -43,11 +44,15 @@ public class GameRoom
     public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
     public uint GetInitialTimeControlSeconds => (_chessTimer.TimeControlBaseMs / 1000);
     public uint GetInitialTimeControlIncrement => (_chessTimer.TimeControlIncrementMs / 1000);
+
     public GameSides GameSide;
 
-    
-        
-    public GameRoom(uint timeControlSeconds, uint timeControlIncrement, bool isVisible , OpponentTypes gameType, string? fen = null)
+    //Testing
+    private IHubContext<GameHub> _hubContext;
+
+
+    public GameRoom(uint timeControlSeconds, uint timeControlIncrement, bool isVisible, OpponentTypes gameType,
+        IHubContext<GameHub> hubContext, string? fen = null)
     {
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
@@ -55,35 +60,50 @@ public class GameRoom
         IsVisible = isVisible;
         GameType = gameType;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
-    }
-    
-    public GameRoom(uint timeControlSeconds, uint timeControlIncrement, string? fen = null)
-    {
-        _game = GameFactory.Create();
-        _game.NewGame(fen ?? Fen.StartPositionFen);
-        _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
-        
-        _whitePlaying = _game.CurrentPlayer().IsWhite;
+        _hubContext = hubContext;
+        if (gameType == OpponentTypes.Ai)
+        {
+            _gameIsActive = true;
+        }
     }
 
     public void Initialize()
     {
-
-        var streamDto = new JoinedGameStreamDto()
+        _chessTimer.ThrowEvent += (_, _, dto) =>
         {
-            Event = GameStreamEvents.InitialTime,
+            if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) _gameIsActive = false;
+            // GameJoined.Invoke(dto);
+            _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", dto);
+        };
+    }
+
+    public CurrentGameStateDto GetCurrentGameState()
+    {
+        var stateDto = new CurrentGameStateDto
+        {
+            FenString = _game.Pos.FenNotation,
+            WhiteTimeLeftMs = _chessTimer.WhiteRemainingTimeMs,
+            BlackTimeLeftMs = _chessTimer.BlackRemainingTimeMs,
+            UsernameWhite = PlayerWhite ?? "",
+            UsernameBlack = PlayerBlack ?? ""
+        };
+
+        return stateDto;
+    }
+
+    public void PlayerJoined()
+    {
+        _gameIsActive = true;
+        var streamDto = new JoinedGameStreamDto
+        {
+            FenString = _game.Pos.FenNotation,
+            Event = GameStreamEvents.PlayerJoined,
             TimeLeftMs = _chessTimer.TimeControlBaseMs,
             UsernameWhite = PlayerWhite ?? "",
             UsernameBlack = PlayerBlack ?? ""
         };
-        _gameData.Add(streamDto);
-        GameJoined.Invoke(streamDto);
-
-        _chessTimer.ThrowEvent += (_, _, dto) =>
-        {
-            if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) _gameIsActive = false;
-            GameJoined.Invoke(dto);
-        };
+        // GameJoined.Invoke(streamDto);
+        _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
     }
 
     public AckTypes MakeMove(MakeMoveDto dto)
@@ -106,7 +126,7 @@ public class GameRoom
 
         _game.Pos.MakeMove(move, _game.Pos.State);
         _chessTimer.UpdateTimers(_whitePlaying);
-        
+
         // Check game logic: Checkmate, Draw, Insufficient Material
         // TODO(Wiktor): Implement the rest of end game scenarios
         var reachedTheEnd = false;
@@ -125,18 +145,20 @@ public class GameRoom
         if (reachedTheEnd)
         {
             _chessTimer.StopTimers();
-            GameJoined.Invoke(new JoinedGameStreamDto()
+            var streamDto = new JoinedGameStreamDto()
             {
                 Event = GameStreamEvents.ReachedEndOfTheGame,
                 FenString = _game.Pos.FenNotation,
-                GameEndType = (uint)gameEndType,
+                GameEndType = (uint) gameEndType,
                 IsWhite = !_whitePlaying,
                 TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
-            });
-            
+            };
+            // GameJoined.Invoke(streamDto);
+            _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
+
             return AckTypes.Success;
         }
-        
+
         _whitePlaying = _game.CurrentPlayer().IsWhite;
 
         var responseJoinedGameDto = new JoinedGameStreamDto()
@@ -148,8 +170,8 @@ public class GameRoom
             IsWhite = !_whitePlaying
         };
 
-        _gameData.Add(responseJoinedGameDto);
-        GameJoined.Invoke(responseJoinedGameDto);
+        // GameJoined.Invoke(responseJoinedGameDto);
+        _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", responseJoinedGameDto);
 
         return AckTypes.Success;
     }
@@ -165,15 +187,16 @@ public class GameRoom
         {
             return AckTypes.NotUserTurn;
         }
+
         _chessTimer.StopTimers();
         _gameIsActive = false;
-
-        GameJoined.Invoke(new JoinedGameStreamDto()
+        var streamDto = new JoinedGameStreamDto()
         {
             Event = GameStreamEvents.Resignation,
             IsWhite = PlayerWhite!.Equals(dto.Username)
-        });
-
+        };
+        // GameJoined.Invoke(streamDto);
+        _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
         return AckTypes.Success;
     }
 
@@ -189,13 +212,15 @@ public class GameRoom
         _isDrawOfferAccepted = false;
         _drawResponseWithinTimespan = false;
 
-        GameJoined.Invoke(new JoinedGameStreamDto()
+        var streamDto = new JoinedGameStreamDto
         {
             Event = GameStreamEvents.DrawOffer,
             UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
             UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
-        });
+        };
+        // GameJoined.Invoke(streamDto);
 
+        await _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
         _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (true)
         {
@@ -218,13 +243,14 @@ public class GameRoom
         }
 
         if (!_isDrawOfferAccepted && _drawResponseWithinTimespan) return AckTypes.DrawOfferDeclined;
-
-        GameJoined.Invoke(new JoinedGameStreamDto()
+        var streamDto2 = new JoinedGameStreamDto()
         {
             Event = GameStreamEvents.DrawOfferAcceptation,
             IsWhite = PlayerWhite!.Equals(dto.Username)
-        });
+        };
+        // GameJoined.Invoke(streamDto2);
 
+        await _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto2);
         return AckTypes.Success;
     }
 
@@ -235,7 +261,7 @@ public class GameRoom
         {
             return AckTypes.NotUserTurn;
         }
-        
+
         if (dto.Username.Equals(_drawOfferOrigin))
         {
             return AckTypes.NotUserTurn;
@@ -339,13 +365,5 @@ public class GameRoom
             MoveTypes.Promotion => new Move(fromSquare, toSquare, moveType, promotionPiece ?? PieceTypes.Queen),
             _ => throw new Exception("Invalid move type value.")
         };
-    }
-
-    public IObservable<JoinedGameStreamDto> GetMovesAsObservable()
-    {
-        var newMoves = Observable.FromEvent<JoinedGameStreamDto>(
-            x => GameJoined += x,
-            x => GameJoined -= x);
-        return _gameData.ToObservable().Concat(newMoves);
     }
 }

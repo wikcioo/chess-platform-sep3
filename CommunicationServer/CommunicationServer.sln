@@ -8,13 +8,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataClient", "DataClient\Da
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebAPI", "WebAPI\WebAPI.csproj", "{5CEDE1F0-EB91-4AC5-8C2B-1DA1D2F32DBB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrpcService", "GrpcService\GrpcService.csproj", "{FF4FCD54-8E8A-4177-8E73-CD18F34FDFA1}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrpcServiceTests", "GrpcServiceTests\GrpcServiceTests.csproj", "{5BDF1D2E-DBDE-4F05-BBE3-4FC8AD4993FC}"
-	ProjectSection(ProjectDependencies) = postProject
-		{FF4FCD54-8E8A-4177-8E73-CD18F34FDFA1} = {FF4FCD54-8E8A-4177-8E73-CD18F34FDFA1}
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application.Tests", "Application.Tests\Application.Tests.csproj", "{0A78BDDE-80E2-4C2A-A3A4-48F9A0DBBCCD}"
 EndProject
 Global
@@ -39,14 +32,6 @@ Global
 		{5CEDE1F0-EB91-4AC5-8C2B-1DA1D2F32DBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5CEDE1F0-EB91-4AC5-8C2B-1DA1D2F32DBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5CEDE1F0-EB91-4AC5-8C2B-1DA1D2F32DBB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FF4FCD54-8E8A-4177-8E73-CD18F34FDFA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FF4FCD54-8E8A-4177-8E73-CD18F34FDFA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FF4FCD54-8E8A-4177-8E73-CD18F34FDFA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FF4FCD54-8E8A-4177-8E73-CD18F34FDFA1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5BDF1D2E-DBDE-4F05-BBE3-4FC8AD4993FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5BDF1D2E-DBDE-4F05-BBE3-4FC8AD4993FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5BDF1D2E-DBDE-4F05-BBE3-4FC8AD4993FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5BDF1D2E-DBDE-4F05-BBE3-4FC8AD4993FC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0A78BDDE-80E2-4C2A-A3A4-48F9A0DBBCCD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0A78BDDE-80E2-4C2A-A3A4-48F9A0DBBCCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0A78BDDE-80E2-4C2A-A3A4-48F9A0DBBCCD}.Release|Any CPU.ActiveCfg = Release|Any CPU

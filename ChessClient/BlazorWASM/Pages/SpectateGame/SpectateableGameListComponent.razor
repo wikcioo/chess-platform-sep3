@@ -30,12 +30,12 @@
     [Parameter]
     public IList<SpectateableGameRoomDataDto>? SpectateableGames { get; set; }
 
-    private void SpectateGame(ulong i)
+    private async void SpectateGame(ulong i)
     {
-        NavMgr.NavigateTo("/ChessGame");
-        GameLogic.JoinGame(new RequestJoinGameDto
+        await GameLogic.JoinGame(new RequestJoinGameDto
         {
             GameRoom = i
         });
+        NavMgr.NavigateTo("/ChessGame");
     }
 }

@@ -1,13 +1,15 @@
 using System.Text;
 using Application.ClientInterfaces;
-using Application.DaoInterfaces;
+using Application.Hubs;
 using Application.Logic;
 using Application.LogicInterfaces;
 using DatabaseClient.Implementations;
 using Domain.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.IdentityModel.Tokens;
-using WebAPI.Services;
+using WebAPI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +21,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IAuthLogic, AuthLogic>();
-
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] {"application/octet-stream"});
+});
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
     options.RequireHttpsMetadata = false;
@@ -32,23 +38,47 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
     };
-});
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            // If the request is for our hub...
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/gamehub")))
+            {
+                // Read the token out of the query string
+                context.Token = accessToken;
+            }
 
+            return Task.CompletedTask;
+        }
+    };
+});
+builder.Services.AddSignalR();
 builder.Services.AddScoped<IUserLogic, UserLogic>();
 builder.Services.AddScoped<IUserService, UserHttpClient>();
 
-builder.Services.AddScoped<IStockfishLogic, StockfishLogic>();
-builder.Services.AddScoped<IStockfishService, StockfishHttpClient>();
+builder.Services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
 
-builder.Services.AddScoped(
-    sp => 
-        new HttpClient { 
-            BaseAddress = new Uri("http://localhost:8080") 
+builder.Services.AddSingleton<IStockfishLogic, StockfishLogic>();
+builder.Services.AddSingleton<IStockfishService, StockfishHttpClient>();
+
+
+builder.Services.AddSingleton<IChatLogic, ChatLogic>();
+builder.Services.AddSingleton<IGameLogic, GameLogic>();
+builder.Services.AddTransient(
+    sp =>
+        new HttpClient
+        {
+            BaseAddress = new Uri("http://localhost:8080")
         }
 );
 
 AuthorizationPolicies.AddPolicies(builder.Services);
 var app = builder.Build();
+app.UseResponseCompression();
 
 app.UseCors(x => x
     .AllowAnyMethod()
@@ -65,16 +95,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-
 app.UseAuthentication();
-
-app.UseCors(x => x
-    .AllowAnyMethod()
-    .AllowAnyHeader()
-    .SetIsOriginAllowed(origin => true) // allow any origin
-    .AllowCredentials());
 app.UseAuthorization();
 
 app.MapControllers();
-
+app.MapHub<GameHub>("/gamehub");
 app.Run();

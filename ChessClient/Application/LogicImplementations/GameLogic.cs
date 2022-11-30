@@ -1,13 +1,15 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Security.Claims;
+using System.Text.Json;
 using Application.LogicInterfaces;
+using Application.Signalr;
 using Domain.DTOs;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
-using Grpc.Core;
-using Grpc.Net.Client;
-using GrpcService;
 using HttpClients;
 using HttpClients.ClientInterfaces;
+using Microsoft.AspNetCore.SignalR.Client;
 using Rudzoft.ChessLib.Enums;
 using Rudzoft.ChessLib.Types;
 
@@ -16,13 +18,10 @@ namespace Application.LogicImplementations;
 public class GameLogic : IGameLogic
 {
     private readonly IAuthService _authService;
-    private readonly Game.GameClient _gameClient;
-    private EmptyGameMessage _empty = new();
     public bool IsDrawOfferPending { get; set; } = false;
     public bool OnWhiteSide { get; set; } = true;
     public ulong? GameRoomId { get; set; }
 
-    private AsyncServerStreamingCall<JoinedGameStream>? _call;
 
     //Todo Possibility of replacing StreamUpdate with action and only needed information instead of dto
     public delegate void StreamUpdate(JoinedGameStreamDto dto);
@@ -30,132 +29,135 @@ public class GameLogic : IGameLogic
     public event StreamUpdate? TimeUpdated;
     public event StreamUpdate? NewFenReceived;
     public event StreamUpdate? ResignationReceived;
-    public event StreamUpdate? InitialTimeReceived;
+    public event StreamUpdate? NewPlayerJoined;
     public event StreamUpdate? DrawOffered;
     public event StreamUpdate? DrawOfferTimedOut;
     public event StreamUpdate? DrawOfferAccepted;
     public event StreamUpdate? EndOfTheGameReached;
-    public event StreamUpdate? GameFirstJoined;
+    public event Action? GameFirstJoined;
 
-    public GameLogic(IAuthService authService, GrpcChannel channel)
+    public event Action<CurrentGameStateDto>? StateReceived;
+
+    //Signalr
+    private HubConnectionDto _hubDto;
+    private HttpClient _client;
+
+    public GameLogic(IAuthService authService, HubConnectionDto hubDto, HttpClient client)
     {
         _authService = authService;
-        _gameClient = new Game.GameClient(channel);
+        _hubDto = hubDto;
+        _client = client;
+        _hubDto.HubConnection?.On<JoinedGameStreamDto>("GameStreamDto",
+            ListenToJoinedGameStream);
     }
 
-    public GameLogic(IAuthService authService, Game.GameClient client)
+    public GameLogic(IAuthService authService)
     {
         _authService = authService;
-        _gameClient = client;
+    }
+
+    public async void LeaveRoom()
+    {
+        if (_hubDto.HubConnection is not null)
+        {
+            await _hubDto.HubConnection.SendAsync("LeaveRoom", GameRoomId);
+        }
     }
 
     public async Task<ResponseGameDto> CreateGame(RequestGameDto dto)
     {
-        ClaimsPrincipal user = await _authService.GetAuthAsync();
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+        var user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity;
 
         if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
             throw new InvalidOperationException("User not logged in.");
+        dto.Username = user.Identity!.Name!;
+        var response = await _client.PostAsJsonAsync("/startGame", dto);
+        var responseContent = await response.Content.ReadAsStringAsync();
 
-        try
+        if (!response.IsSuccessStatusCode)
         {
-            var grpcResponse = await _gameClient.StartGameAsync(new RequestGame()
-            {
-                OpponentType = dto.OpponentType.ToString(),
-                Increment = dto.Increment,
-                Side = dto.Side.ToString(),
-                OpponentName = dto.OpponentName,
-                Seconds = dto.Seconds,
-                Username = user.Identity?.Name,
-                IsVisible = dto.IsVisible
-            });
-
-            ResponseGameDto response = MessageToDtoParser.ToDto(grpcResponse);
-
-            OnWhiteSide = response.IsWhite;
-
-            return response;
+            throw new Exception(responseContent);
         }
-        catch (RpcException e)
+
+        var created = JsonSerializer.Deserialize<ResponseGameDto>(responseContent, new JsonSerializerOptions
         {
-            throw new HttpRequestException("Failed to connect to server", e);
-        }
+            PropertyNameCaseInsensitive = true
+        })!;
+        OnWhiteSide = created.IsWhite;
+        return created;
     }
 
     public async Task JoinGame(RequestJoinGameDto dto)
     {
-        ClaimsPrincipal user = await _authService.GetAuthAsync();
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity;
 
-        _call?.Dispose();
+        if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
+            throw new InvalidOperationException("User not logged in.");
+        dto.Username = user.Identity!.Name!;
+        var response = await _client.PostAsJsonAsync("/joinGame", dto);
+        var responseContent = await response.Content.ReadAsStringAsync();
 
-        try
+        if (!response.IsSuccessStatusCode)
         {
-            _call = _gameClient.JoinGame(new RequestJoinGame()
-            {
-                GameRoom = dto.GameRoom,
-                Username = user.Identity?.Name
-            });
-
-            GameRoomId = dto.GameRoom;
-        }
-        catch (ArgumentException)
-        {
-            //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
-            throw new ArgumentException("Game room not found");
+            throw new Exception(responseContent);
         }
 
-        ListenToJoinedGameStream();
+        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        })!;
+        GameRoomId = dto.GameRoom;
+
+        if (_hubDto.HubConnection is not null)
+        {
+            await _hubDto.HubConnection.SendAsync("JoinRoom", GameRoomId);
+        }
     }
 
 
-    private async Task ListenToJoinedGameStream()
+    private void ListenToJoinedGameStream(JoinedGameStreamDto response)
     {
-        try
+        switch (response.Event)
         {
-            while (await _call.ResponseStream.MoveNext(CancellationToken.None))
-            {
-                var response = MessageToDtoParser.ToDto(_call.ResponseStream.Current);
-
-                switch (response.Event)
-                {
-                    case GameStreamEvents.NewFenPosition:
-                        NewFenReceived?.Invoke(response);
-                        TimeUpdate(response);
-                        break;
-                    case GameStreamEvents.TimeUpdate:
-                        if (response.GameEndType == (uint) GameEndTypes.TimeIsUp) _call.Dispose();
-                        TimeUpdate(response);
-                        break;
-                    case GameStreamEvents.ReachedEndOfTheGame:
-                        _call.Dispose();
-                        TimeUpdate(response);
-                        NewFenReceived?.Invoke(response);
-                        EndOfTheGameReached?.Invoke(response);
-                        break;
-                    case GameStreamEvents.Resignation:
-                        _call.Dispose();
-                        ResignationReceived?.Invoke(response);
-                        break;
-                    case GameStreamEvents.DrawOffer:
-                        DrawOffer(response);
-                        break;
-                    case GameStreamEvents.DrawOfferTimeout:
-                        DrawOfferTimeout(response);
-                        break;
-                    case GameStreamEvents.DrawOfferAcceptation:
-                        _call.Dispose();
-                        DrawOfferAcceptation(response);
-                        break;
-                    case GameStreamEvents.InitialTime:
-                        InitialTime(response);
-                        break;
-                    default: throw new ArgumentOutOfRangeException();
-                }
-            }
-        }
-        catch (RpcException)
-        {
-            throw new HttpRequestException("Connection error. Failed to participate in game stream");
+            case GameStreamEvents.NewFenPosition:
+                NewFenReceived?.Invoke(response);
+                TimeUpdate(response);
+                break;
+            case GameStreamEvents.TimeUpdate:
+                // if (response.GameEndType == (uint) GameEndTypes.TimeIsUp) _call.Dispose();
+                TimeUpdate(response);
+                break;
+            case GameStreamEvents.ReachedEndOfTheGame:
+                // _call.Dispose();
+                TimeUpdate(response);
+                NewFenReceived?.Invoke(response);
+                EndOfTheGameReached?.Invoke(response);
+                break;
+            case GameStreamEvents.Resignation:
+                // _call.Dispose();
+                ResignationReceived?.Invoke(response);
+                break;
+            case GameStreamEvents.DrawOffer:
+                DrawOffer(response);
+                break;
+            case GameStreamEvents.DrawOfferTimeout:
+                DrawOfferTimeout(response);
+                break;
+            case GameStreamEvents.DrawOfferAcceptation:
+                // _call.Dispose();
+                DrawOfferAcceptation(response);
+                break;
+            case GameStreamEvents.PlayerJoined:
+                // _call.Dispose();
+                PlayerJoined(response);
+                break;
+            default: throw new ArgumentOutOfRangeException();
         }
     }
 
@@ -164,22 +166,45 @@ public class GameLogic : IGameLogic
         TimeUpdated?.Invoke(dto);
     }
 
-    private async void InitialTime(JoinedGameStreamDto dto)
+    public async Task GetCurrentGameState()
     {
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
         var user = await _authService.GetAuthAsync();
-        var myName = user.Identity!.Name;
-        if (dto.UsernameBlack.Equals(myName))
+        var isLoggedIn = user.Identity;
+
+        if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
+            throw new InvalidOperationException("User not logged in.");
+        if (!GameRoomId.HasValue)
+            throw new InvalidOperationException("You didn't join a game room!");
+
+        var response = await _client.PostAsJsonAsync("/gameState", GameRoomId.Value);
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(responseContent);
+        }
+
+        var streamDto = JsonSerializer.Deserialize<CurrentGameStateDto>(responseContent, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        })!;
+
+
+        var myName = user.Identity!.Name!;
+        if (streamDto.UsernameBlack.Equals(myName))
         {
             OnWhiteSide = false;
         }
 
-        if (dto.UsernameWhite.Equals(myName))
+        if (streamDto.UsernameWhite.Equals(myName))
         {
             OnWhiteSide = true;
         }
 
-        GameFirstJoined?.Invoke(dto);
-        InitialTimeReceived?.Invoke(dto);
+        StateReceived?.Invoke(streamDto);
+        GameFirstJoined?.Invoke();
     }
 
     private async void DrawOffer(JoinedGameStreamDto dto)
@@ -203,23 +228,43 @@ public class GameLogic : IGameLogic
         DrawOfferAccepted?.Invoke(dto);
     }
 
-    public async Task<int> MakeMove(Move move)
+    public async Task<AckTypes> MakeMove(Move move)
     {
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
 
+        if (_hubDto.HubConnection == null)
+        {
+            throw new InvalidOperationException("You are not logged in!");
+        }
 
-        var token = _authService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var call = await _gameClient.MakeMoveAsync(new RequestMakeMove
+        var user = await _authService.GetAuthAsync();
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+        var dto = new MakeMoveDto
         {
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
             GameRoom = GameRoomId.Value,
             MoveType = (uint) move.MoveType(),
-            Promotion = (uint) move.PromotedPieceType().AsInt()
-        }, headers);
-        return (int) call.Status;
+            Promotion = (uint) move.PromotedPieceType().AsInt(),
+            Username = user.Identity!.Name!
+        };
+        var response = await _client.PostAsJsonAsync("/makeMove", dto);
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(responseContent);
+        }
+
+        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })!;
+
+        return ack;
     }
 
     public async Task<AckTypes> OfferDraw()
@@ -234,15 +279,34 @@ public class GameLogic : IGameLogic
         if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in");
 
-
-        var token = _authService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var ack = await _gameClient.OfferDrawAsync(new RequestDraw
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+        var dto = new RequestDrawDto()
         {
-            Username = user.Identity!.Name, GameRoom = GameRoomId.Value
-        }, headers);
+            Username = user.Identity!.Name!,
+            GameRoom = GameRoomId.Value
+        };
+        var response = await _client.PostAsJsonAsync("/offerDraw", dto);
+        var responseContent = await response.Content.ReadAsStringAsync();
 
-        return (AckTypes) ack.Status;
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(responseContent);
+        }
+
+        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })!;
+
+        return ack;
+    }
+
+    public void PlayerJoined(JoinedGameStreamDto dto)
+    {
+        GameFirstJoined?.Invoke();
+        NewPlayerJoined?.Invoke(dto);
     }
 
     public async Task<AckTypes> Resign()
@@ -253,15 +317,31 @@ public class GameLogic : IGameLogic
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
 
-
         if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in.");
 
-        var token = _authService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var ack = await _gameClient.ResignAsync(
-            new RequestResign {Username = user.Identity!.Name, GameRoom = GameRoomId.Value}, headers);
-        return (AckTypes) ack.Status;
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+        var dto = new ResponseDrawDto
+        {
+            Username = user.Identity!.Name!,
+            GameRoom = GameRoomId.Value
+        };
+        var response = await _client.PostAsJsonAsync("/resign", dto);
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(responseContent);
+        }
+
+        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })!;
+
+        return ack;
     }
 
     public async Task<AckTypes> SendDrawResponse(bool accepted)
@@ -275,57 +355,71 @@ public class GameLogic : IGameLogic
         if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in.");
 
-        var token = _authService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var ack = await _gameClient.DrawOfferResponseAsync(new ResponseDraw
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+        var dto = new ResponseDrawDto
         {
-            Username = user.Identity!.Name, GameRoom = GameRoomId.Value, Accept = accepted
-        }, headers);
+            Username = user.Identity!.Name!,
+            GameRoom = GameRoomId.Value,
+            Accept = accepted
+        };
+        var response = await _client.PostAsJsonAsync("/drawResponse", dto);
+        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if ((AckTypes) ack.Status == AckTypes.Success)
+        if (!response.IsSuccessStatusCode)
         {
-            IsDrawOfferPending = false;
+            throw new Exception(responseContent);
         }
 
-        return (AckTypes) ack.Status;
+        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })!;
+
+        return ack;
     }
 
     public async Task<IList<SpectateableGameRoomDataDto>> GetAllSpectateableGames()
     {
-        var response = await _gameClient.GetSpectateableGamesAsync(_empty);
-        var roomList = response.GameRoomsData;
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
 
-        return roomList.Select(room => new SpectateableGameRoomDataDto
+        var response = await _client.GetAsync("/spectateable");
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(responseContent);
+        }
+
+        var roomList = JsonSerializer.Deserialize<IEnumerable<SpectateableGameRoomDataDto>>(responseContent,
+            new JsonSerializerOptions
             {
-                GameRoom = room.GameRoom,
-                Increment = room.Increment,
-                Seconds = room.Seconds,
-                UsernameWhite = room.UsernameWhite,
-                UsernameBlack = room.UsernameBlack
-            })
-            .ToList();
+                PropertyNameCaseInsensitive = true
+            })!;
+
+        return roomList.ToList();
     }
 
     public async Task<IList<JoinableGameRoomDataDto>> GetAllJoinableGames()
     {
-        var token = _authService.GetJwtToken();
-        var headers = new Metadata {{"Authorization", $"Bearer {token}"}};
-        var response = await _gameClient.GetJoinableGamesAsync(_empty, headers);
-        var roomList = response.GameRoomsData;
-        IList<JoinableGameRoomDataDto> joinableRoomList = new List<JoinableGameRoomDataDto>();
-        foreach (var room in roomList)
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+        var response = await _client.GetAsync("/joinable");
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
         {
-            Enum.TryParse(room.Side, out GameSides side);
-            joinableRoomList.Add(new JoinableGameRoomDataDto
-            {
-                GameRoom = room.GameRoom,
-                Increment = room.Increment,
-                Seconds = room.Seconds,
-                Side = side,
-                Username = room.Username
-            });
+            throw new Exception(responseContent);
         }
 
-        return joinableRoomList;
+        var roomList = JsonSerializer.Deserialize<IEnumerable<JoinableGameRoomDataDto>>(responseContent,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })!;
+
+        return roomList.ToList();
     }
 }

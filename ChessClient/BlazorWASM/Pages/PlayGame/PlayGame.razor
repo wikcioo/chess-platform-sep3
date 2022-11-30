@@ -51,12 +51,12 @@
         
         if (_joinableGames.Count > 0)
         {
-            NavMgr.NavigateTo("/ChessGame");
             var randomGameRoomId = _joinableGames[new Random().Next(_joinableGames.Count)].GameRoom;
-            GameLogic.JoinGame(new RequestJoinGameDto
+            await GameLogic.JoinGame(new RequestJoinGameDto
             {
                 GameRoom = randomGameRoomId
             });
+            NavMgr.NavigateTo("/ChessGame");
         }
         else
         {

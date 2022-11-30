@@ -1,11 +1,12 @@
 using Application.ClientInterfaces;
 using Application.Entities;
+using Application.Hubs;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Domain.Models;
-using Microsoft.VisualBasic.CompilerServices;
+using Microsoft.AspNetCore.SignalR;
 using Rudzoft.ChessLib.Fen;
 
 namespace Application.Logic;
@@ -16,15 +17,18 @@ public class GameLogic : IGameLogic
     private readonly IStockfishService _stockfishService;
     private readonly IChatLogic _chatLogic;
 
-    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic)
+    private IHubContext<GameHub> _hubContext;
+
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IHubContext<GameHub> hubContext)
     {
         _stockfishService = stockfishService;
         _chatLogic = chatLogic;
+        _hubContext = hubContext;
     }
 
     public Task<ResponseGameDto> StartGame(RequestGameDto dto)
     {
-        GameRoom gameRoom = new(dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType)
+        GameRoom gameRoom = new(dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType, _hubContext)
         {
             GameSide = dto.Side
         };
@@ -65,8 +69,8 @@ public class GameLogic : IGameLogic
             }
         }
 
-        gameRoom.Initialize();
         var id = _gameRoomsData.Add(gameRoom);
+        gameRoom.Initialize();
         _chatLogic.StartChatRoom(id);
 
         if (dto.OpponentType == OpponentTypes.Ai)
@@ -87,7 +91,7 @@ public class GameLogic : IGameLogic
         return Task.FromResult(responseDto);
     }
 
-    public IObservable<JoinedGameStreamDto> JoinGame(RequestJoinGameDto dto)
+    public AckTypes JoinGame(RequestJoinGameDto dto)
     {
         var gameRoom = _gameRoomsData.Get(dto.GameRoom);
         if ((gameRoom.IsJoinable && _gameRoomsData.CanUsernameJoin(gameRoom, dto.Username)))
@@ -104,16 +108,16 @@ public class GameLogic : IGameLogic
             if (++gameRoom.NumPlayersJoined == 2)
             {
                 gameRoom.IsJoinable = false;
-                gameRoom.Initialize();
+                gameRoom.PlayerJoined();
             }
 
-            return gameRoom.GetMovesAsObservable();
+            return AckTypes.Success;
         }
 
         if (gameRoom.IsSpectatable)
         {
             gameRoom.NumSpectatorsJoined++;
-            return gameRoom.GetMovesAsObservable();
+            return AckTypes.Success;
         }
 
         throw new ArgumentException("Cannot join the game!");
@@ -253,5 +257,10 @@ public class GameLogic : IGameLogic
         }
 
         return list;
+    }
+
+    public CurrentGameStateDto GetCurrentGameState(ulong gameRoomId)
+    {
+        return _gameRoomsData.Get(gameRoomId).GetCurrentGameState();
     }
 }
