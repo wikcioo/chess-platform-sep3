@@ -5,6 +5,7 @@ using Application.Logic;
 using Application.LogicInterfaces;
 using DatabaseClient.Implementations;
 using Domain.Auth;
+using Grpc.Net.Client;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.SignalR;
@@ -65,6 +66,7 @@ builder.Services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
 builder.Services.AddSingleton<IStockfishLogic, StockfishLogic>();
 builder.Services.AddSingleton<IStockfishService, StockfishHttpClient>();
 
+builder.Services.AddSingleton(_ => GrpcChannel.ForAddress("https://localhost:7007"));
 
 builder.Services.AddSingleton<IChatLogic, ChatLogic>();
 builder.Services.AddSingleton<IGameLogic, GameLogic>();
