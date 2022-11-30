@@ -18,7 +18,6 @@ public class GroupHandler
 
     private void FireEvent(GameRoomEventDto dto)
     {
-        Console.WriteLine($"DTO: {dto.GameRoomId} happened.");
         _hubContext.Clients.Group(dto.GameRoomId.ToString()).SendAsync("GameStreamDto", dto.GameEventDto);
     }
 }
