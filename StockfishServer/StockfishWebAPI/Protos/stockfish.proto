@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+option csharp_namespace = "StockfishWebAPI";
+
+package stockfish;
+
+message RequestBestMove {
+  string Fen = 1;
+  string StockfishPlayer = 2;
+}
+
+message BestMove {
+  string Fen = 1;
+}
+message Empty{}
+
+message IsReady{
+  bool Ready = 1;
+}
+
+message StockfishSettings{
+  int32 Threads = 1;
+  int32 Hash = 2;
+  bool Ponder = 3;
+  int32 MultiPv = 4;
+  int32 SkillLevel = 5;
+}
+
+service Stockfish {
+  rpc GetBestMove(RequestBestMove) returns (BestMove) {}
+  rpc GetStockfishReady(Empty) returns (IsReady){}
+}

@@ -7,6 +7,14 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Grpc.AspNetCore" Version="2.46.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Protobuf Include="Protos\stockfish.proto" GrpcServices="Server" />
+    </ItemGroup>
+    
+    <ItemGroup>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
     </ItemGroup>
 
