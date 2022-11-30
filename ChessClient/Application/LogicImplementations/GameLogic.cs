@@ -47,8 +47,6 @@ public class GameLogic : IGameLogic
         _authService = authService;
         _hubDto = hubDto;
         _client = client;
-        _hubDto.HubConnection?.On<JoinedGameStreamDto>("GameStreamDto",
-            ListenToJoinedGameStream);
     }
 
     public GameLogic(IAuthService authService)
@@ -92,6 +90,9 @@ public class GameLogic : IGameLogic
 
     public async Task JoinGame(RequestJoinGameDto dto)
     {
+        _hubDto.HubConnection?.Remove("GameStreamDto");
+        _hubDto.HubConnection?.On<JoinedGameStreamDto>("GameStreamDto",
+            ListenToJoinedGameStream);
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
         var user = await _authService.GetAuthAsync();
