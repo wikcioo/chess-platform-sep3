@@ -1,32 +1,48 @@
-using System.Net.Http.Json;
-using System.Net.Mime;
-using System.Text;
 using Application.ClientInterfaces;
 using Domain.DTOs;
+using Grpc.Core;
+using Grpc.Net.Client;
+using StockfishWebAPI;
 
 namespace DatabaseClient.Implementations;
 
 public class StockfishHttpClient : IStockfishService
 {
-    private readonly HttpClient _client;
+    private readonly Stockfish.StockfishClient _client;
+    private Empty _empty = new();
 
-    public StockfishHttpClient(HttpClient client)
+    public StockfishHttpClient(GrpcChannel channel)
     {
-        _client = client;
-        _client.BaseAddress = new Uri("https://localhost:7007");
+        _client = new Stockfish.StockfishClient(channel);
     }
 
     public async Task<bool> GetStockfishIsReadyAsync()
     {
-        var response = await _client.GetAsync("/ready");
-        var result = await response.Content.ReadAsStringAsync();
-        return result.Equals("true");
+        try
+        {
+            var response = await _client.GetStockfishReadyAsync(_empty);
+            return response.Ready;
+        }
+        catch (RpcException e)
+        {
+            throw new HttpRequestException("Failed to connect to server", e);
+        }
     }
 
     public async Task<string> GetBestMoveAsync(StockfishBestMoveDto dto)
     {
-        var response = await _client.PostAsJsonAsync("/bestMove", dto);
-        var result = await response.Content.ReadAsStringAsync();
-        return result;
+        try
+        {
+            var response = await _client.GetBestMoveAsync(new RequestBestMove
+            {
+                Fen = dto.Fen,
+                StockfishPlayer = dto.StockfishPlayer
+            });
+            return response.Fen;
+        }
+        catch (RpcException e)
+        {
+            throw new HttpRequestException("Failed to connect to server", e);
+        }
     }
 }

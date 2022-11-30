@@ -1,9 +1,12 @@
+using Application.ClientInterfaces;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
+using Grpc.Net.Client;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StockfishWebAPI;
 
 namespace WebAPI.Controllers;
 
@@ -13,10 +16,12 @@ namespace WebAPI.Controllers;
 public class GameController : ControllerBase
 {
     private readonly IGameLogic _gameLogic;
+    private readonly IStockfishService _stockfishService;
 
-    public GameController(IGameLogic gameLogic)
+    public GameController(IGameLogic gameLogic,IStockfishService stockfishService)
     {
         _gameLogic = gameLogic;
+        _stockfishService = stockfishService;
     }
 
     [HttpPost("/startGame")]
@@ -25,6 +30,16 @@ public class GameController : ControllerBase
         try
         {
             request.Username = User.Identity.Name;
+            if (request.OpponentType == OpponentTypes.Ai)
+            {
+                var aiIsReady = await _stockfishService.GetStockfishIsReadyAsync();
+                if (!aiIsReady)
+                {
+                    return StatusCode(500, "Cannot create game. Ai is not ready."); 
+                }
+                
+            }
+
             var response = await _gameLogic.StartGame(request);
             return Ok(response);
         }
