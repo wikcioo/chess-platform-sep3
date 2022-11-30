@@ -79,7 +79,7 @@ public class GameLogic : IGameLogic
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(responseContent);
+            throw new HttpRequestException(responseContent);
         }
 
         var created = JsonSerializer.Deserialize<ResponseGameDto>(responseContent, new JsonSerializerOptions
@@ -105,7 +105,7 @@ public class GameLogic : IGameLogic
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(responseContent);
+            throw new HttpRequestException(responseContent);
         }
 
         var ack = JsonSerializer.Deserialize<AckTypes>(responseContent, new JsonSerializerOptions
@@ -183,7 +183,7 @@ public class GameLogic : IGameLogic
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(responseContent);
+            throw new HttpRequestException(responseContent);
         }
 
         var streamDto = JsonSerializer.Deserialize<CurrentGameStateDto>(responseContent, new JsonSerializerOptions
@@ -255,7 +255,7 @@ public class GameLogic : IGameLogic
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(responseContent);
+            throw new HttpRequestException(responseContent);
         }
 
         var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
@@ -291,7 +291,7 @@ public class GameLogic : IGameLogic
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(responseContent);
+            throw new HttpRequestException(responseContent);
         }
 
         var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
@@ -332,7 +332,7 @@ public class GameLogic : IGameLogic
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(responseContent);
+            throw new HttpRequestException(responseContent);
         }
 
         var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
@@ -368,7 +368,7 @@ public class GameLogic : IGameLogic
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(responseContent);
+            throw new HttpRequestException(responseContent);
         }
 
         var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
@@ -390,7 +390,7 @@ public class GameLogic : IGameLogic
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(responseContent);
+            throw new HttpRequestException(responseContent);
         }
 
         var roomList = JsonSerializer.Deserialize<IEnumerable<SpectateableGameRoomDataDto>>(responseContent,
@@ -411,7 +411,7 @@ public class GameLogic : IGameLogic
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(responseContent);
+            throw new HttpRequestException(responseContent);
         }
 
         var roomList = JsonSerializer.Deserialize<IEnumerable<JoinableGameRoomDataDto>>(responseContent,
