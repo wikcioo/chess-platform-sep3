@@ -1,5 +1,6 @@
 using Application.Entities;
 using Domain.DTOs;
+using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 
@@ -16,4 +17,5 @@ public interface IGameLogic
     IEnumerable<SpectateableGameRoomDataDto> GetSpectateableGameRoomData();
     IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData(string requesterUsername);
     CurrentGameStateDto GetCurrentGameState(ulong gameRoomId);
+    event Action<GameRoomEventDto>? GameEvent;
 }

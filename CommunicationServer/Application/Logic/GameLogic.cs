@@ -3,6 +3,7 @@ using Application.Entities;
 using Application.Hubs;
 using Application.LogicInterfaces;
 using Domain.DTOs;
+using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Domain.Models;
@@ -16,23 +17,26 @@ public class GameLogic : IGameLogic
     private readonly GameRoomsData _gameRoomsData = new();
     private readonly IStockfishService _stockfishService;
     private readonly IChatLogic _chatLogic;
+    public event Action<GameRoomEventDto>? GameEvent;
 
-    private IHubContext<GameHub> _hubContext;
-
-    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IHubContext<GameHub> hubContext)
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic)
     {
         _stockfishService = stockfishService;
         _chatLogic = chatLogic;
-        _hubContext = hubContext;
     }
 
+    public void FireEvent(GameRoomEventDto dto)
+    {
+        GameEvent?.Invoke(dto);
+    }
+    
     public Task<ResponseGameDto> StartGame(RequestGameDto dto)
     {
-        GameRoom gameRoom = new(dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType, _hubContext)
+        GameRoom gameRoom = new(dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType)
         {
             GameSide = dto.Side
         };
-
+        gameRoom.GameEvent += FireEvent;
         var requesterIsWhite = true;
         switch (dto.Side)
         {
