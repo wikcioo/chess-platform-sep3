@@ -19,7 +19,7 @@ public class GameRoom
     private readonly ChessTimer _chessTimer;
     private bool _whitePlaying;
     private bool _firstMovePlayed;
-    private bool _gameIsActive = false;
+    public bool GameIsActive = false;
 
     // Offer draw related fields
     private string _drawOfferOrigin = string.Empty;
@@ -59,7 +59,7 @@ public class GameRoom
         _whitePlaying = _game.CurrentPlayer().IsWhite;
         if (gameType == OpponentTypes.Ai)
         {
-            _gameIsActive = true;
+            GameIsActive = true;
         }
     }
 
@@ -67,7 +67,7 @@ public class GameRoom
     {
         _chessTimer.ThrowEvent += (_, _, dto) =>
         {
-            if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) _gameIsActive = false;
+            if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) GameIsActive = false;
             GameEvent?.Invoke(new GameRoomEventDto
             {
                 GameRoomId = Id,
@@ -92,7 +92,7 @@ public class GameRoom
 
     public void PlayerJoined()
     {
-        _gameIsActive = true;
+        GameIsActive = true;
         var streamDto = new GameEventDto
         {
             FenString = _game.Pos.FenNotation,
@@ -110,7 +110,7 @@ public class GameRoom
 
     public AckTypes MakeMove(MakeMoveDto dto)
     {
-        if (!_gameIsActive) return AckTypes.GameHasFinished;
+        if (!GameIsActive) return AckTypes.GameHasFinished;
 
         var move = ParseMove(dto);
 
@@ -197,7 +197,7 @@ public class GameRoom
         }
 
         _chessTimer.StopTimers();
-        _gameIsActive = false;
+        GameIsActive = false;
         var streamDto = new GameEventDto()
         {
             Event = GameStreamEvents.Resignation,
@@ -290,7 +290,7 @@ public class GameRoom
         {
             _isDrawOfferAccepted = dto.Accept;
             _chessTimer.StopTimers();
-            _gameIsActive = false;
+            GameIsActive = false;
         }
 
         try
