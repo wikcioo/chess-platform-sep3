@@ -71,7 +71,7 @@ public class GameRoom
             GameEvent?.Invoke(new GameRoomEventDto
             {
                 GameRoomId = Id,
-                JoinedGameStreamDto = dto
+                GameEventDto = dto
             });
         };
     }
@@ -104,7 +104,7 @@ public class GameRoom
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
-            JoinedGameStreamDto = streamDto
+            GameEventDto = streamDto
         });
     }
 
@@ -158,7 +158,7 @@ public class GameRoom
             GameEvent?.Invoke(new GameRoomEventDto
             {
                 GameRoomId = Id,
-                JoinedGameStreamDto = streamDto
+                GameEventDto = streamDto
             });
 
             return AckTypes.Success;
@@ -178,7 +178,7 @@ public class GameRoom
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
-            JoinedGameStreamDto = responseJoinedGameDto
+            GameEventDto = responseJoinedGameDto
         });
 
         return AckTypes.Success;
@@ -206,7 +206,7 @@ public class GameRoom
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
-            JoinedGameStreamDto = streamDto
+            GameEventDto = streamDto
         });
         return AckTypes.Success;
     }
@@ -232,7 +232,7 @@ public class GameRoom
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
-            JoinedGameStreamDto = streamDto
+            GameEventDto = streamDto
         });
         _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (true)
@@ -250,7 +250,7 @@ public class GameRoom
             GameEvent?.Invoke(new GameRoomEventDto
             {
                 GameRoomId = Id,
-                JoinedGameStreamDto = new GameEventDto()
+                GameEventDto = new GameEventDto()
                 {
                     Event = GameStreamEvents.DrawOfferTimeout,
                     IsWhite = PlayerWhite!.Equals(dto.Username)
@@ -263,7 +263,7 @@ public class GameRoom
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
-            JoinedGameStreamDto = new GameEventDto
+            GameEventDto = new GameEventDto
             {
                 Event = GameStreamEvents.DrawOfferAcceptation,
                 IsWhite = PlayerWhite!.Equals(dto.Username)
