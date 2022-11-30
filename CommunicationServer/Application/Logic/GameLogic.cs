@@ -16,18 +16,33 @@ public class GameLogic : IGameLogic
     private readonly GameRoomsData _gameRoomsData = new();
     private readonly IStockfishService _stockfishService;
     private readonly IChatLogic _chatLogic;
+    private readonly IUserService _userService;
 
     private IHubContext<GameHub> _hubContext;
 
-    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IHubContext<GameHub> hubContext)
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IHubContext<GameHub> hubContext,  IUserService userService)
     {
         _stockfishService = stockfishService;
         _chatLogic = chatLogic;
         _hubContext = hubContext;
     }
 
-    public Task<ResponseGameDto> StartGame(RequestGameDto dto)
+    public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
     {
+        try
+        {
+            await ValidateGameRequest(dto);
+        }
+        catch (InvalidOperationException e)
+        {
+            ResponseGameDto responseFail = new()
+            {
+                Success = false,
+                ErrorMessage = e.Message
+            };
+
+            return responseFail;
+        }
         GameRoom gameRoom = new(dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType, _hubContext)
         {
             GameSide = dto.Side
@@ -88,7 +103,75 @@ public class GameLogic : IGameLogic
             IsWhite = requesterIsWhite,
         };
 
-        return Task.FromResult(responseDto);
+        return responseDto;
+    }
+
+    private async Task ValidateGameRequest(RequestGameDto dto)
+    {
+        ValidateTimeControl(dto.Seconds, dto.Increment);
+        await ValidateUserExists(dto.Username);
+
+        if (dto.OpponentType == OpponentTypes.Friend)
+        {
+            if (dto.OpponentName == dto.Username)
+            {
+                throw new InvalidOperationException("Player cannot play against themselves");
+            }
+            
+            if (IsAi(dto.OpponentName))
+            {
+                throw new InvalidOperationException("Opponent is an AI in the not ai game.");
+            }
+            
+            if (dto.OpponentName == null || !await ValidateUserExists(dto.OpponentName))
+            {
+                throw new InvalidOperationException("Opponent not found.");
+            }
+        }
+
+        if (dto.OpponentType == OpponentTypes.Ai && !IsAi(dto.OpponentName))
+            throw new InvalidOperationException("Opponent not an AI in the ai game.");
+
+        if (dto.OpponentType == OpponentTypes.Random)
+        {
+            if (dto.OpponentName != string.Empty)
+            {
+                throw new InvalidOperationException("Opponent cannot be chosen for a random game.");
+            }
+
+            if (dto.Side != GameSides.Random)
+            {
+                throw new InvalidOperationException("You cannot choose a side in a random game.");
+            }
+        }
+    }
+
+    private static void ValidateTimeControl(uint seconds, uint increment)
+    {
+        switch (seconds)
+        {
+            case < 30:
+                throw new InvalidOperationException("Game cannot last less than 30 seconds.");
+            case > 86_400:
+                throw new InvalidOperationException("Game cannot last longer than a day.");
+        }
+
+        if (increment > 60)
+        {
+            throw new InvalidOperationException("Increment cannot be longer than a minute.");
+        }
+    }
+
+    private async Task<bool> ValidateUserExists(string username)
+    {
+        var existing = await _userService.GetByUsernameAsync(username);
+
+        if (existing == null)
+        {
+            throw new InvalidOperationException($"User {username} does not exist in the database.");
+        }
+
+        return true;
     }
 
     public AckTypes JoinGame(RequestJoinGameDto dto)
