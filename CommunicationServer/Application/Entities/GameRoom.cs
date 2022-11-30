@@ -1,6 +1,6 @@
-using System.Reactive.Linq;
 using Application.Hubs;
 using Domain.DTOs;
+using Domain.DTOs.GameEvents;
 using Domain.Enums;
 using Microsoft.AspNetCore.SignalR;
 using Rudzoft.ChessLib;
@@ -26,9 +26,9 @@ public class GameRoom
     private bool _isDrawOffered = false;
     private bool _isDrawOfferAccepted = false;
     private bool _drawResponseWithinTimespan = false;
-    private CancellationTokenSource _drawCts;
+    private CancellationTokenSource? _drawCts;
 
-    public event Action<JoinedGameStreamDto> GameJoined = delegate { };
+    public event Action<GameRoomEventDto>? GameEvent;
 
     public ulong Id { get; set; }
     public string? PlayerWhite { get; set; }
@@ -47,12 +47,9 @@ public class GameRoom
 
     public GameSides GameSide;
 
-    //Testing
-    private IHubContext<GameHub> _hubContext;
-
 
     public GameRoom(uint timeControlSeconds, uint timeControlIncrement, bool isVisible, OpponentTypes gameType,
-        IHubContext<GameHub> hubContext, string? fen = null)
+        string? fen = null)
     {
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
@@ -60,7 +57,6 @@ public class GameRoom
         IsVisible = isVisible;
         GameType = gameType;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
-        _hubContext = hubContext;
         if (gameType == OpponentTypes.Ai)
         {
             _gameIsActive = true;
@@ -72,8 +68,11 @@ public class GameRoom
         _chessTimer.ThrowEvent += (_, _, dto) =>
         {
             if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) _gameIsActive = false;
-            // GameJoined.Invoke(dto);
-            _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", dto);
+            GameEvent?.Invoke(new GameRoomEventDto
+            {
+                GameRoomId = Id,
+                JoinedGameStreamDto = dto
+            });
         };
     }
 
@@ -94,7 +93,7 @@ public class GameRoom
     public void PlayerJoined()
     {
         _gameIsActive = true;
-        var streamDto = new JoinedGameStreamDto
+        var streamDto = new GameEventDto
         {
             FenString = _game.Pos.FenNotation,
             Event = GameStreamEvents.PlayerJoined,
@@ -102,8 +101,11 @@ public class GameRoom
             UsernameWhite = PlayerWhite ?? "",
             UsernameBlack = PlayerBlack ?? ""
         };
-        // GameJoined.Invoke(streamDto);
-        _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
+        GameEvent?.Invoke(new GameRoomEventDto
+        {
+            GameRoomId = Id,
+            JoinedGameStreamDto = streamDto
+        });
     }
 
     public AckTypes MakeMove(MakeMoveDto dto)
@@ -145,7 +147,7 @@ public class GameRoom
         if (reachedTheEnd)
         {
             _chessTimer.StopTimers();
-            var streamDto = new JoinedGameStreamDto()
+            var streamDto = new GameEventDto()
             {
                 Event = GameStreamEvents.ReachedEndOfTheGame,
                 FenString = _game.Pos.FenNotation,
@@ -153,15 +155,18 @@ public class GameRoom
                 IsWhite = !_whitePlaying,
                 TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             };
-            // GameJoined.Invoke(streamDto);
-            _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
+            GameEvent?.Invoke(new GameRoomEventDto
+            {
+                GameRoomId = Id,
+                JoinedGameStreamDto = streamDto
+            });
 
             return AckTypes.Success;
         }
 
         _whitePlaying = _game.CurrentPlayer().IsWhite;
 
-        var responseJoinedGameDto = new JoinedGameStreamDto()
+        var responseJoinedGameDto = new GameEventDto()
         {
             Event = GameStreamEvents.NewFenPosition,
             FenString = _game.Pos.FenNotation,
@@ -170,8 +175,11 @@ public class GameRoom
             IsWhite = !_whitePlaying
         };
 
-        // GameJoined.Invoke(responseJoinedGameDto);
-        _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", responseJoinedGameDto);
+        GameEvent?.Invoke(new GameRoomEventDto
+        {
+            GameRoomId = Id,
+            JoinedGameStreamDto = responseJoinedGameDto
+        });
 
         return AckTypes.Success;
     }
@@ -190,13 +198,16 @@ public class GameRoom
 
         _chessTimer.StopTimers();
         _gameIsActive = false;
-        var streamDto = new JoinedGameStreamDto()
+        var streamDto = new GameEventDto()
         {
             Event = GameStreamEvents.Resignation,
             IsWhite = PlayerWhite!.Equals(dto.Username)
         };
-        // GameJoined.Invoke(streamDto);
-        _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
+        GameEvent?.Invoke(new GameRoomEventDto
+        {
+            GameRoomId = Id,
+            JoinedGameStreamDto = streamDto
+        });
         return AckTypes.Success;
     }
 
@@ -212,15 +223,17 @@ public class GameRoom
         _isDrawOfferAccepted = false;
         _drawResponseWithinTimespan = false;
 
-        var streamDto = new JoinedGameStreamDto
+        var streamDto = new GameEventDto
         {
             Event = GameStreamEvents.DrawOffer,
             UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
             UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
         };
-        // GameJoined.Invoke(streamDto);
-
-        await _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto);
+        GameEvent?.Invoke(new GameRoomEventDto
+        {
+            GameRoomId = Id,
+            JoinedGameStreamDto = streamDto
+        });
         _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (true)
         {
@@ -234,23 +247,28 @@ public class GameRoom
 
         if (!_drawResponseWithinTimespan)
         {
-            GameJoined.Invoke(new JoinedGameStreamDto()
+            GameEvent?.Invoke(new GameRoomEventDto
             {
-                Event = GameStreamEvents.DrawOfferTimeout,
-                IsWhite = PlayerWhite!.Equals(dto.Username)
+                GameRoomId = Id,
+                JoinedGameStreamDto = new GameEventDto()
+                {
+                    Event = GameStreamEvents.DrawOfferTimeout,
+                    IsWhite = PlayerWhite!.Equals(dto.Username)
+                }
             });
             return AckTypes.DrawOfferExpired;
         }
 
         if (!_isDrawOfferAccepted && _drawResponseWithinTimespan) return AckTypes.DrawOfferDeclined;
-        var streamDto2 = new JoinedGameStreamDto()
+        GameEvent?.Invoke(new GameRoomEventDto
         {
-            Event = GameStreamEvents.DrawOfferAcceptation,
-            IsWhite = PlayerWhite!.Equals(dto.Username)
-        };
-        // GameJoined.Invoke(streamDto2);
-
-        await _hubContext.Clients.Group(Id.ToString()).SendAsync("GameStreamDto", streamDto2);
+            GameRoomId = Id,
+            JoinedGameStreamDto = new GameEventDto
+            {
+                Event = GameStreamEvents.DrawOfferAcceptation,
+                IsWhite = PlayerWhite!.Equals(dto.Username)
+            }
+        });
         return AckTypes.Success;
     }
 
@@ -277,9 +295,9 @@ public class GameRoom
 
         try
         {
-            _drawCts.Cancel();
+            _drawCts?.Cancel();
         }
-        catch (Exception e)
+        catch (Exception)
         {
             // ignored
         }
