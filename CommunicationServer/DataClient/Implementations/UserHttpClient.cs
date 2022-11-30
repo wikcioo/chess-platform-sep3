@@ -64,6 +64,22 @@ public class UserHttpClient : IUserService
         return users;
     }
     
+    public async Task<User?> GetByUsernameAsync(string username)
+    {
+        HttpResponseMessage response = await _client.GetAsync($"/users/{username}");
+        string result = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException(result);
+        }
+
+        var users = JsonSerializer.Deserialize<User?>(result, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        })!;
+        return users;
+    }
+    
     private static string ConstructQuery(string? userName)
     {
         string query = "";
