@@ -9,6 +9,7 @@
 @using Domain.Enums
 @using BlazorWASM.Pages.ChessComponents
 @using System.Security.Claims
+@using Domain.DTOs.GameEvents
 @inject IDialogService DialogService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
@@ -236,7 +237,7 @@
         _isWhiteSide = side;
     }
 
-    private void OnEndOfTheGameReached(JoinedGameStreamDto dto)
+    private void OnEndOfTheGameReached(GameEventDto dto)
     {
         PlaySound("notify");
         switch (dto.GameEndType)
@@ -262,7 +263,7 @@
         }
     }
 
-    private void OnTimeUpdated(JoinedGameStreamDto dto)
+    private void OnTimeUpdated(GameEventDto dto)
     {
         if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp)
         {
@@ -292,7 +293,7 @@
         }
     }
 
-    private void OnNewFenReceived(JoinedGameStreamDto dto)
+    private void OnNewFenReceived(GameEventDto dto)
     {
         SetFenPosition(dto.FenString);
         PlaySound("move");
@@ -307,7 +308,7 @@
         StateHasChanged();
     }
 
-    private void OnResignationReceived(JoinedGameStreamDto dto)
+    private void OnResignationReceived(GameEventDto dto)
     {
         PlaySound("notify");
         if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
@@ -320,7 +321,7 @@
         }
     }
 
-    private void OnPlayerJoined(JoinedGameStreamDto dto)
+    private void OnPlayerJoined(GameEventDto dto)
     {
         _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
         PlaySound("notify");
@@ -328,19 +329,19 @@
         StateHasChanged();
     }
 
-    private void OnDrawOffered(JoinedGameStreamDto dto)
+    private void OnDrawOffered(GameEventDto dto)
     {
         Notify($"Draw offer", Severity.Info);
         StateHasChanged();
     }
 
-    private void OnDrawOfferTimedOut(JoinedGameStreamDto dto)
+    private void OnDrawOfferTimedOut(GameEventDto dto)
     {
         Notify("Draw offer expired", Severity.Info);
         StateHasChanged();
     }
 
-    private void OnDrawOfferAccepted(JoinedGameStreamDto dto)
+    private void OnDrawOfferAccepted(GameEventDto dto)
     {
         PlaySound("notify");
         DisplayDefaultDialog("The game finished in a draw!");

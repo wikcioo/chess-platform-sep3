@@ -1,8 +1,8 @@
 using Domain.Enums;
 
-namespace Domain.DTOs;
+namespace Domain.DTOs.GameEvents;
 
-public class JoinedGameStreamDto
+public class GameEventDto
 {
     public string FenString { get; set; } = string.Empty;
     public uint GameEndType { get; set; }
