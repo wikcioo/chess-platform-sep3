@@ -1,26 +1,26 @@
-using Application.LogicImplementations;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
+using HttpClients.Implementations;
 using Rudzoft.ChessLib.Types;
 
-namespace Application.LogicInterfaces;
+namespace HttpClients.ClientInterfaces;
 
-public interface IGameLogic
+public interface IGameService
 {
     public event Action<CurrentGameStateDto>? StateReceived;
     bool OnWhiteSide { get; set; }
     ulong? GameRoomId { get; }
     bool IsDrawOfferPending { get; set; }
-    public event GameLogic.StreamUpdate? TimeUpdated;
-    public event GameLogic.StreamUpdate? NewFenReceived;
-    public event GameLogic.StreamUpdate? ResignationReceived;
-    public event GameLogic.StreamUpdate? NewPlayerJoined;
-    public event GameLogic.StreamUpdate? DrawOffered;
-    public event GameLogic.StreamUpdate? DrawOfferTimedOut;
-    public event GameLogic.StreamUpdate? DrawOfferAccepted;
-    public event GameLogic.StreamUpdate? EndOfTheGameReached;
+    public event GameService.StreamUpdate? TimeUpdated;
+    public event GameService.StreamUpdate? NewFenReceived;
+    public event GameService.StreamUpdate? ResignationReceived;
+    public event GameService.StreamUpdate? NewPlayerJoined;
+    public event GameService.StreamUpdate? DrawOffered;
+    public event GameService.StreamUpdate? DrawOfferTimedOut;
+    public event GameService.StreamUpdate? DrawOfferAccepted;
+    public event GameService.StreamUpdate? EndOfTheGameReached;
     public event Action? GameFirstJoined;
 
     public Task<ResponseGameDto> CreateGame(RequestGameDto dto);

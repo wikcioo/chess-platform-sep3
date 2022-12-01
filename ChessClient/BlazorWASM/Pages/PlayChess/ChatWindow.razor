@@ -1,9 +1,8 @@
-@using Application.LogicInterfaces
 @using Domain.DTOs.Chat
 @using MudBlazor
-@using Application.LogicImplementations
+@using HttpClients.ClientInterfaces
 @using Rudzoft.ChessLib.Extensions
-@inject IChatLogic ChatLogic
+@inject IChatService ChatService
 @implements IDisposable
 @inject ISnackbar Snackbar
 
@@ -32,12 +31,12 @@
 
     protected override void OnInitialized()
     {
-        ChatLogic.MessageReceived += OnMessageReceived;
+        ChatService.MessageReceived += OnMessageReceived;
     }
 
     public void Dispose()
     {
-        ChatLogic.MessageReceived -= OnMessageReceived;
+        ChatService.MessageReceived -= OnMessageReceived;
     }
 
 
@@ -51,7 +50,7 @@
 
         if (IsValid())
         {
-            await ChatLogic.WriteMessageAsync(new MessageDto
+            await ChatService.WriteMessageAsync(new MessageDto
             {
                 Body = _messageBody,
                 GameRoom = (ulong) GameRoom

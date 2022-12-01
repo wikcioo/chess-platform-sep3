@@ -1,7 +1,7 @@
 @using Domain.DTOs
 @using Domain.DTOs.GameRoomData
-@using Application.LogicInterfaces
-@inject IGameLogic GameLogic
+@using HttpClients.ClientInterfaces
+@inject IGameService GameService
 @inject NavigationManager NavMgr
 
 <MudTable Items="@SpectateableGames" Hover="true">
@@ -32,7 +32,7 @@
 
     private async void SpectateGame(ulong i)
     {
-        await GameLogic.JoinGame(new RequestJoinGameDto
+        await GameService.JoinGame(new RequestJoinGameDto
         {
             GameRoom = i
         });

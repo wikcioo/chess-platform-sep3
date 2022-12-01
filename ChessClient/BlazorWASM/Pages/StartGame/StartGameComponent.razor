@@ -3,13 +3,13 @@
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Types
 @using Rudzoft.ChessLib.Fen
-@using Application.LogicInterfaces
 @using Position = Rudzoft.ChessLib.Position
 @using Domain.DTOs
 @using Domain.Models
+@using HttpClients.ClientInterfaces
 @using Rudzoft.ChessLib.Enums
 @inject ISnackbar Snackbar
-@inject IGameLogic GameLogic
+@inject IGameService GameService
 @inject NavigationManager NavMgr
 @* @implements IDisposable *@
 
@@ -108,7 +108,7 @@
 
         try
         {
-            var response = await GameLogic.CreateGame(request);
+            var response = await GameService.CreateGame(request);
 
             if (!response.Success)
             {
@@ -116,7 +116,7 @@
             }
             
             _gameRoomInt = response.GameRoom;
-            await GameLogic.JoinGame(new RequestJoinGameDto
+            await GameService.JoinGame(new RequestJoinGameDto
             {
                 GameRoom = response.GameRoom
             });

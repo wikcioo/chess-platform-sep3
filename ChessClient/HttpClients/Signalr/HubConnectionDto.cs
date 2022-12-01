@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Application.Signalr;
+namespace HttpClients.Signalr;
 
 public class HubConnectionDto
 {

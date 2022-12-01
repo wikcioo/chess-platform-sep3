@@ -1,7 +1,7 @@
 @using Domain.DTOs
-@using Application.LogicInterfaces
 @using Domain.DTOs.GameRoomData
-@inject IGameLogic GameLogic
+@using HttpClients.ClientInterfaces
+@inject IGameService GameService
 @inject NavigationManager NavMgr
 
 <MudTable Items="@JoinableGames" Hover="true">
@@ -32,7 +32,7 @@
 
     private async void JoinGame(ulong i)
     {
-        await GameLogic.JoinGame(new RequestJoinGameDto
+        await GameService.JoinGame(new RequestJoinGameDto
         {
             GameRoom = i
         });

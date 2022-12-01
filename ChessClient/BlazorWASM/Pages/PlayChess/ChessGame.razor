@@ -3,17 +3,16 @@
 @using Rudzoft.ChessLib
 @using Rudzoft.ChessLib.Enums
 @using Rudzoft.ChessLib.Fen
-@using Application.LogicInterfaces
 @using Position = Rudzoft.ChessLib.Position
-@using Domain.DTOs
 @using Domain.Enums
 @using BlazorWASM.Pages.ChessComponents
 @using System.Security.Claims
 @using Domain.DTOs.GameEvents
+@using HttpClients.ClientInterfaces
 @inject IDialogService DialogService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
-@inject IGameLogic GameLogic
+@inject IGameService GameService
 @implements IDisposable
 
 
@@ -46,7 +45,7 @@
         </MudItem>
         <MudItem xs="12" sm="9" md="4">
             <MudGrid>
-                @if (GameLogic.IsDrawOfferPending)
+                @if (GameService.IsDrawOfferPending)
                 {
                     <MudItem Style="text-align: center" xs="12">
                         <MudPaper Class="my-2 pa-2 mud-theme-primary">
@@ -73,7 +72,7 @@
                     <MudButton @onclick="OfferDraw" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Offer Draw</MudButton>
                 </MudItem>
                 <MudItem xs="12">
-                    <ChatWindow GameRoom="@GameLogic.GameRoomId"></ChatWindow>
+                    <ChatWindow GameRoom="@GameService.GameRoomId"></ChatWindow>
                 </MudItem>
             </MudGrid>
 
@@ -106,17 +105,17 @@
 
     public void Dispose()
     {
-        GameLogic.TimeUpdated -= OnTimeUpdated;
-        GameLogic.NewFenReceived -= OnNewFenReceived;
-        GameLogic.ResignationReceived -= OnResignationReceived;
-        GameLogic.NewPlayerJoined -= OnPlayerJoined;
-        GameLogic.DrawOffered -= OnDrawOffered;
-        GameLogic.DrawOfferTimedOut -= OnDrawOfferTimedOut;
-        GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
-        GameLogic.EndOfTheGameReached -= OnEndOfTheGameReached;
-        GameLogic.GameFirstJoined -= OnGameFirstJoined;
-        GameLogic.StateReceived -= OnGameStateReceived;
-        GameLogic.LeaveRoom();
+        GameService.TimeUpdated -= OnTimeUpdated;
+        GameService.NewFenReceived -= OnNewFenReceived;
+        GameService.ResignationReceived -= OnResignationReceived;
+        GameService.NewPlayerJoined -= OnPlayerJoined;
+        GameService.DrawOffered -= OnDrawOffered;
+        GameService.DrawOfferTimedOut -= OnDrawOfferTimedOut;
+        GameService.DrawOfferAccepted -= OnDrawOfferAccepted;
+        GameService.EndOfTheGameReached -= OnEndOfTheGameReached;
+        GameService.GameFirstJoined -= OnGameFirstJoined;
+        GameService.StateReceived -= OnGameStateReceived;
+        GameService.LeaveRoom();
     }
 
     protected override async Task OnInitializedAsync()
@@ -125,21 +124,21 @@
         ClaimsPrincipal user = authState.User;
         if (user.Identity == null) return;
         _currentUser = user.Identity.Name!;
-        await GameLogic.GetCurrentGameState();
+        await GameService.GetCurrentGameState();
     }
 
     private void InitGameLogic()
     {
-        GameLogic.TimeUpdated += OnTimeUpdated;
-        GameLogic.NewFenReceived += OnNewFenReceived;
-        GameLogic.ResignationReceived += OnResignationReceived;
-        GameLogic.NewPlayerJoined += OnPlayerJoined;
-        GameLogic.DrawOffered += OnDrawOffered;
-        GameLogic.DrawOfferTimedOut += OnDrawOfferTimedOut;
-        GameLogic.DrawOfferAccepted += OnDrawOfferAccepted;
-        GameLogic.EndOfTheGameReached += OnEndOfTheGameReached;
-        GameLogic.GameFirstJoined += OnGameFirstJoined;
-        GameLogic.StateReceived += OnGameStateReceived;
+        GameService.TimeUpdated += OnTimeUpdated;
+        GameService.NewFenReceived += OnNewFenReceived;
+        GameService.ResignationReceived += OnResignationReceived;
+        GameService.NewPlayerJoined += OnPlayerJoined;
+        GameService.DrawOffered += OnDrawOffered;
+        GameService.DrawOfferTimedOut += OnDrawOfferTimedOut;
+        GameService.DrawOfferAccepted += OnDrawOfferAccepted;
+        GameService.EndOfTheGameReached += OnEndOfTheGameReached;
+        GameService.GameFirstJoined += OnGameFirstJoined;
+        GameService.StateReceived += OnGameStateReceived;
     }
 
     private void OnGameStateReceived(CurrentGameStateDto dto)
@@ -158,7 +157,7 @@
         try
         {
             _whiteTimerActive = !_whiteTimerActive;
-            var t = await GameLogic.MakeMove(move);
+            var t = await GameService.MakeMove(move);
             return t;
         }
         catch (InvalidOperationException e)
@@ -172,7 +171,7 @@
     {
         try
         {
-            var ack = await GameLogic.Resign();
+            var ack = await GameService.Resign();
             if (ack == (uint) AckTypes.Success) return;
         }
         catch (InvalidOperationException e)
@@ -189,7 +188,7 @@
 
         try
         {
-            ack = await GameLogic.OfferDraw();
+            ack = await GameService.OfferDraw();
         }
         catch (InvalidOperationException e)
         {
@@ -213,8 +212,8 @@
         AckTypes ack;
         try
         {
-            ack = await GameLogic.SendDrawResponse(accepted);
-            GameLogic.IsDrawOfferPending = false;
+            ack = await GameService.SendDrawResponse(accepted);
+            GameService.IsDrawOfferPending = false;
         }
         catch (InvalidOperationException e)
         {
@@ -234,7 +233,7 @@
 
     private void OnGameFirstJoined()
     {
-        Enum.TryParse(GameLogic.OnWhiteSide ? "White" : "Black", out GameSides side);
+        Enum.TryParse(GameService.OnWhiteSide ? "White" : "Black", out GameSides side);
         _isWhiteSide = side;
     }
 
@@ -244,7 +243,7 @@
         switch (dto.GameEndType)
         {
             case (uint) GameEndTypes.CheckMate:
-                if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
+                if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
                     DisplayDefaultDialog("You got checkmated!");
                 else
                     DisplayDefaultDialog("You checkmated your opponent!");
@@ -268,7 +267,7 @@
     {
         if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp)
         {
-            if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
+            if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
             {
                 DisplayDefaultDialog("You ran out of time! You loose!");
             }
@@ -312,7 +311,7 @@
     private void OnResignationReceived(GameEventDto dto)
     {
         PlaySound("notify");
-        if ((dto.IsWhite && GameLogic.OnWhiteSide) || (!dto.IsWhite && !GameLogic.OnWhiteSide))
+        if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
         {
             DisplayDefaultDialog("You resigned the game!");
         }
