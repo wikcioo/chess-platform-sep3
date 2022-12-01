@@ -1,4 +1,4 @@
-namespace StockfishWrapper;
+namespace Domain.DTOs.StockfishData;
 
 public struct StockfishSettingsDto
 {
