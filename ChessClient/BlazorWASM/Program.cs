@@ -36,8 +36,7 @@ builder.Services.AddMudServices(config =>
 });
 AuthorizationPolicies.AddPolicies(builder.Services);
 builder.Services.AddScoped<IUserService, UserHttpClient>();
-builder.Services.AddSingleton<HubConnectionDto>();
-// builder.Services.AddBlazorBootstrap();
+builder.Services.AddSingleton<HubConnectionWrapper>();
 builder.Services.AddScoped<IAuthService, JwtAuthService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddTransient<IChatService, ChatService>();

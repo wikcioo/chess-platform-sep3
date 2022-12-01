@@ -36,10 +36,10 @@ public class GameService : IGameService
     public event Action<CurrentGameStateDto>? StateReceived;
 
     //Signalr
-    private HubConnectionDto _hubDto;
+    private HubConnectionWrapper _hubDto;
     private HttpClient _client;
 
-    public GameService(IAuthService authService, HubConnectionDto hubDto, HttpClient client)
+    public GameService(IAuthService authService, HubConnectionWrapper hubDto, HttpClient client)
     {
         _authService = authService;
         _hubDto = hubDto;

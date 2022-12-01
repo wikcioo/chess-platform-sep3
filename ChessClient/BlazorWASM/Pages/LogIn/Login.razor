@@ -6,7 +6,6 @@
 @inject IAuthService AuthService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
-@inject HubConnectionDto HubDto
 
 
 <AuthorizeView>
@@ -46,19 +45,6 @@
             try
             {
                 await AuthService.LoginAsync(_email, _password);
-
-                if (HubDto.HubConnection is not null)
-                {
-                    await HubDto.HubConnection.DisposeAsync();
-                }
-                HubDto.HubConnection = new HubConnectionBuilder()
-                    .WithUrl("https://localhost:7233/gamehub",
-                        options => { options.AccessTokenProvider = () => Task.FromResult(AuthService.GetJwtToken())!; })
-                    .WithAutomaticReconnect()
-                    .Build();
-    //Required so the connection is not dropped
-                HubDto.HubConnection.On<string>("DummyConnection", _ => { });
-                await HubDto.HubConnection.StartAsync();
                 NavMgr.NavigateTo("/");
             }
             catch (Exception e)

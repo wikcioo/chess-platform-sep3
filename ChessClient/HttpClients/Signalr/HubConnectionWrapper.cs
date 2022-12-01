@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 namespace HttpClients.Signalr;
 
-public class HubConnectionDto
+public class HubConnectionWrapper
 {
     public HubConnection? HubConnection { get; set; }
 }
