@@ -96,7 +96,7 @@ public class GameLogic : IGameLogic
             gameRoom.NumPlayersJoined++;
 
         if (gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
-            RequestAiMove(id);
+            await RequestAiMove(id);
 
         ResponseGameDto responseDto = new()
         {
@@ -209,7 +209,7 @@ public class GameLogic : IGameLogic
         throw new ArgumentException("Cannot join the game!");
     }
 
-    public Task<AckTypes> MakeMove(MakeMoveDto dto)
+    public async Task<AckTypes> MakeMove(MakeMoveDto dto)
     {
         try
         {
@@ -218,25 +218,25 @@ public class GameLogic : IGameLogic
             var ack = room.MakeMove(dto);
             if (ack != AckTypes.Success)
             {
-                return Task.FromResult(ack);
+                return ack;
             }
 
             if (room.CurrentPlayer != null && IsAi(room.CurrentPlayer))
             {
-                Task.Run(() => RequestAiMove(dto.GameRoom));
+                await RequestAiMove(dto.GameRoom);
             }
 
-            return Task.FromResult(ack);
+            return ack;
         }
         catch (KeyNotFoundException e)
         {
-            return Task.FromResult(AckTypes.GameNotFound);
+            return AckTypes.GameNotFound;
         }
     }
 
     private static bool IsAi(string? playerName) => StockfishLevels.IsAi(playerName);
 
-    private async void RequestAiMove(ulong roomId)
+    private async Task RequestAiMove(ulong roomId)
     {
         var room = _gameRoomsData.Get(roomId);
 

@@ -84,7 +84,8 @@ public class GameRoom
             WhiteTimeLeftMs = _chessTimer.WhiteRemainingTimeMs,
             BlackTimeLeftMs = _chessTimer.BlackRemainingTimeMs,
             UsernameWhite = PlayerWhite ?? "",
-            UsernameBlack = PlayerBlack ?? ""
+            UsernameBlack = PlayerBlack ?? "",
+            IsWhite = _whitePlaying
         };
 
         return stateDto;
@@ -172,7 +173,7 @@ public class GameRoom
             FenString = _game.Pos.FenNotation,
             TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             GameEndType = (uint) _game.GameEndType,
-            IsWhite = !_whitePlaying
+            IsWhite = _whitePlaying
         };
 
         GameEvent?.Invoke(new GameRoomEventDto

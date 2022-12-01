@@ -115,6 +115,7 @@
         GameLogic.DrawOfferAccepted -= OnDrawOfferAccepted;
         GameLogic.EndOfTheGameReached -= OnEndOfTheGameReached;
         GameLogic.GameFirstJoined -= OnGameFirstJoined;
+        GameLogic.StateReceived -= OnGameStateReceived;
         GameLogic.LeaveRoom();
     }
 
@@ -141,7 +142,7 @@
         GameLogic.StateReceived += OnGameStateReceived;
     }
 
-    public void OnGameStateReceived(CurrentGameStateDto dto)
+    private void OnGameStateReceived(CurrentGameStateDto dto)
     {
         _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
         PlaySound("notify");
@@ -152,7 +153,7 @@
         StateHasChanged();
     }
 
-    public async Task<AckTypes> MakeMove(Move move)
+    private async Task<AckTypes> MakeMove(Move move)
     {
         try
         {
