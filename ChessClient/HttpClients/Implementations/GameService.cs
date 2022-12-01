@@ -36,10 +36,10 @@ public class GameService : IGameService
     public event Action<CurrentGameStateDto>? StateReceived;
 
     //Signalr
-    private HubConnectionDto _hubDto;
+    private HubConnectionWrapper _hubDto;
     private HttpClient _client;
 
-    public GameService(IAuthService authService, HubConnectionDto hubDto, HttpClient client)
+    public GameService(IAuthService authService, HubConnectionWrapper hubDto, HttpClient client)
     {
         _authService = authService;
         _hubDto = hubDto;
@@ -49,6 +49,23 @@ public class GameService : IGameService
     public GameService(IAuthService authService)
     {
         _authService = authService;
+    }
+
+    public async Task StartHubConnection()
+    {
+        if (_hubDto.HubConnection is not null)
+        {
+            await _hubDto.HubConnection.DisposeAsync();
+        }
+
+        _hubDto.HubConnection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7233/gamehub",
+                options => { options.AccessTokenProvider = () => Task.FromResult(_authService.GetJwtToken())!; })
+            .WithAutomaticReconnect()
+            .Build();
+        //Required so the connection is not dropped
+        _hubDto.HubConnection.On<string>("DummyConnection", _ => { });
+        await _hubDto.HubConnection.StartAsync();
     }
 
     public async void LeaveRoom()
