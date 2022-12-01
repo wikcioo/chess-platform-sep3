@@ -34,4 +34,5 @@ public interface IGameService
     public Task<IList<JoinableGameRoomDataDto>> GetAllJoinableGames();
     Task GetCurrentGameState();
     void LeaveRoom();
+    Task StopHubConnection();
 }

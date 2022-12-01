@@ -76,6 +76,16 @@ public class GameService : IGameService
         }
     }
 
+    public async Task StopHubConnection()
+    {
+        if (_hubDto.HubConnection is not null)
+        {
+            await _hubDto.HubConnection.StopAsync();
+            await _hubDto.HubConnection.DisposeAsync();
+            _hubDto.HubConnection = null;
+        }
+    }
+
     public async Task<ResponseGameDto> CreateGame(RequestGameDto dto)
     {
         _client.DefaultRequestHeaders.Authorization =
