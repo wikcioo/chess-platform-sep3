@@ -83,6 +83,11 @@
                 OpponentTypes.Random => string.Empty,
                 _ => throw new ArgumentNullException()
                 };
+
+            if (_opponentType == OpponentTypes.Random)
+            {
+                _isWhiteSide = GameSides.Random;
+            }
         }
         catch (ArgumentNullException)
         {
@@ -105,6 +110,11 @@
         {
             var response = await GameLogic.CreateGame(request);
 
+            if (!response.Success)
+            {
+                throw new InvalidOperationException(response.ErrorMessage);
+            }
+            
             _gameRoomInt = response.GameRoom;
             await GameLogic.JoinGame(new RequestJoinGameDto
             {
@@ -113,51 +123,18 @@
             NavMgr.NavigateTo("/ChessGame");
             Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException e)
         {
-            Notify("You have to be logged in to create a game!", Severity.Warning);
+            Notify(e.Message, Severity.Warning);
         }
-        catch (HttpRequestException e)
+        catch (HttpRequestException)
         {
-            Notify(e.Message, Severity.Error);
-        }
-    }
-
-    private async Task JoinGame()
-    {
-        try
-        {
-    //workaround, initial position should be sent and not set
-            SetFenPosition(Fen.StartPositionFen);
-            await GameLogic.JoinGame(new RequestJoinGameDto
-            {
-                GameRoom = _gameRoomInt,
-            });
-            NavMgr.NavigateTo("/ChessGame");
-        }
-        catch (ArgumentException)
-        {
-    //TODO: This catch will never catch anything cause there is no error thrown. New grpc message is needed
-            Notify("Game room not found.", Severity.Warning);
-        }
-        catch (Exception)
-        {
-            Notify("Connection error. Failed to participate in game. ¯\\_(ツ)_/¯", Severity.Error);
+            Notify("Network error, Failed to create a game.", Severity.Error);
         }
     }
-
+    
     private void Notify(string message, Severity severity)
     {
         Snackbar.Add(message, severity);
     }
-
-    private void SetFenPosition(string fen)
-    {
-        FenData fenData = new FenData(fen);
-        State state = new State();
-        _position.Set(in fenData, ChessMode.Normal, state);
-        StateHasChanged();
-    }
-
-
 }
