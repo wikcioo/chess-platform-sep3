@@ -1,18 +1,18 @@
-using Application.LogicInterfaces;
-using Application.Signalr;
 using Domain.DTOs.Chat;
+using HttpClients.ClientInterfaces;
+using HttpClients.Signalr;
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Application.LogicImplementations;
+namespace HttpClients.Implementations;
 
-public class ChatLogic : IChatLogic
+public class ChatService : IChatService
 {
     public event Action<string>? MessageReceived;
     private string _chatLog = "";
 
     private readonly HubConnectionDto _hubDto;
 
-    public ChatLogic(HubConnectionDto hubDto)
+    public ChatService(HubConnectionDto hubDto)
     {
         _hubDto = hubDto;
         if (_hubDto.HubConnection is null) return;

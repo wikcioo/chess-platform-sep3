@@ -1,12 +1,12 @@
 @page "/PlayGame"
 @using BlazorWASM.Pages.StartGame
-@using Application.LogicInterfaces
 @using Domain.DTOs
 @using Domain.DTOs.GameRoomData
+@using HttpClients.ClientInterfaces
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
-@inject IGameLogic GameLogic
+@inject IGameService GameService
 
 <MudContainer>
     <MudContainer Class="mt-10" Style="display: flex; flex-direction: row; gap: 25px">
@@ -31,7 +31,7 @@
 
     private async Task RefreshJoinableGames()
     {
-        _joinableGames = await GameLogic.GetAllJoinableGames();
+        _joinableGames = await GameService.GetAllJoinableGames();
     }
 
     private void DisplayCreateGameDialog()
@@ -52,7 +52,7 @@
         if (_joinableGames.Count > 0)
         {
             var randomGameRoomId = _joinableGames[new Random().Next(_joinableGames.Count)].GameRoom;
-            await GameLogic.JoinGame(new RequestJoinGameDto
+            await GameService.JoinGame(new RequestJoinGameDto
             {
                 GameRoom = randomGameRoomId
             });

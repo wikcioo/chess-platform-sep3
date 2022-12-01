@@ -1,21 +1,17 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Security.Claims;
 using System.Text.Json;
-using Application.LogicInterfaces;
-using Application.Signalr;
 using Domain.DTOs;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
-using HttpClients;
 using HttpClients.ClientInterfaces;
+using HttpClients.Signalr;
 using Microsoft.AspNetCore.SignalR.Client;
-using Rudzoft.ChessLib.Enums;
 using Rudzoft.ChessLib.Types;
 
-namespace Application.LogicImplementations;
+namespace HttpClients.Implementations;
 
-public class GameLogic : IGameLogic
+public class GameService : IGameService
 {
     private readonly IAuthService _authService;
     public bool IsDrawOfferPending { get; set; } = false;
@@ -42,7 +38,7 @@ public class GameLogic : IGameLogic
     private HubConnectionDto _hubDto;
     private HttpClient _client;
 
-    public GameLogic(IAuthService authService, HubConnectionDto hubDto, HttpClient client)
+    public GameService(IAuthService authService, HubConnectionDto hubDto, HttpClient client)
     {
         _authService = authService;
         _hubDto = hubDto;
@@ -51,7 +47,7 @@ public class GameLogic : IGameLogic
             ListenToJoinedGameStream);
     }
 
-    public GameLogic(IAuthService authService)
+    public GameService(IAuthService authService)
     {
         _authService = authService;
     }
