@@ -11,7 +11,7 @@ public interface IGameService
 {
     public event Action<CurrentGameStateDto>? StateReceived;
     bool OnWhiteSide { get; set; }
-    ulong? GameRoomId { get; }
+    ulong? GameRoomId { get; set; }
     bool IsDrawOfferPending { get; set; }
     public event GameService.StreamUpdate? TimeUpdated;
     public event GameService.StreamUpdate? NewFenReceived;

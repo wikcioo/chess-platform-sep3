@@ -13,6 +13,7 @@
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
 @inject IGameService GameService
+@inject NavigationManager NavMgr
 @implements IDisposable
 
 
@@ -116,15 +117,23 @@
         GameService.GameFirstJoined -= OnGameFirstJoined;
         GameService.StateReceived -= OnGameStateReceived;
         GameService.LeaveRoom();
+        GameService.GameRoomId = null;
     }
 
     protected override async Task OnInitializedAsync()
     {
-        AuthenticationState authState = await AuthState;
-        ClaimsPrincipal user = authState.User;
-        if (user.Identity == null) return;
-        _currentUser = user.Identity.Name!;
-        await GameService.GetCurrentGameState();
+        if (GameService.GameRoomId == null)
+        {
+            NavMgr.NavigateTo("/");
+        }
+        else
+        {
+            var authState = await AuthState;
+            var user = authState.User;
+            if (user.Identity == null) return;
+            _currentUser = user.Identity.Name!;
+            await GameService.GetCurrentGameState();
+        }
     }
 
     private void InitGameLogic()
