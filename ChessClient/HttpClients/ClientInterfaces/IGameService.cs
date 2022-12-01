@@ -1,4 +1,5 @@
 using Domain.DTOs;
+using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using HttpClients.Implementations;

@@ -31,8 +31,6 @@
     private string _email = "";
     private string _password = string.Empty;
 
-    private bool _isShow = false;
-
     private async Task LoginAsync()
     {
         if (string.IsNullOrEmpty(_email))
@@ -56,6 +54,7 @@
                 HubDto.HubConnection = new HubConnectionBuilder()
                     .WithUrl("https://localhost:7233/gamehub",
                         options => { options.AccessTokenProvider = () => Task.FromResult(AuthService.GetJwtToken())!; })
+                    .WithAutomaticReconnect()
                     .Build();
     //Required so the connection is not dropped
                 HubDto.HubConnection.On<string>("DummyConnection", _ => { });

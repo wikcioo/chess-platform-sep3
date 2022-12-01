@@ -1,4 +1,5 @@
 using Domain.DTOs;
+using Domain.DTOs.GameEvents;
 using Domain.Enums;
 using Rudzoft.ChessLib.Enums;
 
@@ -14,7 +15,7 @@ public class ChessTimer
     public double WhiteRemainingTimeMs { get; private set; }
     public double BlackRemainingTimeMs { get; private set; }
     
-    public delegate void EventHandler(object sender, EventArgs args, JoinedGameStreamDto dto);
+    public delegate void EventHandler(object sender, EventArgs args, GameEventDto dto);
     public event EventHandler ThrowEvent = delegate{};
 
     public ChessTimer(bool whitePlaying, uint timeControlSeconds, uint timeControlIncrement)
@@ -86,7 +87,7 @@ public class ChessTimer
         if (WhiteRemainingTimeMs <= 0 || BlackRemainingTimeMs <= 0)
         {
             StopTimers();
-            ThrowEvent(this, EventArgs.Empty, new JoinedGameStreamDto()
+            ThrowEvent(this, EventArgs.Empty, new GameEventDto()
             {
                 Event = GameStreamEvents.TimeUpdate,
                 IsWhite = _whitePlaying,
@@ -96,7 +97,7 @@ public class ChessTimer
         }
         else
         {
-            ThrowEvent(this, EventArgs.Empty, new JoinedGameStreamDto()
+            ThrowEvent(this, EventArgs.Empty, new GameEventDto()
             {
                 Event = GameStreamEvents.TimeUpdate,
                 IsWhite = _whitePlaying,

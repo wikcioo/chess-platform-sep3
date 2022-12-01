@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Domain.DTOs;
+using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using HttpClients.ClientInterfaces;
@@ -20,7 +21,7 @@ public class GameService : IGameService
 
 
     //Todo Possibility of replacing StreamUpdate with action and only needed information instead of dto
-    public delegate void StreamUpdate(JoinedGameStreamDto dto);
+    public delegate void StreamUpdate(GameEventDto dto);
 
     public event StreamUpdate? TimeUpdated;
     public event StreamUpdate? NewFenReceived;
@@ -43,8 +44,6 @@ public class GameService : IGameService
         _authService = authService;
         _hubDto = hubDto;
         _client = client;
-        _hubDto.HubConnection?.On<JoinedGameStreamDto>("GameStreamDto",
-            ListenToJoinedGameStream);
     }
 
     public GameService(IAuthService authService)
@@ -88,6 +87,9 @@ public class GameService : IGameService
 
     public async Task JoinGame(RequestJoinGameDto dto)
     {
+        _hubDto.HubConnection?.Remove("GameStreamDto");
+        _hubDto.HubConnection?.On<GameEventDto>("GameStreamDto",
+            ListenToJoinedGameStream);
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
         var user = await _authService.GetAuthAsync();
@@ -117,7 +119,7 @@ public class GameService : IGameService
     }
 
 
-    private void ListenToJoinedGameStream(JoinedGameStreamDto response)
+    private void ListenToJoinedGameStream(GameEventDto response)
     {
         switch (response.Event)
         {
@@ -157,7 +159,7 @@ public class GameService : IGameService
         }
     }
 
-    private void TimeUpdate(JoinedGameStreamDto dto)
+    private void TimeUpdate(GameEventDto dto)
     {
         TimeUpdated?.Invoke(dto);
     }
@@ -203,7 +205,7 @@ public class GameService : IGameService
         GameFirstJoined?.Invoke();
     }
 
-    private async void DrawOffer(JoinedGameStreamDto dto)
+    private async void DrawOffer(GameEventDto dto)
     {
         var user = await _authService.GetAuthAsync();
         if (dto.UsernameWhite.Equals(user.Identity!.Name) || dto.UsernameBlack.Equals(user.Identity!.Name))
@@ -212,13 +214,13 @@ public class GameService : IGameService
         DrawOffered?.Invoke(dto);
     }
 
-    private void DrawOfferTimeout(JoinedGameStreamDto dto)
+    private void DrawOfferTimeout(GameEventDto dto)
     {
         IsDrawOfferPending = false;
         DrawOfferTimedOut?.Invoke(dto);
     }
 
-    private void DrawOfferAcceptation(JoinedGameStreamDto dto)
+    private void DrawOfferAcceptation(GameEventDto dto)
     {
         IsDrawOfferPending = false;
         DrawOfferAccepted?.Invoke(dto);
@@ -299,7 +301,7 @@ public class GameService : IGameService
         return ack;
     }
 
-    public void PlayerJoined(JoinedGameStreamDto dto)
+    public void PlayerJoined(GameEventDto dto)
     {
         GameFirstJoined?.Invoke();
         NewPlayerJoined?.Invoke(dto);
