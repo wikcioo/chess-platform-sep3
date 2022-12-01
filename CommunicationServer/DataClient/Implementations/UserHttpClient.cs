@@ -66,6 +66,11 @@ public class UserHttpClient : IUserService
     
     public async Task<User?> GetByUsernameAsync(string username)
     {
+        if (username == string.Empty)
+        {
+            return null;
+        }
+        
         HttpResponseMessage response = await _client.GetAsync($"/users/{username}");
         string result = await response.Content.ReadAsStringAsync();
         if (!response.IsSuccessStatusCode)
