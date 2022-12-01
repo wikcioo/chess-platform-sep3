@@ -83,6 +83,11 @@
                 OpponentTypes.Random => string.Empty,
                 _ => throw new ArgumentNullException()
                 };
+
+            if (_opponentType == OpponentTypes.Random)
+            {
+                _isWhiteSide = GameSides.Random;
+            }
         }
         catch (ArgumentNullException)
         {
