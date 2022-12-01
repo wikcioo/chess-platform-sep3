@@ -17,14 +17,14 @@ public class GameLogic : IGameLogic
     private readonly IStockfishService _stockfishService;
     private readonly IChatLogic _chatLogic;
     private readonly IUserService _userService;
-
-    private IHubContext<GameHub> _hubContext;
+    private readonly IHubContext<GameHub> _hubContext;
 
     public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IHubContext<GameHub> hubContext,  IUserService userService)
     {
         _stockfishService = stockfishService;
         _chatLogic = chatLogic;
         _hubContext = hubContext;
+        _userService = userService;
     }
 
     public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
@@ -40,7 +40,6 @@ public class GameLogic : IGameLogic
                 Success = false,
                 ErrorMessage = e.Message
             };
-
             return responseFail;
         }
         GameRoom gameRoom = new(dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType, _hubContext)
@@ -109,7 +108,11 @@ public class GameLogic : IGameLogic
     private async Task ValidateGameRequest(RequestGameDto dto)
     {
         ValidateTimeControl(dto.Seconds, dto.Increment);
-        await ValidateUserExists(dto.Username);
+
+        if (!await ValidateUserExists(dto.Username))
+        {
+            throw new InvalidOperationException($"User {dto.Username} does not exist in the database.");
+        }
 
         if (dto.OpponentType == OpponentTypes.Friend)
         {
@@ -125,7 +128,7 @@ public class GameLogic : IGameLogic
             
             if (dto.OpponentName == null || !await ValidateUserExists(dto.OpponentName))
             {
-                throw new InvalidOperationException("Opponent not found.");
+                throw new InvalidOperationException("Opponent incorrect.");
             }
         }
 
@@ -166,12 +169,7 @@ public class GameLogic : IGameLogic
     {
         var existing = await _userService.GetByUsernameAsync(username);
 
-        if (existing == null)
-        {
-            throw new InvalidOperationException($"User {username} does not exist in the database.");
-        }
-
-        return true;
+        return existing != null;
     }
 
     public AckTypes JoinGame(RequestJoinGameDto dto)
