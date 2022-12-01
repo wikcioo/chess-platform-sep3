@@ -46,12 +46,7 @@ public class GameService : IGameService
         _hubDto.HubConnection?.On<JoinedGameStreamDto>("GameStreamDto",
             ListenToJoinedGameStream);
     }
-
-    public GameService(IAuthService authService)
-    {
-        _authService = authService;
-    }
-
+    
     public async void LeaveRoom()
     {
         if (_hubDto.HubConnection is not null)
