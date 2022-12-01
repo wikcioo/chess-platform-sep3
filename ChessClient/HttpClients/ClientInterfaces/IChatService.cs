@@ -1,8 +1,8 @@
 using Domain.DTOs.Chat;
 
-namespace Application.LogicInterfaces;
+namespace HttpClients.ClientInterfaces;
 
-public interface IChatLogic
+public interface IChatService
 {
     public event Action<string>? MessageReceived;
     Task WriteMessageAsync(MessageDto dto);

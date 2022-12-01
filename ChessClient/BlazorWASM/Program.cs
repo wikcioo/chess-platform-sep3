@@ -1,6 +1,3 @@
-using Application.LogicImplementations;
-using Application.LogicInterfaces;
-using Application.Signalr;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using BlazorWASM;
@@ -9,6 +6,7 @@ using HttpClients.Implementations;
 using MudBlazor.Services;
 using BlazorWASM.Auth;
 using Domain.Auth;
+using HttpClients.Signalr;
 using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
 
@@ -41,8 +39,8 @@ builder.Services.AddScoped<IUserService, UserHttpClient>();
 builder.Services.AddSingleton<HubConnectionDto>();
 // builder.Services.AddBlazorBootstrap();
 builder.Services.AddScoped<IAuthService, JwtAuthService>();
-builder.Services.AddScoped<IGameLogic, GameLogic>();
-builder.Services.AddTransient<IChatLogic, ChatLogic>();
+builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddTransient<IChatService, ChatService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthProvider>();
 
 builder.Services.AddAuthorizationCore();
