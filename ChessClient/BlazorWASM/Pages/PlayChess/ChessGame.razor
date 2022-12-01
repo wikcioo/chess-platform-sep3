@@ -157,8 +157,8 @@
     {
         try
         {
-            var t = await GameLogic.MakeMove(move);
             _whiteTimerActive = !_whiteTimerActive;
+            var t = await GameLogic.MakeMove(move);
             return t;
         }
         catch (InvalidOperationException e)
