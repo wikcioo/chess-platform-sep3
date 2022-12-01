@@ -1,13 +1,11 @@
 using Application.ClientInterfaces;
 using Application.Entities;
-using Application.Hubs;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Domain.Models;
-using Microsoft.AspNetCore.SignalR;
 using Rudzoft.ChessLib.Fen;
 
 namespace Application.Logic;
@@ -17,21 +15,38 @@ public class GameLogic : IGameLogic
     private readonly GameRoomsData _gameRoomsData = new();
     private readonly IStockfishService _stockfishService;
     private readonly IChatLogic _chatLogic;
+    private readonly IUserService _userService;
     public event Action<GameRoomEventDto>? GameEvent;
 
-    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic)
+
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService)
     {
         _stockfishService = stockfishService;
         _chatLogic = chatLogic;
+        _userService = userService;
     }
 
-    public void FireEvent(GameRoomEventDto dto)
+    private void FireEvent(GameRoomEventDto dto)
     {
         GameEvent?.Invoke(dto);
     }
-    
-    public Task<ResponseGameDto> StartGame(RequestGameDto dto)
+
+    public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
     {
+        try
+        {
+            await ValidateGameRequest(dto);
+        }
+        catch (InvalidOperationException e)
+        {
+            ResponseGameDto responseFail = new()
+            {
+                Success = false,
+                ErrorMessage = e.Message
+            };
+            return responseFail;
+        }
+
         GameRoom gameRoom = new(dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType)
         {
             GameSide = dto.Side
@@ -92,7 +107,74 @@ public class GameLogic : IGameLogic
             IsWhite = requesterIsWhite,
         };
 
-        return Task.FromResult(responseDto);
+        return responseDto;
+    }
+
+    private async Task ValidateGameRequest(RequestGameDto dto)
+    {
+        ValidateTimeControl(dto.Seconds, dto.Increment);
+
+        if (!await ValidateUserExists(dto.Username))
+        {
+            throw new InvalidOperationException($"User {dto.Username} does not exist in the database.");
+        }
+
+        if (dto.OpponentType == OpponentTypes.Friend)
+        {
+            if (dto.OpponentName == dto.Username)
+            {
+                throw new InvalidOperationException("Player cannot play against themselves");
+            }
+
+            if (IsAi(dto.OpponentName))
+            {
+                throw new InvalidOperationException("Opponent is an AI in the not ai game.");
+            }
+
+            if (dto.OpponentName == null || !await ValidateUserExists(dto.OpponentName))
+            {
+                throw new InvalidOperationException("Opponent incorrect.");
+            }
+        }
+
+        if (dto.OpponentType == OpponentTypes.Ai && !IsAi(dto.OpponentName))
+            throw new InvalidOperationException("Opponent not an AI in the ai game.");
+
+        if (dto.OpponentType == OpponentTypes.Random)
+        {
+            if (dto.OpponentName != string.Empty)
+            {
+                throw new InvalidOperationException("Opponent cannot be chosen for a random game.");
+            }
+
+            if (dto.Side != GameSides.Random)
+            {
+                throw new InvalidOperationException("You cannot choose a side in a random game.");
+            }
+        }
+    }
+
+    private static void ValidateTimeControl(uint seconds, uint increment)
+    {
+        switch (seconds)
+        {
+            case < 30:
+                throw new InvalidOperationException("Game cannot last less than 30 seconds.");
+            case > 86_400:
+                throw new InvalidOperationException("Game cannot last longer than a day.");
+        }
+
+        if (increment > 60)
+        {
+            throw new InvalidOperationException("Increment cannot be longer than a minute.");
+        }
+    }
+
+    private async Task<bool> ValidateUserExists(string username)
+    {
+        var existing = await _userService.GetByUsernameAsync(username);
+
+        return existing != null;
     }
 
     public AckTypes JoinGame(RequestJoinGameDto dto)

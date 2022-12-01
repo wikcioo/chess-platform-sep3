@@ -59,7 +59,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 });
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IUserLogic, UserLogic>();
-builder.Services.AddScoped<IUserService, UserHttpClient>();
+builder.Services.AddHttpClient<IUserService, UserHttpClient>(client => client.BaseAddress = new Uri("http://localhost:8080"));
 
 builder.Services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
 
@@ -72,13 +72,7 @@ builder.Services.AddSingleton<IChatLogic, ChatLogic>();
 builder.Services.AddSingleton<IGameLogic, GameLogic>();
 
 builder.Services.AddSingleton<GroupHandler>();
-builder.Services.AddTransient(
-    sp =>
-        new HttpClient
-        {
-            BaseAddress = new Uri("http://localhost:8080")
-        }
-);
+
 
 AuthorizationPolicies.AddPolicies(builder.Services);
 var app = builder.Build();

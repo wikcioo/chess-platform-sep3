@@ -13,4 +13,6 @@ import java.util.Optional;
 public interface UserRepository extends CrudRepository<User, String> {
     Optional<User> findByEmailIgnoreCase(@Param("Email") String email);
     Iterable<User> findByUsernameContaining(@Param("username") String username);
+
+    Optional<User> findByUsernameEquals(@Param("username") String username);
 }
