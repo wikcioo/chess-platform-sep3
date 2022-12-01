@@ -1,6 +1,10 @@
 using Domain.DTOs.Stockfish;
 using Domain.Models;
 using Grpc.Core;
+using Rudzoft.ChessLib;
+using Rudzoft.ChessLib.Exceptions;
+using Rudzoft.ChessLib.Fen;
+using Rudzoft.ChessLib.Validation;
 using StockfishGrpc;
 using StockfishWrapper;
 
@@ -28,12 +32,26 @@ public class StockfishService : StockfishGrpc.StockfishService.StockfishServiceB
 
     public override async Task<BestMove> GetBestMove(RequestBestMove request, ServerCallContext context)
     {
-        // TODO(Wiktor): Add validation for fen and depth value
+        try
+        {
+            Fen.Validate(request.Fen);
+        }
+        catch (InvalidFen e)
+        {
+            Console.WriteLine(e);
+            throw new RpcException(Status.DefaultCancelled, "Invalid fen!");
+        }
+
         _stockfish.UciNewGame();
         _stockfish.Position(request.Fen, PositionType.Fen);
 
         var levels = StockfishLevels.LevelOf[request.StockfishPlayer];
 
+        if (!await _stockfish.SetOptions(new StockfishSettingsDto() { SkillLevel = (int)levels.Skill }))
+        {
+            Console.WriteLine("[StockfishService]: Failed to set options!");
+        }
+        
         var bestMove = await _stockfish.Go(depth: (int) levels.Depth, moveTime: (int) levels.Time);
         return new BestMove
         {
