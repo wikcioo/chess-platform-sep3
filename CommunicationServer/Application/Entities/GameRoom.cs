@@ -147,6 +147,7 @@ public class GameRoom
 
         if (reachedTheEnd)
         {
+            GameIsActive = false;
             _chessTimer.StopTimers();
             var streamDto = new GameEventDto()
             {
@@ -192,6 +193,7 @@ public class GameRoom
 
     public AckTypes Resign(RequestResignDto dto)
     {
+        if (!GameIsActive) return AckTypes.GameHasFinished;
         if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
         {
             return AckTypes.NotUserTurn;
@@ -214,6 +216,7 @@ public class GameRoom
 
     public async Task<AckTypes> OfferDraw(RequestDrawDto dto)
     {
+        if (!GameIsActive) return AckTypes.GameHasFinished;
         if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
         {
             return AckTypes.NotUserTurn;
@@ -275,6 +278,7 @@ public class GameRoom
 
     public AckTypes DrawOfferResponse(ResponseDrawDto dto)
     {
+        if (!GameIsActive) return AckTypes.GameHasFinished;
         if (!_isDrawOffered) return AckTypes.DrawNotOffered;
         if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
         {
