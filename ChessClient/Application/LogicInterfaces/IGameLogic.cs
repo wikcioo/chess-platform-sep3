@@ -1,5 +1,6 @@
 using Application.LogicImplementations;
 using Domain.DTOs;
+using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Rudzoft.ChessLib.Types;
