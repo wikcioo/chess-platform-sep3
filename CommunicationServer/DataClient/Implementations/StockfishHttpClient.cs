@@ -1,19 +1,19 @@
 using Application.ClientInterfaces;
-using Domain.DTOs;
+using Domain.DTOs.StockfishData;
 using Grpc.Core;
 using Grpc.Net.Client;
-using StockfishWebAPI;
+using StockfishGrpc;
 
 namespace DatabaseClient.Implementations;
 
 public class StockfishHttpClient : IStockfishService
 {
-    private readonly Stockfish.StockfishClient _client;
+    private readonly StockfishService.StockfishServiceClient _client;
     private Empty _empty = new();
 
     public StockfishHttpClient(GrpcChannel channel)
     {
-        _client = new Stockfish.StockfishClient(channel);
+        _client = new StockfishService.StockfishServiceClient(channel);
     }
 
     public async Task<bool> GetStockfishIsReadyAsync()

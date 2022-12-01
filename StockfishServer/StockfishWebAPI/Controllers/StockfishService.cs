@@ -1,9 +1,12 @@
+using Domain.DTOs.StockfishData;
+using Domain.Models;
 using Grpc.Core;
+using StockfishGrpc;
 using StockfishWrapper;
 
 namespace StockfishWebAPI.Controllers;
 
-public class StockfishService : Stockfish.StockfishBase
+public class StockfishService : StockfishGrpc.StockfishService.StockfishServiceBase
 {
     private readonly IStockfishUci _stockfish;
 

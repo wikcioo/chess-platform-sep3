@@ -1,7 +1,6 @@
-using System.Threading.Tasks;
 using Application.ClientInterfaces;
 using Application.LogicInterfaces;
-using Domain.DTOs;
+using Domain.DTOs.StockfishData;
 
 namespace Application.Logic;
 

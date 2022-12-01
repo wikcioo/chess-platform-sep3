@@ -1,5 +1,5 @@
 ﻿using System.Net.Http.Json;
-using Domain.DTOs;
+using Domain.DTOs.StockfishData;
 using HttpClients.ClientInterfaces;
 
 namespace HttpClients.Implementations;

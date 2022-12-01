@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Domain.DTOs;
+using Domain.DTOs.StockfishData;
 
 namespace Application.LogicInterfaces;
 
