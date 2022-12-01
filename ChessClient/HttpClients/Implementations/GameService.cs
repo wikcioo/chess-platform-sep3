@@ -51,6 +51,23 @@ public class GameService : IGameService
         _authService = authService;
     }
 
+    public async Task StartHubConnection()
+    {
+        if (_hubDto.HubConnection is not null)
+        {
+            await _hubDto.HubConnection.DisposeAsync();
+        }
+
+        _hubDto.HubConnection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7233/gamehub",
+                options => { options.AccessTokenProvider = () => Task.FromResult(_authService.GetJwtToken())!; })
+            .WithAutomaticReconnect()
+            .Build();
+        //Required so the connection is not dropped
+        _hubDto.HubConnection.On<string>("DummyConnection", _ => { });
+        await _hubDto.HubConnection.StartAsync();
+    }
+
     public async void LeaveRoom()
     {
         if (_hubDto.HubConnection is not null)

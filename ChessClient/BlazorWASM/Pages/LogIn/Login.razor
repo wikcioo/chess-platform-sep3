@@ -4,6 +4,7 @@
 @using System.Text.Json.Nodes
 @using HttpClients.Signalr
 @inject IAuthService AuthService
+@inject IGameService GameService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 
@@ -45,6 +46,7 @@
             try
             {
                 await AuthService.LoginAsync(_email, _password);
+                await GameService.StartHubConnection();
                 NavMgr.NavigateTo("/");
             }
             catch (Exception e)
