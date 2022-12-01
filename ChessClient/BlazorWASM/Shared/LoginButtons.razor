@@ -23,7 +23,7 @@
     private async Task Logout()
     {
         await AuthService.LogoutAsync();
-        NavMgr.NavigateTo("/", true);
+        NavMgr.NavigateTo("/");
         if (HubDto.HubConnection is not null)
         {
             await HubDto.HubConnection.StopAsync();
