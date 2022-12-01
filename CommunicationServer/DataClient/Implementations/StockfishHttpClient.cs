@@ -1,5 +1,5 @@
 using Application.ClientInterfaces;
-using Domain.DTOs.StockfishData;
+using Domain.DTOs.Stockfish;
 using Grpc.Core;
 using Grpc.Net.Client;
 using StockfishGrpc;

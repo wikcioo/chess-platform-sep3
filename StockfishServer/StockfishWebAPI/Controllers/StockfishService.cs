@@ -1,4 +1,4 @@
-using Domain.DTOs.StockfishData;
+using Domain.DTOs.Stockfish;
 using Domain.Models;
 using Grpc.Core;
 using StockfishGrpc;

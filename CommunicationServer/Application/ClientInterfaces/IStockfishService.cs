@@ -1,5 +1,4 @@
-using Domain.DTOs;
-using Domain.DTOs.StockfishData;
+using Domain.DTOs.Stockfish;
 
 namespace Application.ClientInterfaces;
 

@@ -1,4 +1,4 @@
-namespace Domain.DTOs.StockfishData;
+namespace Domain.DTOs.Stockfish;
 
 public class StockfishBestMoveDto
 {

@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Text;
-using Domain.DTOs.StockfishData;
+using Domain.DTOs.Stockfish;
 
 namespace StockfishWrapper;
 

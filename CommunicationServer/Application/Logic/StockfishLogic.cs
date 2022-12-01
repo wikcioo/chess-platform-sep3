@@ -1,6 +1,6 @@
 using Application.ClientInterfaces;
 using Application.LogicInterfaces;
-using Domain.DTOs.StockfishData;
+using Domain.DTOs.Stockfish;
 
 namespace Application.Logic;
 

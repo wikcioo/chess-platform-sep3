@@ -1,5 +1,5 @@
 using Application.LogicInterfaces;
-using Domain.DTOs.StockfishData;
+using Domain.DTOs.Stockfish;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebAPI.Controllers;
