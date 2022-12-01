@@ -7,25 +7,38 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 @inject IGameService GameService
-
-<MudContainer>
-    <MudContainer Class="mt-10" Style="display: flex; flex-direction: row; gap: 25px">
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="DisplayCreateGameDialog">Create a Game</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinRandomGame">Play Random</MudButton>
-    </MudContainer>
-    <MudSpacer/>
-    <MudContainer Style="display: flex; justify-content: right">
-        <MudIconButton Icon="@Icons.Filled.Refresh"
-                       @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshJoinableGames(); })"/>
-    </MudContainer>
-    <JoinableGameListComponent JoinableGames="@_joinableGames"/>
-</MudContainer>
+<AuthorizeView>
+    <Authorized>
+        <MudContainer>
+            <MudContainer Class="mt-10" Style="display: flex; flex-direction: row; gap: 25px">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="DisplayCreateGameDialog">Create a Game</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinRandomGame">Play Random</MudButton>
+            </MudContainer>
+            <MudSpacer/>
+            <MudContainer Style="display: flex; justify-content: right">
+                <MudIconButton Icon="@Icons.Filled.Refresh"
+                               @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshJoinableGames(); })"/>
+            </MudContainer>
+            <JoinableGameListComponent JoinableGames="@_joinableGames"/>
+        </MudContainer>
+    </Authorized>
+    <NotAuthorized>
+        <MudText Typo="Typo.h2" Align="Align.Center" Class="ma-5">Please login to start playing.</MudText>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; } = null!;
+
     private IList<JoinableGameRoomDataDto>? _joinableGames;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthState;
+        var user = authState.User;
+        if (user.Identity == null) return;
         await RefreshJoinableGames();
     }
 
@@ -48,8 +61,8 @@
     private async void JoinRandomGame()
     {
         await RefreshJoinableGames();
-        
-        if (_joinableGames.Count > 0)
+
+        if (_joinableGames?.Count > 0)
         {
             var randomGameRoomId = _joinableGames[new Random().Next(_joinableGames.Count)].GameRoom;
             await GameService.JoinGame(new RequestJoinGameDto
@@ -72,4 +85,5 @@
             });
         }
     }
+
 }
