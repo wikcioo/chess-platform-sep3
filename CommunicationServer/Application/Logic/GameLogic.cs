@@ -4,6 +4,7 @@ using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
+using Domain.DTOs.Stockfish;
 using Domain.Enums;
 using Domain.Models;
 using Rudzoft.ChessLib.Fen;

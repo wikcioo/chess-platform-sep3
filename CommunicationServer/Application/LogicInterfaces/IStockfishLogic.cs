@@ -1,5 +1,4 @@
-using System.Threading.Tasks;
-using Domain.DTOs;
+using Domain.DTOs.Stockfish;
 
 namespace Application.LogicInterfaces;
 
