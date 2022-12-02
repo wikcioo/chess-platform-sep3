@@ -17,12 +17,11 @@ namespace HttpClients.Implementations;
 public class GameService : IGameService
 {
     private readonly IAuthService _authService;
-    public bool IsDrawOfferPending { get; set; } = false;
+    public bool IsDrawOfferPending { get; set; }
     public bool OnWhiteSide { get; set; } = true;
     public ulong? GameRoomId { get; set; }
 
 
-    //Todo Possibility of replacing StreamUpdate with action and only needed information instead of dto
     public delegate void StreamUpdate(GameEventDto dto);
 
     public event StreamUpdate? TimeUpdated;
@@ -37,9 +36,8 @@ public class GameService : IGameService
 
     public event Action<CurrentGameStateDto>? StateReceived;
 
-    //Signalr
-    private HubConnectionWrapper _hubDto;
-    private HttpClient _client;
+    private readonly HubConnectionWrapper _hubDto;
+    private readonly HttpClient _client;
 
     public GameService(IAuthService authService, HubConnectionWrapper hubDto, HttpClient client)
     {
@@ -158,17 +156,14 @@ public class GameService : IGameService
                 TimeUpdate(response);
                 break;
             case GameStreamEvents.TimeUpdate:
-                // if (response.GameEndType == (uint) GameEndTypes.TimeIsUp) _call.Dispose();
                 TimeUpdate(response);
                 break;
             case GameStreamEvents.ReachedEndOfTheGame:
-                // _call.Dispose();
                 TimeUpdate(response);
                 NewFenReceived?.Invoke(response);
                 EndOfTheGameReached?.Invoke(response);
                 break;
             case GameStreamEvents.Resignation:
-                // _call.Dispose();
                 ResignationReceived?.Invoke(response);
                 break;
             case GameStreamEvents.DrawOffer:
@@ -178,11 +173,9 @@ public class GameService : IGameService
                 DrawOfferTimeout(response);
                 break;
             case GameStreamEvents.DrawOfferAcceptation:
-                // _call.Dispose();
                 DrawOfferAcceptation(response);
                 break;
             case GameStreamEvents.PlayerJoined:
-                // _call.Dispose();
                 PlayerJoined(response);
                 break;
             default: throw new ArgumentOutOfRangeException();
