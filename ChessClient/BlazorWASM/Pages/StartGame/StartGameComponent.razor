@@ -1,17 +1,11 @@
 ﻿@using Microsoft.AspNetCore.Components
 @using Domain.Enums
-@using Rudzoft.ChessLib
-@using Rudzoft.ChessLib.Types
-@using Rudzoft.ChessLib.Fen
-@using Position = Rudzoft.ChessLib.Position
 @using Domain.DTOs
 @using Domain.Models
 @using HttpClients.ClientInterfaces
-@using Rudzoft.ChessLib.Enums
 @inject ISnackbar Snackbar
 @inject IGameService GameService
 @inject NavigationManager NavMgr
-@* @implements IDisposable *@
 
 <MudContainer Class="mb-10 mx-10" MaxWidth="MaxWidth.Small">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="ma-5">Create a game</MudText>
@@ -38,24 +32,13 @@
 </MudContainer>
 
 @code {
-    private readonly IPosition _position = new Position(new Board(), new PieceValue());
-
-    //Form input bindings
     private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
     private OpponentTypes _opponentType;
-    private ulong _gameRoomInt;
     private GameSides _isWhiteSide = GameSides.White;
     private string _opponentName = "";
     private uint _timeControlBase = 120;
     private uint _timeControlIncrement;
     private bool _isGamePublic = false;
-    private bool open = false;
-
-    private void ToggleDrawer()
-    {
-        open = !open;
-        StateHasChanged();
-    }
 
     private void OnTabChange(int tabIndex)
     {
@@ -72,7 +55,6 @@
     private async Task CreateGame()
     {
         var opponentName = "";
-
 
         try
         {
@@ -114,8 +96,6 @@
             {
                 throw new InvalidOperationException(response.ErrorMessage);
             }
-            
-            _gameRoomInt = response.GameRoom;
             await GameService.JoinGame(new RequestJoinGameDto
             {
                 GameRoom = response.GameRoom
