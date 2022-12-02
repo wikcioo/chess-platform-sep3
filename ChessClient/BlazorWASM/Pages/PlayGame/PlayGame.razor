@@ -9,12 +9,12 @@
 @inject IGameService GameService
 
 <MudContainer>
-    <MudContainer Class="mt-10" Style="display: flex; flex-direction: row; gap: 25px">
+    <MudContainer Class="mt-10 d-flex flex-row gap-10">
         <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="DisplayCreateGameDialog">Create a Game</MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinRandomGame">Play Random</MudButton>
     </MudContainer>
     <MudSpacer/>
-    <MudContainer Style="display: flex; justify-content: right">
+    <MudContainer Class="d-flex justify-end">
         <MudIconButton Icon="@Icons.Filled.Refresh"
                        @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshJoinableGames(); })"/>
     </MudContainer>
