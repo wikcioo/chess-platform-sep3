@@ -14,6 +14,8 @@ public interface IGameService
     bool OnWhiteSide { get; set; }
     ulong? GameRoomId { get; set; }
     bool IsDrawOfferPending { get; set; }
+    bool IsRematchOfferRequestPending { get; set; }
+    bool IsRematchOfferResponsePending { get; set; }
     public event GameService.StreamUpdate? TimeUpdated;
     public event GameService.StreamUpdate? NewFenReceived;
     public event GameService.StreamUpdate? ResignationReceived;
@@ -21,7 +23,11 @@ public interface IGameService
     public event GameService.StreamUpdate? DrawOffered;
     public event GameService.StreamUpdate? DrawOfferTimedOut;
     public event GameService.StreamUpdate? DrawOfferAccepted;
+    public event GameService.StreamUpdate? RematchOffered;
+    public event GameService.StreamUpdate? RematchOfferTimedOut;
+    public event GameService.StreamUpdate? RematchOfferAccepted;
     public event GameService.StreamUpdate? EndOfTheGameReached;
+    public event GameService.StreamUpdate? JoinRematchedGame;
     public event Action? GameFirstJoined;
 
     Task StartHubConnectionAsync();
@@ -29,9 +35,11 @@ public interface IGameService
     Task JoinGameAsync(RequestJoinGameDto dto);
     Task<AckTypes> MakeMoveAsync(Move move);
     Task<AckTypes> OfferDrawAsync();
+    Task<AckTypes> SendDrawResponseAsync(bool accepted);
+    Task<AckTypes> OfferRematchAsync();
+    Task<AckTypes> SendRematchResponseAsync(bool accepted);
     Task<AckTypes> ResignAsync();
     Task<string> GetLastFenAsync();
-    Task<AckTypes> SendDrawResponseAsync(bool accepted);
     Task<IList<GameRoomDto>> GetGameRoomsAsync(GameRoomSearchParameters parameters);
     Task GetCurrentGameStateAsync();
     void LeaveRoomAsync();
