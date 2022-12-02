@@ -117,6 +117,9 @@ public class GameRoom
     {
         if (!GameIsActive) return AckTypes.GameHasFinished;
 
+        if (!dto.Username.Equals(CurrentPlayer))
+            return AckTypes.NotUserTurn;
+        
         var move = ParseMove(dto);
 
         if (!IsValidMove(move))
@@ -127,9 +130,7 @@ public class GameRoom
             _chessTimer.StartTimers();
             _firstMovePlayed = true;
         }
-
-        if (!dto.Username.Equals(CurrentPlayer))
-            return AckTypes.NotUserTurn;
+        
 
         _game.Pos.MakeMove(move, _game.Pos.State);
         _chessTimer.UpdateTimers(_whitePlaying);
