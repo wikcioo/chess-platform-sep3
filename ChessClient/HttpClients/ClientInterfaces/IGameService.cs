@@ -1,7 +1,6 @@
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.DTOs.Chat;
-using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using HttpClients.Implementations;
 using Rudzoft.ChessLib.Types;
@@ -24,7 +23,7 @@ public interface IGameService
     public event GameService.StreamUpdate? EndOfTheGameReached;
     public event Action? GameFirstJoined;
 
-    Task StartHubConnectionAsync();
+
     Task<ResponseGameDto> CreateGameAsync(RequestGameDto dto);
     Task JoinGameAsync(RequestJoinGameDto dto);
     Task<AckTypes> MakeMoveAsync(Move move);
@@ -35,5 +34,4 @@ public interface IGameService
     Task<IList<GameRoomDto>> GetGameRoomsAsync(GameRoomSearchParameters parameters);
     Task GetCurrentGameStateAsync();
     void LeaveRoomAsync();
-    Task StopHubConnectionAsync();
 }

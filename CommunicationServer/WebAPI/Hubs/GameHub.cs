@@ -3,7 +3,7 @@ using Domain.DTOs.Chat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Application.Hubs;
+namespace WebAPI.Hubs;
 
 [Authorize]
 public class GameHub : Hub<IGameHub>
@@ -15,16 +15,17 @@ public class GameHub : Hub<IGameHub>
         _chatLogic = chatLogic;
     }
 
-    public async Task SendMessage(ulong gameRoom, string message)
+    public async Task SendMessage(MessageDto dto)
     {
-        var groupName = gameRoom.ToString();
-        _chatLogic.Add(new MessageDto
+        var groupName = dto.GameRoom.ToString();
+        var messageDto = new MessageDto
         {
-            Username = Context.User?.Identity?.Name,
-            Body = message,
-            GameRoom = gameRoom
-        });
-        await Clients.Group(groupName).ReceiveMessage(Context.User?.Identity?.Name, message);
+            Username = Context.User?.Identity?.Name!,
+            Body = dto.Body,
+            GameRoom = dto.GameRoom
+        };
+        _chatLogic.Add(messageDto);
+        await Clients.Group(groupName).ReceiveMessage(messageDto);
     }
 
     public async Task JoinRoom(ulong gameRoom)

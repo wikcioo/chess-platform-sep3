@@ -1,26 +1,17 @@
 @using HttpClients.ClientInterfaces
 @using Domain.DTOs.AuthorizedUserEvents
 @using Domain.DTOs
-@inject IAuthUserService AuthUserService
+@using HttpClients.ClientInterfaces.Signalr
 @inject ISnackbar Snackbar
+@inject IHubConnectionHandler HubConnectionHandler
 @inject IGameService GameService
 @inject NavigationManager NavMgr
 
 @code {
-    
+
     protected override void OnInitialized()
     {
-        BindToAuthUserServiceCallbacks();
-    }
-
-    private void DisposeOfAuthUserServiceCallbacks()
-    {
-        AuthUserService.NewGameOffer -= OnNewGameOffer;
-    }
-
-    private void BindToAuthUserServiceCallbacks()
-    {
-        AuthUserService.NewGameOffer += OnNewGameOffer;
+        HubConnectionHandler.NewGameOffer += OnNewGameOffer;
     }
 
     private void OnNewGameOffer(AuthorizedUserEventDto dto)
@@ -29,22 +20,22 @@
             $"<div>New game offer from <strong>{dto.SenderUsername}</strong></div>",
             Severity.Info,
             config =>
-        {
-            config.Action = "Join";
-            config.ActionColor = Color.Primary;
-            config.Onclick = async _ =>
             {
-                await GameService.JoinGameAsync(new RequestJoinGameDto()
+                config.Action = "Join";
+                config.ActionColor = Color.Primary;
+                config.Onclick = async _ =>
                 {
-                    GameRoom = dto.GameRoomId
-                });
+                    await GameService.JoinGameAsync(new RequestJoinGameDto()
+                    {
+                        GameRoom = dto.GameRoomId
+                    });
                 
-                NavMgr.NavigateTo("/ChessGame");
-            };
-            config.CloseAfterNavigation = false;
-            config.RequireInteraction = true;
-            config.ShowCloseIcon = true;
-        });
+                    NavMgr.NavigateTo("/ChessGame");
+                };
+                config.CloseAfterNavigation = false;
+                config.RequireInteraction = true;
+                config.ShowCloseIcon = true;
+            });
     }
-    
+
 }

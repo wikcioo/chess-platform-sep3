@@ -4,7 +4,7 @@ namespace Domain.DTOs;
 
 public class RequestGameDto
 {
-    public string Username { get; set; }
+    public string Username { get; set; } = string.Empty;
     public OpponentTypes OpponentType { get; set; }
     public string? OpponentName { get; set; }
     public uint Seconds { get; set; }

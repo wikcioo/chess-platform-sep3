@@ -1,4 +1,4 @@
-﻿namespace Domain.DTOs.GameRoomData;
+﻿namespace Domain.DTOs;
 
 public class GameRoomDto
 {

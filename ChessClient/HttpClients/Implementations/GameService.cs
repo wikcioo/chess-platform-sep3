@@ -2,13 +2,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Domain.DTOs;
-using Domain.DTOs.Chat;
 using Domain.DTOs.GameEvents;
-using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using HttpClients.ClientInterfaces;
-using HttpClients.Signalr;
-using Microsoft.AspNetCore.SignalR.Client;
+using HttpClients.ClientInterfaces.Signalr;
 using Microsoft.AspNetCore.WebUtilities;
 using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.Types;
@@ -39,62 +36,24 @@ public class GameService : IGameService
 
     public event Action<CurrentGameStateDto>? StateReceived;
 
-    private readonly HubConnectionWrapper _hubDto;
-    private readonly HttpClient _client;
+    private readonly IGameHub _gameHub;
+    private HttpClient _client;
 
-    public GameService(IAuthService authService, HubConnectionWrapper hubDto, HttpClient client)
+
+    public GameService(IAuthService authService, IGameHub gameHub, HttpClient client)
     {
         _authService = authService;
-        _hubDto = hubDto;
+        _gameHub = gameHub;
         _client = client;
+        gameHub.GameEventReceived += ListenToGameEvents;
     }
 
-    public async Task StartHubConnectionAsync()
-    {
-        try
-        {
-            if (_hubDto.HubConnection is not null)
-            {
-                await _hubDto.HubConnection.DisposeAsync();
-            }
 
-            _hubDto.HubConnection = new HubConnectionBuilder()
-                .WithUrl("https://localhost:7233/gamehub",
-                    options => { options.AccessTokenProvider = () => Task.FromResult(_authService.GetJwtToken())!; })
-                .WithAutomaticReconnect()
-                .Build();
-            //Required so the connection is not dropped
-            _hubDto.HubConnection.On<string>("DummyConnection", _ => { });
-            await _hubDto.HubConnection.StartAsync();
-        }
-        catch (HttpRequestException)
-        {
-            throw new HttpRequestException("Network error. Failed to connect to a stream");
-        }
-    }
-    
     public Task<string> GetLastFenAsync()
     {
         return Task.FromResult(LastFen);
     }
 
-    public async void LeaveRoomAsync()
-    {
-        if (_hubDto.HubConnection is not null)
-        {
-            await _hubDto.HubConnection.SendAsync("LeaveRoom", GameRoomId);
-        }
-    }
-
-    public async Task StopHubConnectionAsync()
-    {
-        if (_hubDto.HubConnection is not null)
-        {
-            await _hubDto.HubConnection.StopAsync();
-            await _hubDto.HubConnection.DisposeAsync();
-            _hubDto.HubConnection = null;
-        }
-    }
 
     public async Task<ResponseGameDto> CreateGameAsync(RequestGameDto dto)
     {
@@ -123,31 +82,27 @@ public class GameService : IGameService
 
     public async Task JoinGameAsync(RequestJoinGameDto dto)
     {
-        _hubDto.HubConnection?.Remove("GameStreamDto");
-        _hubDto.HubConnection?.On<GameEventDto>("GameStreamDto",
-            ListenToJoinedGameStream);
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!isLoggedIn)
+            throw new InvalidOperationException("User not logged in.");
+        _gameHub.StartListeningToGameEvents();
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
-        var user = await _authService.GetAuthAsync();
-        var isLoggedIn = user.Identity;
-
-        if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
-            throw new InvalidOperationException("User not logged in.");
 
         try
         {
             var response = await _client.PostAsync($"/games/{dto.GameRoom}/users", null);
             var ack = await ResponseParser.ParseAsync<AckTypes>(response);
 
-            if(ack != AckTypes.Success)
+            if (ack != AckTypes.Success)
                 throw new HttpRequestException($"Ack code: {ack}");
-            
+
             GameRoomId = dto.GameRoom;
-            if (_hubDto.HubConnection is not null)
-            {
-                await _hubDto.HubConnection.SendAsync("JoinRoom", GameRoomId);
-            }
+            await _gameHub.JoinRoomAsync(GameRoomId);
         }
+
         catch (HttpRequestException e)
         {
             throw new HttpRequestException("Network error. Failed to join the game", e);
@@ -155,7 +110,7 @@ public class GameService : IGameService
     }
 
 
-    private void ListenToJoinedGameStream(GameEventDto response)
+    private void ListenToGameEvents(GameEventDto response)
     {
         switch (response.Event)
         {
@@ -208,21 +163,21 @@ public class GameService : IGameService
 
     public async Task GetCurrentGameStateAsync()
     {
-        _client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
         var user = await _authService.GetAuthAsync();
-        var isLoggedIn = user.Identity;
+        var isLoggedIn = user.Identity != null;
 
-        if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
-            throw new InvalidOperationException("User not logged in.");
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
+        if (!isLoggedIn)
+            throw new InvalidOperationException("User not logged in.");
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
 
         try
         {
             var response = await _client.GetAsync($"/games/{GameRoomId.Value}");
             var streamDto = await ResponseParser.ParseAsync<CurrentGameStateDto>(response);
-            
+
             LastFen = streamDto.FenString;
             var myName = user.Identity!.Name!;
             if (streamDto.UsernameBlack.Equals(myName))
@@ -242,6 +197,11 @@ public class GameService : IGameService
         {
             throw new HttpRequestException("Network error. Failed to get current game state", e);
         }
+    }
+
+    public void LeaveRoomAsync()
+    {
+        _gameHub.LeaveRoomAsync(GameRoomId);
     }
 
     private async void DrawOffer(GameEventDto dto)
@@ -267,15 +227,15 @@ public class GameService : IGameService
 
     public async Task<AckTypes> MakeMoveAsync(Move move)
     {
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
 
-        if (_hubDto.HubConnection == null)
-        {
-            throw new InvalidOperationException("You are not logged in!");
-        }
+        if (!isLoggedIn)
+            throw new InvalidOperationException("User not logged in.");
 
-        var user = await _authService.GetAuthAsync();
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
         var dto = new MakeMoveDto
@@ -283,8 +243,8 @@ public class GameService : IGameService
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
             GameRoom = GameRoomId.Value,
-            MoveType = (uint)move.MoveType(),
-            Promotion = (uint)move.PromotedPieceType().AsInt(),
+            MoveType = (uint) move.MoveType(),
+            Promotion = (uint) move.PromotedPieceType().AsInt(),
             Username = user.Identity!.Name!
         };
 
@@ -308,13 +268,12 @@ public class GameService : IGameService
             throw new InvalidOperationException("You didn't join a game room!");
 
         if (!isLoggedIn)
-            throw new InvalidOperationException("User not logged in");
+            throw new InvalidOperationException("User not logged in.");
 
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
         var dto = new RequestDrawDto()
         {
-            Username = user.Identity!.Name!,
             GameRoom = GameRoomId.Value
         };
 
@@ -345,12 +304,10 @@ public class GameService : IGameService
 
         if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in.");
-
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
         var dto = new ResponseDrawDto
         {
-            Username = user.Identity!.Name!,
             GameRoom = GameRoomId.Value
         };
 
@@ -375,7 +332,6 @@ public class GameService : IGameService
 
         if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in.");
-
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
 

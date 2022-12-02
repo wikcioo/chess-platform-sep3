@@ -1,9 +1,9 @@
 using Domain.DTOs.Chat;
 
-namespace Application.Hubs;
+namespace WebAPI.Hubs;
 
 public interface IGameHub
 {
-    Task ReceiveMessage(string username, string body);
+    Task ReceiveMessage(MessageDto dto);
     Task GetLog(List<MessageDto> log);
 }
