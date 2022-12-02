@@ -1,6 +1,7 @@
 @page "/SpectateGame"
 @using Domain.DTOs.GameRoomData
 @using HttpClients.ClientInterfaces
+@using Domain.DTOs.Chat
 @inject IGameService GameService
 @inject ISnackbar Snackbar
 
@@ -13,7 +14,7 @@
 </MudContainer>
 
 @code {
-    private IList<SpectateableGameRoomDataDto>? _spectateableGames;
+    private IList<GameRoomDto>? _spectateableGames = new List<GameRoomDto>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -22,7 +23,18 @@
 
     private async Task RefreshSpectateableGames()
     {
-        _spectateableGames = await GameService.GetAllSpectateableGames();
-        Snackbar.Add("Refreshed", Severity.Success);
+        try
+        {
+            _spectateableGames = await GameService.GetGameRooms(new GameRoomSearchParameters()
+            {
+                Spectateable = true
+            });
+            Snackbar.Add("Refreshed", Severity.Success);
+        }
+        catch(HttpRequestException e)
+        {
+            Snackbar.Add("Network error. Unable to refresh games.", Severity.Error);
+        }
+        
     }
 }
