@@ -1,8 +1,11 @@
 @using Domain.DTOs.Chat
 @using MudBlazor
 @using HttpClients.ClientInterfaces
+@using HttpClients.ClientInterfaces.Signalr
+@using HttpClients.Implementations
+@using HttpClients.Implementations.Signalr
 @using Rudzoft.ChessLib.Extensions
-@inject IChatService ChatService
+@inject IChatHub ChatHub
 @implements IDisposable
 @inject ISnackbar Snackbar
 
@@ -31,12 +34,14 @@
 
     protected override void OnInitialized()
     {
-        ChatService.MessageReceived += OnMessageReceived;
+        ChatHub.MessageReceived += OnMessageReceived;
+        ChatHub.ChatLogReceived += OnChatLogReceived;
     }
 
     public void Dispose()
     {
-        ChatService.MessageReceived -= OnMessageReceived;
+        ChatHub.MessageReceived -= OnMessageReceived;
+        ChatHub.ChatLogReceived -= OnChatLogReceived;
     }
 
 
@@ -50,7 +55,7 @@
 
         if (IsValid())
         {
-            await ChatService.WriteMessageAsync(new MessageDto
+            await ChatHub.WriteMessageAsync(new MessageDto
             {
                 Body = _messageBody,
                 GameRoom = (ulong) GameRoom
@@ -60,9 +65,20 @@
         }
     }
 
-    private void OnMessageReceived(string chatLog)
+    private void OnMessageReceived(MessageDto dto)
     {
-        _chatLog = chatLog;
+        _chatLog += $"<div>{dto.Username}:{dto.Body}\n</div>";
+        StateHasChanged();
+    }
+
+    private void OnChatLogReceived(List<MessageDto> log)
+    {
+        _chatLog = "";
+        foreach (var dto in log)
+        {
+            _chatLog += $"<div>{dto.Username}:{dto.Body}\n</div>";
+        }
+
         StateHasChanged();
     }
 
