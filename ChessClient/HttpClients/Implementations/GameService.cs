@@ -111,7 +111,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/games", dto);
-            var created = await ParseResponse<ResponseGameDto>(response);
+            var created = await ResponseParser.Parse<ResponseGameDto>(response);
             OnWhiteSide = created.IsWhite;
             return created;
         }
@@ -137,7 +137,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsync($"/games/{dto.GameRoom}/users", null);
-            var ack = await ParseResponse<AckTypes>(response);
+            var ack = await ResponseParser.Parse<AckTypes>(response);
 
             if(ack != AckTypes.Success)
                 throw new HttpRequestException($"Ack code: {ack}");
@@ -222,7 +222,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.GetAsync($"/games/{GameRoomId.Value}");
-            var streamDto = await ParseResponse<CurrentGameStateDto>(response);
+            var streamDto = await ResponseParser.Parse<CurrentGameStateDto>(response);
 
             var myName = user.Identity!.Name!;
             if (streamDto.UsernameBlack.Equals(myName))
@@ -291,7 +291,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/moves", dto);
-            return await ParseResponse<AckTypes>(response);
+            return await ResponseParser.Parse<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
@@ -321,7 +321,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/draw-offers", dto);
-            return await ParseResponse<AckTypes>(response);
+            return await ResponseParser.Parse<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
@@ -357,7 +357,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/resignation", dto);
-            return await ParseResponse<AckTypes>(response);
+            return await ResponseParser.Parse<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
@@ -389,27 +389,12 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/draw-responses", dto);
-            return await ParseResponse<AckTypes>(response);
+            return await ResponseParser.Parse<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
             throw new HttpRequestException("Network error. Failed to respond to a draw offer.", e);
         }
-    }
-
-    public static async Task<T> ParseResponse<T>(HttpResponseMessage response)
-    {
-        var responseContent = await response.Content.ReadAsStringAsync();
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new HttpRequestException(responseContent);
-        }
-
-        return JsonSerializer.Deserialize<T>(responseContent,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
     }
 
     public async Task<IList<GameRoomDto>> GetGameRooms(GameRoomSearchParameters parameters)
@@ -433,7 +418,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.GetAsync(uri);
-            var roomList = await ParseResponse<IEnumerable<GameRoomDto>>(response);
+            var roomList = await ResponseParser.Parse<IEnumerable<GameRoomDto>>(response);
             return roomList.ToList();
         }
         catch (HttpRequestException e)
