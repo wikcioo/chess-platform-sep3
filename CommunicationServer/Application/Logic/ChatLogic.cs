@@ -1,6 +1,6 @@
-﻿using Application.Entities;
-using Application.LogicInterfaces;
+﻿using Application.LogicInterfaces;
 using Domain.DTOs.Chat;
+using Domain.Models;
 
 namespace Application.Logic;
 
