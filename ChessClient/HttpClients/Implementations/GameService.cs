@@ -2,11 +2,13 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Domain.DTOs;
+using Domain.DTOs.Chat;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using HttpClients.ClientInterfaces;
 using HttpClients.Signalr;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.WebUtilities;
 using Rudzoft.ChessLib.Types;
 
 namespace HttpClients.Implementations;
@@ -65,7 +67,7 @@ public class GameService : IGameService
         if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
             throw new InvalidOperationException("User not logged in.");
         dto.Username = user.Identity!.Name!;
-        var response = await _client.PostAsJsonAsync("/startGame", dto);
+        var response = await _client.PostAsJsonAsync("/games", dto);
         var responseContent = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -91,7 +93,7 @@ public class GameService : IGameService
         if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
             throw new InvalidOperationException("User not logged in.");
         dto.Username = user.Identity!.Name!;
-        var response = await _client.PostAsJsonAsync("/joinGame", dto);
+        var response = await _client.PostAsync($"/games/{dto.GameRoom}/users", null);
         var responseContent = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -169,7 +171,7 @@ public class GameService : IGameService
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
 
-        var response = await _client.PostAsJsonAsync("/gameState", GameRoomId.Value);
+        var response = await _client.GetAsync($"/games/{GameRoomId.Value}");
         var responseContent = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -241,7 +243,7 @@ public class GameService : IGameService
             Promotion = (uint) move.PromotedPieceType().AsInt(),
             Username = user.Identity!.Name!
         };
-        var response = await _client.PostAsJsonAsync("/makeMove", dto);
+        var response = await _client.PostAsJsonAsync("/moves", dto);
         var responseContent = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -277,7 +279,7 @@ public class GameService : IGameService
             Username = user.Identity!.Name!,
             GameRoom = GameRoomId.Value
         };
-        var response = await _client.PostAsJsonAsync("/offerDraw", dto);
+        var response = await _client.PostAsJsonAsync("/draw-offers", dto);
         var responseContent = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -318,7 +320,7 @@ public class GameService : IGameService
             Username = user.Identity!.Name!,
             GameRoom = GameRoomId.Value
         };
-        var response = await _client.PostAsJsonAsync("/resign", dto);
+        var response = await _client.PostAsJsonAsync("/resignation", dto);
         var responseContent = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -350,11 +352,10 @@ public class GameService : IGameService
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
         var dto = new ResponseDrawDto
         {
-            Username = user.Identity!.Name!,
             GameRoom = GameRoomId.Value,
             Accept = accepted
         };
-        var response = await _client.PostAsJsonAsync("/drawResponse", dto);
+        var response = await _client.PostAsJsonAsync("/draw-responses", dto);
         var responseContent = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -371,12 +372,26 @@ public class GameService : IGameService
         return ack;
     }
 
-    public async Task<IList<SpectateableGameRoomDataDto>> GetAllSpectateableGames()
+    public async Task<IList<GameRoomDto>> GetGameRooms(GameRoomSearchParameters parameters)
     {
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
 
-        var response = await _client.GetAsync("/spectateable");
+        var queryParams = new Dictionary<string, string>();
+
+        if (parameters.Spectateable)
+        {
+            queryParams.Add("spectateable",parameters.Spectateable.ToString());
+        }
+        
+        if (parameters.Joinable)
+        {
+            queryParams.Add("joinable",parameters.Spectateable.ToString());
+        }
+        
+        var uri = QueryHelpers.AddQueryString("/rooms", queryParams);
+        
+        var response = await _client.GetAsync(uri);
         var responseContent = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -384,28 +399,7 @@ public class GameService : IGameService
             throw new HttpRequestException(responseContent);
         }
 
-        var roomList = JsonSerializer.Deserialize<IEnumerable<SpectateableGameRoomDataDto>>(responseContent,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-
-        return roomList.ToList();
-    }
-
-    public async Task<IList<JoinableGameRoomDataDto>> GetAllJoinableGames()
-    {
-        _client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
-        var response = await _client.GetAsync("/joinable");
-        var responseContent = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new HttpRequestException(responseContent);
-        }
-
-        var roomList = JsonSerializer.Deserialize<IEnumerable<JoinableGameRoomDataDto>>(responseContent,
+        var roomList = JsonSerializer.Deserialize<IEnumerable<GameRoomDto>>(responseContent,
             new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true

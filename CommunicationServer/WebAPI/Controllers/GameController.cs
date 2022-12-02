@@ -1,12 +1,11 @@
 using Application.ClientInterfaces;
 using Application.LogicInterfaces;
 using Domain.DTOs;
+using Domain.DTOs.Chat;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using StockfishWebAPI;
 
 namespace WebAPI.Controllers;
 
@@ -24,7 +23,7 @@ public class GameController : ControllerBase
         _stockfishService = stockfishService;
     }
 
-    [HttpPost("/startGame")]
+    [HttpPost("/games")]
     public async Task<ActionResult<ResponseGameDto>> StartGame([FromBody] RequestGameDto request)
     {
         try
@@ -55,8 +54,8 @@ public class GameController : ControllerBase
         }
     }
 
-    [HttpPost("/joinGame")]
-    public ActionResult<AckTypes> JoinGame([FromBody] RequestJoinGameDto dto)
+    [HttpPost("/games/{id}/users")]
+    public ActionResult<AckTypes> JoinGame(ulong id)
     {
         if (User.Identity?.Name == null)
         {
@@ -65,7 +64,7 @@ public class GameController : ControllerBase
 
         try
         {
-            dto.Username = User.Identity.Name;
+            var dto = new RequestJoinGameDto(id, User.Identity.Name);
             var ack = _gameLogic.JoinGame(dto);
             return Ok(ack);
         }
@@ -77,12 +76,12 @@ public class GameController : ControllerBase
     }
 
 
-    [HttpPost("/gameState")]
-    public ActionResult<CurrentGameStateDto> GetCurrentGameState([FromBody] ulong gameRoomId)
+    [HttpGet("/games/{id}")]
+    public ActionResult<CurrentGameStateDto> GetCurrentGameState(ulong id)
     {
         try
         {
-            var result = _gameLogic.GetCurrentGameState(gameRoomId);
+            var result = _gameLogic.GetCurrentGameState(id);
             return Ok(result);
         }
         catch (Exception e)
@@ -92,7 +91,7 @@ public class GameController : ControllerBase
         }
     }
 
-    [HttpPost("/resign")]
+    [HttpPost("/resignation")]
     public async Task<ActionResult<AckTypes>> Resign([FromBody] RequestResignDto request)
     {
         try
@@ -118,7 +117,7 @@ public class GameController : ControllerBase
         }
     }
 
-    [HttpPost("/makeMove")]
+    [HttpPost("/moves")]
     public async Task<ActionResult<AckTypes>> MakeMove([FromBody] MakeMoveDto dto)
     {
         try
@@ -141,16 +140,18 @@ public class GameController : ControllerBase
         }
     }
 
-    [HttpPost("/offerDraw")]
+    [HttpPost("/draw-offers")]
     public async Task<ActionResult<AckTypes>> OfferDraw([FromBody] RequestDrawDto request)
     {
         try
         {
-            var ack = await _gameLogic.OfferDraw(new RequestDrawDto()
+            if (User.Identity?.Name == null)
             {
-                GameRoom = request.GameRoom,
-                Username = User.Identity.Name
-            });
+                return StatusCode(401, "Identity not found.");
+            }
+            
+            request.Username = User.Identity.Name;
+            var ack = await _gameLogic.OfferDraw(request);
 
             return Ok(ack);
         }
@@ -161,7 +162,7 @@ public class GameController : ControllerBase
         }
     }
 
-    [HttpPost("/drawResponse")]
+    [HttpPost("/draw-responses")]
     public async Task<ActionResult<AckTypes>> DrawOfferResponse([FromBody] ResponseDrawDto request)
     {
         try
@@ -182,28 +183,25 @@ public class GameController : ControllerBase
         }
     }
 
-    [HttpGet("/spectateable")]
-    public ActionResult<IEnumerable<SpectateableGameRoomDataDto>> GetSpectateableGames()
+    [HttpGet("/rooms")]
+    public ActionResult<IEnumerable<GameRoomDto>> GetRooms([FromQuery] bool spectateable, [FromQuery] bool joinable)
     {
         try
         {
-            var result = _gameLogic.GetSpectateableGameRoomData();
-            return Ok(result);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return StatusCode(500, e.Message);
-        }
-    }
+            
+            if (User.Identity?.Name == null)
+            {
+                return StatusCode(401, "Identity not found.");
+            } 
+            
+            var rooms = _gameLogic.GetGameRooms(new GameRoomSearchParameters()
+            {
+                RequesterName = User.Identity.Name,
+                Joinable = joinable,
+                Spectateable = spectateable
+            });
 
-    [HttpGet("/joinable")]
-    public ActionResult<IEnumerable<JoinableGameRoomDataDto>> GetJoinableGames()
-    {
-        try
-        {
-            var result = _gameLogic.GetJoinableGameRoomData(User.Identity.Name);
-            return Ok(result);
+            return Ok(rooms);
         }
         catch (Exception e)
         {
