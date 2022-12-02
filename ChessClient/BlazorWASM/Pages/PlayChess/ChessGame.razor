@@ -6,7 +6,6 @@
 @using Position = Rudzoft.ChessLib.Position
 @using Domain.Enums
 @using BlazorWASM.Pages.ChessComponents
-@using System.Security.Claims
 @using Domain.DTOs.GameEvents
 @using HttpClients.ClientInterfaces
 @using HttpClients.ClientInterfaces.Signalr
@@ -117,7 +116,7 @@
         GameService.EndOfTheGameReached -= OnEndOfTheGameReached;
         GameService.GameFirstJoined -= OnGameFirstJoined;
         GameService.StateReceived -= OnGameStateReceived;
-        GameService.LeaveRoom();
+        GameService.LeaveRoomAsync();
         GameService.GameRoomId = null;
     }
 
@@ -133,7 +132,7 @@
             var user = authState.User;
             if (user.Identity == null) return;
             _currentUser = user.Identity.Name!;
-            await GameService.GetCurrentGameState();
+            await GameService.GetCurrentGameStateAsync();
         }
     }
 
@@ -162,34 +161,49 @@
         StateHasChanged();
     }
 
-    private async Task<AckTypes> MakeMove(Move move)
+    private async Task MakeMove(Move move)
     {
         try
         {
             _whiteTimerActive = !_whiteTimerActive;
-            var t = await GameService.MakeMove(move);
-            return t;
+            var ack = await GameService.MakeMoveAsync(move);
+            if (ack is AckTypes.InvalidMove or AckTypes.GameHasFinished or AckTypes.GameNotFound)
+                RevertToLastFen();
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            return AckTypes.GameNotFound;
+            RevertToLastFen();
         }
+        catch (HttpRequestException e)
+        {
+            Notify(e.Message, Severity.Error);
+            RevertToLastFen();
+        }
+    }
+
+    private async void RevertToLastFen()
+    {
+        SetFenPosition(await GameService.GetLastFenAsync());
+        StateHasChanged();
     }
 
     private async void Resign()
     {
         try
         {
-            var ack = await GameService.Resign();
-            if (ack == (uint) AckTypes.Success) return;
+            var ack = await GameService.ResignAsync();
+            if (ack == (uint)AckTypes.Success) return;
+            Notify("Failed to resign", Severity.Error);
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
         }
-
-        Notify("Failed to resign", Severity.Error);
+        catch (HttpRequestException e)
+        {
+            Notify(e.Message, Severity.Error);
+        }
     }
 
     private async void OfferDraw()
@@ -198,22 +212,26 @@
 
         try
         {
-            ack = await GameService.OfferDraw();
+            ack = await GameService.OfferDrawAsync();
+
+            switch (ack)
+            {
+                case AckTypes.Success:
+                    Notify("Draw Offer Successful!", Severity.Info);
+                    return;
+                case AckTypes.DrawOfferDeclined:
+                    Notify("Draw Offer Declined!", Severity.Info);
+                    break;
+            }
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
             return;
         }
-
-        switch (ack)
+        catch (HttpRequestException e)
         {
-            case AckTypes.Success:
-                Notify("Draw Offer Successful!", Severity.Info);
-                return;
-            case AckTypes.DrawOfferDeclined:
-                Notify("Draw Offer Declined!", Severity.Info);
-                break;
+            Notify(e.Message, Severity.Error);
         }
     }
 
@@ -222,22 +240,24 @@
         AckTypes ack;
         try
         {
-            ack = await GameService.SendDrawResponse(accepted);
+            ack = await GameService.SendDrawResponseAsync(accepted);
             GameService.IsDrawOfferPending = false;
+            if (ack == AckTypes.Success)
+            {
+                StateHasChanged();
+            }
+            else
+            {
+                Notify($"Failed to send draw response! AckType = {ack}", Severity.Error);
+            }
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            return;
         }
-
-        if (ack == AckTypes.Success)
+        catch (HttpRequestException e)
         {
-            StateHasChanged();
-        }
-        else
-        {
-            Notify($"Failed to send draw response! AckType = {ack}", Severity.Error);
+            Notify(e.Message, Severity.Error);
         }
     }
 
@@ -252,22 +272,22 @@
         PlaySound("notify");
         switch (dto.GameEndType)
         {
-            case (uint) GameEndTypes.CheckMate:
+            case (uint)GameEndTypes.CheckMate:
                 if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
                     DisplayDefaultDialog("You got checkmated!");
                 else
                     DisplayDefaultDialog("You checkmated your opponent!");
                 break;
-            case (uint) GameEndTypes.Repetition:
+            case (uint)GameEndTypes.Repetition:
                 DisplayDefaultDialog("Draw by repetition!");
                 break;
-            case (uint) GameEndTypes.Pat:
+            case (uint)GameEndTypes.Pat:
                 DisplayDefaultDialog("Stalemate!");
                 break;
-            case (uint) GameEndTypes.FiftyMove:
+            case (uint)GameEndTypes.FiftyMove:
                 DisplayDefaultDialog("Draw by 50 moves!");
                 break;
-            case (uint) GameEndTypes.MaterialDrawn:
+            case (uint)GameEndTypes.MaterialDrawn:
                 DisplayDefaultDialog("Draw! Insufficient material!");
                 break;
         }
@@ -275,7 +295,7 @@
 
     private void OnTimeUpdated(GameEventDto dto)
     {
-        if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp)
+        if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp)
         {
             if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
             {
@@ -360,7 +380,7 @@
 
     private void PlaySound(string sound)
     {
-        Js.InvokeAsync<string>("PlaySound", new object[] {sound});
+        Js.InvokeAsync<string>("PlaySound", new object[] { sound });
     }
 
     private void Notify(string message, Severity severity)
@@ -370,7 +390,7 @@
 
     private void DisplayDefaultDialog(string message)
     {
-        var options = new DialogOptions {CloseOnEscapeKey = true};
+        var options = new DialogOptions { CloseOnEscapeKey = true };
         DialogService.Show<InformDialogComponent>(message, options);
     }
 

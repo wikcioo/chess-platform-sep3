@@ -7,6 +7,7 @@ using Domain.Enums;
 using HttpClients.ClientInterfaces;
 using HttpClients.ClientInterfaces.Signalr;
 using Microsoft.AspNetCore.WebUtilities;
+using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.Types;
 
 namespace HttpClients.Implementations;
@@ -14,12 +15,13 @@ namespace HttpClients.Implementations;
 public class GameService : IGameService
 {
     private readonly IAuthService _authService;
-    public bool IsDrawOfferPending { get; set; } = false;
+    public bool IsDrawOfferPending { get; set; }
     public bool OnWhiteSide { get; set; } = true;
     public ulong? GameRoomId { get; set; }
 
+    public string LastFen { get; set; } = Fen.StartPositionFen;
 
-    //Todo Possibility of replacing StreamUpdate with action and only needed information instead of dto
+
     public delegate void StreamUpdate(GameEventDto dto);
 
     public event StreamUpdate? TimeUpdated;
@@ -34,9 +36,9 @@ public class GameService : IGameService
 
     public event Action<CurrentGameStateDto>? StateReceived;
 
-    //Signalr
     private readonly IGameHub _gameHub;
     private HttpClient _client;
+
 
     public GameService(IAuthService authService, IGameHub gameHub, HttpClient client)
     {
@@ -46,7 +48,14 @@ public class GameService : IGameService
         gameHub.GameEventReceived += ListenToGameEvents;
     }
 
-    public async Task<ResponseGameDto> CreateGame(RequestGameDto dto)
+
+    public Task<string> GetLastFenAsync()
+    {
+        return Task.FromResult(LastFen);
+    }
+
+
+    public async Task<ResponseGameDto> CreateGameAsync(RequestGameDto dto)
     {
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
@@ -55,50 +64,49 @@ public class GameService : IGameService
 
         if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
             throw new InvalidOperationException("User not logged in.");
+
         dto.Username = user.Identity!.Name!;
-        var response = await _client.PostAsJsonAsync("/games", dto);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException(responseContent);
+            var response = await _client.PostAsJsonAsync("/games", dto);
+            var created = await ResponseParser.ParseAsync<ResponseGameDto>(response);
+            OnWhiteSide = created.IsWhite;
+            return created;
         }
-
-        var created = JsonSerializer.Deserialize<ResponseGameDto>(responseContent, new JsonSerializerOptions
+        catch (HttpRequestException e)
         {
-            PropertyNameCaseInsensitive = true
-        })!;
-        OnWhiteSide = created.IsWhite;
-        return created;
+            throw new HttpRequestException("Network error. Failed to create the game", e);
+        }
     }
 
-    public async Task JoinGame(RequestJoinGameDto dto)
+    public async Task JoinGameAsync(RequestJoinGameDto dto)
     {
         var user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
 
         if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in.");
-
         _gameHub.StartListeningToGameEvents();
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
 
-        var response = await _client.PostAsync($"/games/{dto.GameRoom}/users", null);
-        var responseContent = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException(responseContent);
+            var response = await _client.PostAsync($"/games/{dto.GameRoom}/users", null);
+            var ack = await ResponseParser.ParseAsync<AckTypes>(response);
+
+            if (ack != AckTypes.Success)
+                throw new HttpRequestException($"Ack code: {ack}");
+
+            GameRoomId = dto.GameRoom;
+            await _gameHub.JoinRoomAsync(GameRoomId);
         }
 
-        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent, new JsonSerializerOptions
+        catch (HttpRequestException e)
         {
-            PropertyNameCaseInsensitive = true
-        })!;
-        GameRoomId = dto.GameRoom;
-
-        await _gameHub.JoinRoomAsync(GameRoomId);
+            throw new HttpRequestException("Network error. Failed to join the game", e);
+        }
     }
 
 
@@ -107,21 +115,15 @@ public class GameService : IGameService
         switch (response.Event)
         {
             case GameStreamEvents.NewFenPosition:
-                NewFenReceived?.Invoke(response);
-                TimeUpdate(response);
+                NewFen(response);
                 break;
             case GameStreamEvents.TimeUpdate:
-                // if (response.GameEndType == (uint) GameEndTypes.TimeIsUp) _call.Dispose();
                 TimeUpdate(response);
                 break;
             case GameStreamEvents.ReachedEndOfTheGame:
-                // _call.Dispose();
-                TimeUpdate(response);
-                NewFenReceived?.Invoke(response);
-                EndOfTheGameReached?.Invoke(response);
+                EndOfTheGame(response);
                 break;
             case GameStreamEvents.Resignation:
-                // _call.Dispose();
                 ResignationReceived?.Invoke(response);
                 break;
             case GameStreamEvents.DrawOffer:
@@ -131,11 +133,9 @@ public class GameService : IGameService
                 DrawOfferTimeout(response);
                 break;
             case GameStreamEvents.DrawOfferAcceptation:
-                // _call.Dispose();
                 DrawOfferAcceptation(response);
                 break;
             case GameStreamEvents.PlayerJoined:
-                // _call.Dispose();
                 PlayerJoined(response);
                 break;
             default: throw new ArgumentOutOfRangeException();
@@ -147,49 +147,59 @@ public class GameService : IGameService
         TimeUpdated?.Invoke(dto);
     }
 
-    public async Task GetCurrentGameState()
+    private void EndOfTheGame(GameEventDto dto)
+    {
+        TimeUpdate(dto);
+        NewFenReceived?.Invoke(dto);
+        EndOfTheGameReached?.Invoke(dto);
+    }
+
+    private void NewFen(GameEventDto dto)
+    {
+        NewFenReceived?.Invoke(dto);
+        LastFen = dto.FenString;
+        TimeUpdate(dto);
+    }
+
+    public async Task GetCurrentGameStateAsync()
     {
         var user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
 
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
-
         if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in.");
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
 
-        var response = await _client.GetAsync($"/games/{GameRoomId.Value}");
-        var responseContent = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException(responseContent);
+            var response = await _client.GetAsync($"/games/{GameRoomId.Value}");
+            var streamDto = await ResponseParser.ParseAsync<CurrentGameStateDto>(response);
+
+            LastFen = streamDto.FenString;
+            var myName = user.Identity!.Name!;
+            if (streamDto.UsernameBlack.Equals(myName))
+            {
+                OnWhiteSide = false;
+            }
+
+            if (streamDto.UsernameWhite.Equals(myName))
+            {
+                OnWhiteSide = true;
+            }
+
+            StateReceived?.Invoke(streamDto);
+            GameFirstJoined?.Invoke();
         }
-
-        var streamDto = JsonSerializer.Deserialize<CurrentGameStateDto>(responseContent, new JsonSerializerOptions
+        catch (HttpRequestException e)
         {
-            PropertyNameCaseInsensitive = true
-        })!;
-
-
-        var myName = user.Identity!.Name!;
-        if (streamDto.UsernameBlack.Equals(myName))
-        {
-            OnWhiteSide = false;
+            throw new HttpRequestException("Network error. Failed to get current game state", e);
         }
-
-        if (streamDto.UsernameWhite.Equals(myName))
-        {
-            OnWhiteSide = true;
-        }
-
-        StateReceived?.Invoke(streamDto);
-        GameFirstJoined?.Invoke();
     }
 
-    public void LeaveRoom()
+    public void LeaveRoomAsync()
     {
         _gameHub.LeaveRoomAsync(GameRoomId);
     }
@@ -215,7 +225,7 @@ public class GameService : IGameService
         DrawOfferAccepted?.Invoke(dto);
     }
 
-    public async Task<AckTypes> MakeMove(Move move)
+    public async Task<AckTypes> MakeMoveAsync(Move move)
     {
         var user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
@@ -237,24 +247,19 @@ public class GameService : IGameService
             Promotion = (uint) move.PromotedPieceType().AsInt(),
             Username = user.Identity!.Name!
         };
-        var response = await _client.PostAsJsonAsync("/moves", dto);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException(responseContent);
+            var response = await _client.PostAsJsonAsync("/moves", dto);
+            return await ResponseParser.ParseAsync<AckTypes>(response);
         }
-
-        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-
-        return ack;
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to make a move.", e);
+        }
     }
 
-    public async Task<AckTypes> OfferDraw()
+    public async Task<AckTypes> OfferDrawAsync()
     {
         var user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
@@ -271,21 +276,16 @@ public class GameService : IGameService
         {
             GameRoom = GameRoomId.Value
         };
-        var response = await _client.PostAsJsonAsync("/draw-offers", dto);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException(responseContent);
+            var response = await _client.PostAsJsonAsync("/draw-offers", dto);
+            return await ResponseParser.ParseAsync<AckTypes>(response);
         }
-
-        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-
-        return ack;
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to offer a draw.", e);
+        }
     }
 
     public void PlayerJoined(GameEventDto dto)
@@ -294,7 +294,7 @@ public class GameService : IGameService
         NewPlayerJoined?.Invoke(dto);
     }
 
-    public async Task<AckTypes> Resign()
+    public async Task<AckTypes> ResignAsync()
     {
         var user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
@@ -310,24 +310,19 @@ public class GameService : IGameService
         {
             GameRoom = GameRoomId.Value
         };
-        var response = await _client.PostAsJsonAsync("/resignation", dto);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException(responseContent);
+            var response = await _client.PostAsJsonAsync("/resignation", dto);
+            return await ResponseParser.ParseAsync<AckTypes>(response);
         }
-
-        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-
-        return ack;
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to resign from the game.", e);
+        }
     }
 
-    public async Task<AckTypes> SendDrawResponse(bool accepted)
+    public async Task<AckTypes> SendDrawResponseAsync(bool accepted)
     {
         var user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
@@ -339,29 +334,26 @@ public class GameService : IGameService
             throw new InvalidOperationException("User not logged in.");
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+
+
         var dto = new ResponseDrawDto
         {
             GameRoom = GameRoomId.Value,
             Accept = accepted
         };
-        var response = await _client.PostAsJsonAsync("/draw-responses", dto);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException(responseContent);
+            var response = await _client.PostAsJsonAsync("/draw-responses", dto);
+            return await ResponseParser.ParseAsync<AckTypes>(response);
         }
-
-        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-
-        return ack;
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to respond to a draw offer.", e);
+        }
     }
 
-    public async Task<IList<GameRoomDto>> GetGameRooms(GameRoomSearchParameters parameters)
+    public async Task<IList<GameRoomDto>> GetGameRoomsAsync(GameRoomSearchParameters parameters)
     {
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
@@ -380,20 +372,15 @@ public class GameService : IGameService
 
         var uri = QueryHelpers.AddQueryString("/rooms", queryParams);
 
-        var response = await _client.GetAsync(uri);
-        var responseContent = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException(responseContent);
+            var response = await _client.GetAsync(uri);
+            var roomList = await ResponseParser.ParseAsync<IEnumerable<GameRoomDto>>(response);
+            return roomList.ToList();
         }
-
-        var roomList = JsonSerializer.Deserialize<IEnumerable<GameRoomDto>>(responseContent,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-
-        return roomList.ToList();
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to retrieve game rooms.", e);
+        }
     }
 }

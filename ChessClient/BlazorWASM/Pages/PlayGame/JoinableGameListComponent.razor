@@ -36,7 +36,7 @@
 
     private async void JoinGame(ulong i)
     {
-        await GameService.JoinGame(new RequestJoinGameDto
+        await GameService.JoinGameAsync(new RequestJoinGameDto
         {
             GameRoom = i
         });

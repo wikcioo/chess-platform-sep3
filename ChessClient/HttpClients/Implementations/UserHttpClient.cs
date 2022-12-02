@@ -22,37 +22,35 @@ public class UserHttpClient : IUserService
     {
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
-        var response = await _client.PostAsJsonAsync("/users", user);
-        var result = await response.Content.ReadAsStringAsync();
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new Exception(result);
-        }
 
-        var created = JsonSerializer.Deserialize<User>(result, new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true
-        })!;
-        return created;
+            var response = await _client.PostAsJsonAsync("/users", user);
+            return await ResponseParser.ParseAsync<User>(response);
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to create a user.", e);
+        }
+       
     }
     
     public async Task<IEnumerable<UserSearchResultDto>> GetAsync(UserSearchParamsDto paramsDto)
     {
+        
         var query = ConstructQuery(paramsDto.Username);
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
-        HttpResponseMessage response = await _client.GetAsync("/users"+query);
-        string result = await response.Content.ReadAsStringAsync();
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new Exception(result);
-        }
 
-        ICollection<UserSearchResultDto> users = JsonSerializer.Deserialize<ICollection<UserSearchResultDto>>(result, new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true
-        })!;
-        return users;
+            HttpResponseMessage response = await _client.GetAsync("/users" + query);
+            return await ResponseParser.ParseAsync<IEnumerable<UserSearchResultDto>>(response);
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to get users.", e);
+        }
     }
     
     private static string ConstructQuery(string? userName)

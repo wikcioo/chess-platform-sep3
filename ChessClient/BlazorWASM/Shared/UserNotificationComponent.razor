@@ -25,11 +25,11 @@
                 config.ActionColor = Color.Primary;
                 config.Onclick = async _ =>
                 {
-                    await GameService.JoinGame(new RequestJoinGameDto()
+                    await GameService.JoinGameAsync(new RequestJoinGameDto()
                     {
                         GameRoom = dto.GameRoomId
                     });
-
+                
                     NavMgr.NavigateTo("/ChessGame");
                 };
                 config.CloseAfterNavigation = false;

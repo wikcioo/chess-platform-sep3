@@ -1,6 +1,5 @@
 ﻿@page "/Login"
 @using HttpClients.ClientInterfaces
-@using System.Text.Json.Nodes
 @using HttpClients.ClientInterfaces.Signalr
 @inject IAuthService AuthService
 @inject IHubConnectionHandler HubConnectionHandler
@@ -49,11 +48,10 @@
                 HubConnectionHandler.JoinUserEvents();
                 NavMgr.NavigateTo("/");
             }
-            catch (Exception e)
+            catch (HttpRequestException e)
             {
                 Console.WriteLine(e);
-                var res = JsonNode.Parse(e.Message)!;
-                Notify("" + res["message"], Severity.Error);
+                Notify(e.Message, Severity.Error);
             }
         }
     }
