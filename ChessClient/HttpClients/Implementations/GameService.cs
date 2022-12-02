@@ -2,13 +2,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Domain.DTOs;
-using Domain.DTOs.Chat;
 using Domain.DTOs.GameEvents;
-using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using HttpClients.ClientInterfaces;
-using HttpClients.Signalr;
-using Microsoft.AspNetCore.SignalR.Client;
+using HttpClients.ClientInterfaces.Signalr;
 using Microsoft.AspNetCore.WebUtilities;
 using Rudzoft.ChessLib.Types;
 

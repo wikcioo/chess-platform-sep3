@@ -2,7 +2,7 @@ using System.Net.Http.Headers;
 using Domain.DTOs.AuthorizedUserEvents;
 using Domain.Enums;
 using HttpClients.ClientInterfaces;
-using HttpClients.Signalr;
+using HttpClients.Implementations.Signalr;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace HttpClients.Implementations;
