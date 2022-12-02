@@ -3,8 +3,7 @@
 @using System.Text.Json.Nodes
 @using HttpClients.ClientInterfaces.Signalr
 @inject IAuthService AuthService
-@inject IHubConnectionWrapper HubConnectionWrapper
-@inject IAuthUserService AuthUserService
+@inject IHubConnectionHandler HubConnectionHandler
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 
@@ -46,8 +45,8 @@
             try
             {
                 await AuthService.LoginAsync(_email, _password);
-                await HubConnectionWrapper.StartHubConnection(AuthService);
-                await AuthUserService.JoinUserEvents();
+                await HubConnectionHandler.StartHubConnection(AuthService);
+                HubConnectionHandler.JoinUserEvents();
                 NavMgr.NavigateTo("/");
             }
             catch (Exception e)

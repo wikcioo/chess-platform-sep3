@@ -43,7 +43,6 @@ builder.Services.AddScoped<IGameService, GameService>();
 
 builder.Services.AddSingleton<IHubConnectionHandler, HubConnectionHandler>();
 builder.Services.AddTransient<IChatHub, ChatHub>();
-builder.Services.AddScoped<IAuthUserService, AuthUserService>();
 builder.Services.AddScoped<IGameHub, GameHub>();
 
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthProvider>();
