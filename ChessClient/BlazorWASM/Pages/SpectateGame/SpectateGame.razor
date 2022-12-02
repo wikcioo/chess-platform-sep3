@@ -5,11 +5,11 @@
 @inject IGameService GameService
 @inject ISnackbar Snackbar
 
-<MudContainer Class="mt-10">
-    <MudContainer Class="d-flex justify-end">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-10">
+    <div class="d-flex justify-end">
         <MudIconButton Icon="@Icons.Filled.Refresh"
                        @onclick="@(async () => { await RefreshSpectateableGames(); })"/>
-    </MudContainer>
+    </div>
     <SpectateableGameListComponent SpectateableGames="@_spectateableGames"/>
 </MudContainer>
 

@@ -8,25 +8,26 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 @inject IGameService GameService
-<AuthorizeView>
-    <Authorized>
-        <MudContainer>
-            <MudContainer Class="mt-10 d-flex flex-row gap-10">
+<MudContainer MaxWidth="MaxWidth.Large">
+    <AuthorizeView>
+        <Authorized>
+            <div class="mt-10 d-flex flex-row gap-10">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="DisplayCreateGameDialog">Create a Game</MudButton>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinRandomGame">Play Random</MudButton>
-            </MudContainer>
+            </div>
             <MudSpacer/>
-            <MudContainer Class="d-flex justify-end">
+            <div class="d-flex justify-end">
                 <MudIconButton Icon="@Icons.Filled.Refresh"
                                @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshJoinableGames(); })"/>
-            </MudContainer>
+            </div>
             <JoinableGameListComponent JoinableGames="@_joinableGames"/>
-        </MudContainer>
-    </Authorized>
-    <NotAuthorized>
-        <MudText Typo="Typo.h2" Align="Align.Center" Class="ma-5">Please login to start playing.</MudText>
-    </NotAuthorized>
-</AuthorizeView>
+        </Authorized>
+        <NotAuthorized>
+            <MudText Typo="Typo.h2" Align="Align.Center" Class="ma-5">Please login to start playing.</MudText>
+        </NotAuthorized>
+    </AuthorizeView>
+</MudContainer>
+
 
 @code {
     private IList<GameRoomDto>? _joinableGames = new List<GameRoomDto>();
@@ -55,7 +56,6 @@
         {
             Snackbar.Add("Network error. Unable to refresh games.", Severity.Error);
         }
-        
     }
 
     private void DisplayCreateGameDialog()
@@ -72,7 +72,7 @@
     private async void JoinRandomGame()
     {
         await RefreshJoinableGames();
-        
+
         if (_joinableGames?.Count > 0)
         {
             var randomGameRoomId = _joinableGames[new Random().Next(_joinableGames.Count)].GameRoom;
