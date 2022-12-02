@@ -8,7 +8,6 @@
 @using BlazorWASM.Pages.ChessComponents
 @using Domain.DTOs.GameEvents
 @using HttpClients.ClientInterfaces
-@using HttpClients.ClientInterfaces.Signalr
 @inject IDialogService DialogService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
@@ -48,32 +47,7 @@
             <MudGrid>
                 @if (!_spectating)
                 {
-                    @if (GameService.IsDrawOfferPending)
-                    {
-                        <MudItem Style="text-align: center" xs="12">
-                            <MudPaper Class="my-2 pa-2 mud-theme-primary">
-                                <MudGrid Spacing="2" Justify="Justify.SpaceBetween">
-                                    <MudItem Class="d-flex align-center" xs="12" sm="6" md="12">
-                                        <MudText Class="flex-1" Typo="Typo.subtitle1" Align="Align.Center">You have a draw offer!</MudText>
-                                    </MudItem>
-                                    <MudItem xs="6" sm="3" md="6">
-                                        <MudButton @onclick="() => SendDrawResponse(true)" Variant="Variant.Filled" FullWidth="true" Color="Color.Tertiary">Accept</MudButton>
-                                    </MudItem>
-                                    <MudItem xs="6" sm="3" md="6">
-                                        <MudButton @onclick="() => SendDrawResponse(false)" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Decline</MudButton>
-                                    </MudItem>
-                                </MudGrid>
-                            </MudPaper>
-                        </MudItem>
-                    }
-                    <MudItem xs="6">
-                        <MudButton @onclick="Resign" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
-                            Resign <MudIcon Icon="@Icons.Filled.OutlinedFlag" Size="Size.Small"></MudIcon>
-                        </MudButton>
-                    </MudItem>
-                    <MudItem xs="6">
-                        <MudButton @onclick="OfferDraw" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Offer Draw</MudButton>
-                    </MudItem>
+                    <DrawResignComponent IsDrawOfferPending="GameService.IsDrawOfferPending" OnResign="Resign" OnOfferDraw="OfferDraw" OnSendDrawResponse="SendDrawResponse"/>
                 }
                 else
                 {
