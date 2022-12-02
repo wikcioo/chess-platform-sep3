@@ -167,18 +167,24 @@
             _whiteTimerActive = !_whiteTimerActive;
             var ack = await GameService.MakeMoveAsync(move);
             if (ack is AckTypes.InvalidMove or AckTypes.GameHasFinished or AckTypes.GameNotFound)
-            {
-                SetFenPosition(await GameService.GetLastFenAsync());
-            }
+                RevertToLastFen();
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
+            RevertToLastFen();
         }
         catch (HttpRequestException e)
         {
             Notify(e.Message, Severity.Error);
+            RevertToLastFen();
         }
+    }
+
+    private async void RevertToLastFen()
+    {
+        SetFenPosition(await GameService.GetLastFenAsync());
+        StateHasChanged();
     }
 
     private async void Resign()
