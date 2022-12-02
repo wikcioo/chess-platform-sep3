@@ -78,7 +78,7 @@ public class JwtAuthService : IAuthService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(responseContent);
+            throw new HttpRequestException("Network Error. Failed to login.");
         }
 
         var token = responseContent;

@@ -26,7 +26,7 @@ public class UserHttpClient : IUserService
         var result = await response.Content.ReadAsStringAsync();
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(result);
+            throw new HttpRequestException("Network error. Failed to create a user.");
         }
 
         var created = JsonSerializer.Deserialize<User>(result, new JsonSerializerOptions
@@ -45,7 +45,7 @@ public class UserHttpClient : IUserService
         string result = await response.Content.ReadAsStringAsync();
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception(result);
+            throw new HttpRequestException("Network error. Failed to get users.");
         }
 
         ICollection<UserSearchResultDto> users = JsonSerializer.Deserialize<ICollection<UserSearchResultDto>>(result, new JsonSerializerOptions

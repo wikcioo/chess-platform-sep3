@@ -49,11 +49,10 @@
                 await GameService.StartHubConnection();
                 NavMgr.NavigateTo("/");
             }
-            catch (Exception e)
+            catch (HttpRequestException e)
             {
                 Console.WriteLine(e);
-                var res = JsonNode.Parse(e.Message)!;
-                Notify("" + res["message"], Severity.Error);
+                Notify(e.Message, Severity.Error);
             }
         }
     }
