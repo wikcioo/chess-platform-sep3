@@ -7,7 +7,7 @@
 <MudContainer Class="mt-10">
     <MudContainer Class="d-flex justify-end">
         <MudIconButton Icon="@Icons.Filled.Refresh"
-                       @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshSpectateableGames(); })"/>
+                       @onclick="@(async () => { await RefreshSpectateableGames(); })"/>
     </MudContainer>
     <SpectateableGameListComponent SpectateableGames="@_spectateableGames"/>
 </MudContainer>
