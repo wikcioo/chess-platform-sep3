@@ -29,8 +29,8 @@ public class GameRoom
     public event Action<GameRoomEventDto>? GameEvent;
 
     public ulong Id { get; set; }
-    
-    public string Creator { get; }  
+
+    public string Creator { get; }
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
     public bool IsVisible { get; set; }
@@ -48,7 +48,8 @@ public class GameRoom
     public GameSides GameSide;
 
 
-    public GameRoom(string creator, uint timeControlSeconds, uint timeControlIncrement, bool isVisible, OpponentTypes gameType,
+    public GameRoom(string creator, uint timeControlSeconds, uint timeControlIncrement, bool isVisible,
+        OpponentTypes gameType,
         string? fen = null)
     {
         Creator = creator;
@@ -146,6 +147,8 @@ public class GameRoom
             gameEndType = GameEndTypes.Pat;
         }
 
+        _whitePlaying = _game.CurrentPlayer().IsWhite;
+        
         if (reachedTheEnd)
         {
             GameIsActive = false;
@@ -155,8 +158,8 @@ public class GameRoom
                 Event = GameStreamEvents.ReachedEndOfTheGame,
                 FenString = _game.Pos.FenNotation,
                 GameEndType = (uint) gameEndType,
-                IsWhite = !_whitePlaying,
-                TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
+                IsWhite = _whitePlaying,
+                TimeLeftMs = _whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             };
             GameEvent?.Invoke(new GameRoomEventDto
             {
@@ -167,13 +170,12 @@ public class GameRoom
             return AckTypes.Success;
         }
 
-        _whitePlaying = _game.CurrentPlayer().IsWhite;
 
         var responseJoinedGameDto = new GameEventDto()
         {
             Event = GameStreamEvents.NewFenPosition,
             FenString = _game.Pos.FenNotation,
-            TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
+            TimeLeftMs = _whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             GameEndType = (uint) _game.GameEndType,
             IsWhite = _whitePlaying
         };
@@ -403,7 +405,7 @@ public class GameRoom
             Increment = GetInitialTimeControlIncrement
         };
     }
-    
+
     public bool CanUsernameJoin(string username)
     {
         if (GameType is OpponentTypes.Random or OpponentTypes.Ai)
