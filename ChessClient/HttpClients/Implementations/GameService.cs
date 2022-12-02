@@ -10,6 +10,7 @@ using HttpClients.ClientInterfaces;
 using HttpClients.Signalr;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.WebUtilities;
+using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.Types;
 
 namespace HttpClients.Implementations;
@@ -20,6 +21,8 @@ public class GameService : IGameService
     public bool IsDrawOfferPending { get; set; }
     public bool OnWhiteSide { get; set; } = true;
     public ulong? GameRoomId { get; set; }
+
+    public string LastFen { get; set; } = Fen.StartPositionFen;
 
 
     public delegate void StreamUpdate(GameEventDto dto);
@@ -69,6 +72,11 @@ public class GameService : IGameService
             throw new HttpRequestException("Network error. Failed to connect to a stream");
         }
     }
+    
+    public Task<string> GetLastFen()
+    {
+        return Task.FromResult(LastFen);
+    }
 
     public async void LeaveRoom()
     {
@@ -103,17 +111,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/games", dto);
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new HttpRequestException(responseContent);
-            }
-
-            var created = JsonSerializer.Deserialize<ResponseGameDto>(responseContent, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
+            var created = await ParseResponse<ResponseGameDto>(response);
             OnWhiteSide = created.IsWhite;
             return created;
         }
@@ -139,7 +137,12 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsync($"/games/{dto.GameRoom}/users", null);
-            await ValidatePostResponse(response);
+            var ack = await ParseResponse<AckTypes>(response);
+
+            if(ack != AckTypes.Success)
+                throw new HttpRequestException($"Ack code: {ack}");
+            
+            GameRoomId = dto.GameRoom;
 
             if (_hubDto.HubConnection is not null)
             {
@@ -158,16 +161,13 @@ public class GameService : IGameService
         switch (response.Event)
         {
             case GameStreamEvents.NewFenPosition:
-                NewFenReceived?.Invoke(response);
-                TimeUpdate(response);
+                NewFen(response);
                 break;
             case GameStreamEvents.TimeUpdate:
                 TimeUpdate(response);
                 break;
             case GameStreamEvents.ReachedEndOfTheGame:
-                TimeUpdate(response);
-                NewFenReceived?.Invoke(response);
-                EndOfTheGameReached?.Invoke(response);
+                EndOfTheGame(response);
                 break;
             case GameStreamEvents.Resignation:
                 ResignationReceived?.Invoke(response);
@@ -193,6 +193,20 @@ public class GameService : IGameService
         TimeUpdated?.Invoke(dto);
     }
 
+    private void EndOfTheGame(GameEventDto dto)
+    {
+        TimeUpdate(dto);
+        NewFenReceived?.Invoke(dto);
+        EndOfTheGameReached?.Invoke(dto);
+    }
+
+    private void NewFen(GameEventDto dto)
+    {
+        NewFenReceived?.Invoke(dto);
+        LastFen = dto.FenString;
+        TimeUpdate(dto);
+    }
+
     public async Task GetCurrentGameState()
     {
         _client.DefaultRequestHeaders.Authorization =
@@ -208,18 +222,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.GetAsync($"/games/{GameRoomId.Value}");
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new HttpRequestException(responseContent);
-            }
-
-            var streamDto = JsonSerializer.Deserialize<CurrentGameStateDto>(responseContent, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-
+            var streamDto = await ParseResponse<CurrentGameStateDto>(response);
 
             var myName = user.Identity!.Name!;
             if (streamDto.UsernameBlack.Equals(myName))
@@ -288,7 +291,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/moves", dto);
-            return await ValidatePostResponse(response);
+            return await ParseResponse<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
@@ -318,7 +321,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/draw-offers", dto);
-            return await ValidatePostResponse(response);
+            return await ParseResponse<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
@@ -354,7 +357,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/resignation", dto);
-            return await ValidatePostResponse(response);
+            return await ParseResponse<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
@@ -386,7 +389,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/draw-responses", dto);
-            return await ValidatePostResponse(response);
+            return await ParseResponse<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
@@ -394,7 +397,7 @@ public class GameService : IGameService
         }
     }
 
-    private async Task<AckTypes> ValidatePostResponse(HttpResponseMessage response)
+    public static async Task<T> ParseResponse<T>(HttpResponseMessage response)
     {
         var responseContent = await response.Content.ReadAsStringAsync();
         if (!response.IsSuccessStatusCode)
@@ -402,18 +405,11 @@ public class GameService : IGameService
             throw new HttpRequestException(responseContent);
         }
 
-        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
+        return JsonSerializer.Deserialize<T>(responseContent,
             new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             })!;
-
-        if (ack != AckTypes.Success)
-        {
-            throw new HttpRequestException(responseContent);
-        }
-
-        return ack;
     }
 
     public async Task<IList<GameRoomDto>> GetGameRooms(GameRoomSearchParameters parameters)
@@ -434,24 +430,10 @@ public class GameService : IGameService
         }
 
         var uri = QueryHelpers.AddQueryString("/rooms", queryParams);
-
         try
         {
             var response = await _client.GetAsync(uri);
-
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new HttpRequestException(responseContent);
-            }
-
-            var roomList = JsonSerializer.Deserialize<IEnumerable<GameRoomDto>>(responseContent,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                })!;
-
+            var roomList = await ParseResponse<IEnumerable<GameRoomDto>>(response);
             return roomList.ToList();
         }
         catch (HttpRequestException e)

@@ -166,7 +166,11 @@
         try
         {
             _whiteTimerActive = !_whiteTimerActive;
-            await GameService.MakeMove(move);
+            var ack = await GameService.MakeMove(move);
+            if (ack is AckTypes.InvalidMove or AckTypes.GameHasFinished or AckTypes.GameNotFound)
+            {
+                SetFenPosition(await GameService.GetLastFen());
+            }
         }
         catch (InvalidOperationException e)
         {

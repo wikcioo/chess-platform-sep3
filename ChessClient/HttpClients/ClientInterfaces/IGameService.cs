@@ -30,6 +30,7 @@ public interface IGameService
     public Task<AckTypes> MakeMove(Move move);
     public Task<AckTypes> OfferDraw();
     public Task<AckTypes> Resign();
+    public Task<string> GetLastFen();
     public Task<AckTypes> SendDrawResponse(bool accepted);
     public Task<IList<GameRoomDto>> GetGameRooms(GameRoomSearchParameters parameters);
     Task GetCurrentGameState();
