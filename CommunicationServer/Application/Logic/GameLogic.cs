@@ -195,7 +195,7 @@ public class GameLogic : IGameLogic
             return AckTypes.Success;
         }
 
-        if (gameRoom.IsSpectatable)
+        if (gameRoom.IsSpectateable)
         {
             gameRoom.NumSpectatorsJoined++;
             return AckTypes.Success;
@@ -306,18 +306,8 @@ public class GameLogic : IGameLogic
         IList<SpectateableGameRoomDataDto> list = new List<SpectateableGameRoomDataDto>();
         foreach (var room in _gameRoomsData.GetSpectateable())
         {
-            list.Add(new SpectateableGameRoomDataDto()
-            {
-                GameRoom = room.Id,
-                UsernameWhite = room.PlayerWhite!,
-                UsernameBlack = room.PlayerBlack!,
-                Seconds = room.GetInitialTimeControlSeconds,
-                Increment = room.GetInitialTimeControlIncrement
-            });
+            rooms = rooms.Where(room => room.IsSpectateable);
         }
-
-        return list;
-    }
 
     public IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData(string requesterUsername)
     {

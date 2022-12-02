@@ -35,7 +35,7 @@ public class GameRoom
     public string? PlayerBlack { get; set; }
     public bool IsVisible { get; set; }
     public bool IsJoinable { get; set; } = true;
-    public bool IsSpectatable => IsVisible && !IsJoinable;
+    public bool IsSpectateable => IsVisible && !IsJoinable;
     public OpponentTypes GameType { get; set; }
 
     public uint NumPlayersJoined { get; set; }
