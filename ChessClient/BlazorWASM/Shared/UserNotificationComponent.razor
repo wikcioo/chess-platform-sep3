@@ -11,16 +11,6 @@
 
     protected override void OnInitialized()
     {
-        BindToAuthUserServiceCallbacks();
-    }
-
-    private void DisposeOfAuthUserServiceCallbacks()
-    {
-        HubConnectionHandler.NewGameOffer -= OnNewGameOffer;
-    }
-
-    private void BindToAuthUserServiceCallbacks()
-    {
         HubConnectionHandler.NewGameOffer += OnNewGameOffer;
     }
 
