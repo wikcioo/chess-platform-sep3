@@ -11,7 +11,7 @@ public class HubConnectionHandler : IHubConnectionHandler
     public HubConnection? HubConnection { get; set; }
     public event Action<AuthorizedUserEventDto>? NewGameOffer;
 
-    public async Task StartHubConnection(IAuthService authService)
+    public async Task StartHubConnectionAsync(IAuthService authService)
     {
         if (HubConnection is not null)
         {
@@ -28,7 +28,7 @@ public class HubConnectionHandler : IHubConnectionHandler
         await HubConnection.StartAsync();
     }
 
-    public async Task LeaveRoom(ulong? gameRoomId)
+    public async Task LeaveRoomAsync(ulong? gameRoomId)
     {
         if (HubConnection is not null)
         {
@@ -36,7 +36,7 @@ public class HubConnectionHandler : IHubConnectionHandler
         }
     }
 
-    public async Task JoinRoom(ulong? gameRoomId)
+    public async Task JoinRoomAsync(ulong? gameRoomId)
     {
         if (HubConnection is not null)
         {
@@ -44,7 +44,7 @@ public class HubConnectionHandler : IHubConnectionHandler
         }
     }
 
-    public async Task StopHubConnection()
+    public async Task StopHubConnectionAsync()
     {
         if (HubConnection is not null)
         {

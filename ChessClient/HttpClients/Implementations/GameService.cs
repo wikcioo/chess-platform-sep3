@@ -98,7 +98,7 @@ public class GameService : IGameService
         })!;
         GameRoomId = dto.GameRoom;
 
-        await _gameHub.JoinRoom(GameRoomId);
+        await _gameHub.JoinRoomAsync(GameRoomId);
     }
 
 
@@ -191,7 +191,7 @@ public class GameService : IGameService
 
     public void LeaveRoom()
     {
-        _gameHub.LeaveRoom(GameRoomId);
+        _gameHub.LeaveRoomAsync(GameRoomId);
     }
 
     private async void DrawOffer(GameEventDto dto)

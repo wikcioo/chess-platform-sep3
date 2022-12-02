@@ -45,7 +45,7 @@
             try
             {
                 await AuthService.LoginAsync(_email, _password);
-                await HubConnectionHandler.StartHubConnection(AuthService);
+                await HubConnectionHandler.StartHubConnectionAsync(AuthService);
                 HubConnectionHandler.JoinUserEvents();
                 NavMgr.NavigateTo("/");
             }

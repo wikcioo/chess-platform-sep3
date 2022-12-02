@@ -7,9 +7,9 @@ public interface IHubConnectionHandler
 {
     HubConnection? HubConnection { get; }
     event Action<AuthorizedUserEventDto>? NewGameOffer;
-    Task StartHubConnection(IAuthService authService);
-    Task LeaveRoom(ulong? gameRoomId);
-    Task JoinRoom(ulong? gameRoomId);
-    Task StopHubConnection();
+    Task StartHubConnectionAsync(IAuthService authService);
+    Task LeaveRoomAsync(ulong? gameRoomId);
+    Task JoinRoomAsync(ulong? gameRoomId);
+    Task StopHubConnectionAsync();
     void JoinUserEvents();
 }

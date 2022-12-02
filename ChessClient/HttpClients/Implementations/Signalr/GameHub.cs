@@ -21,13 +21,13 @@ public class GameHub : IGameHub
             x => GameEventReceived?.Invoke(x));
     }
 
-    public async Task LeaveRoom(ulong? gameRoomId)
+    public async Task LeaveRoomAsync(ulong? gameRoomId)
     {
-        await _hubConnectionHandler.LeaveRoom(gameRoomId);
+        await _hubConnectionHandler.LeaveRoomAsync(gameRoomId);
     }
 
-    public async Task JoinRoom(ulong? gameRoomId)
+    public async Task JoinRoomAsync(ulong? gameRoomId)
     {
-        await _hubConnectionHandler.JoinRoom(gameRoomId);
+        await _hubConnectionHandler.JoinRoomAsync(gameRoomId);
     }
 }

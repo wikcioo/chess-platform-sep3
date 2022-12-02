@@ -24,7 +24,7 @@
     private async Task Logout()
     {
         await AuthService.LogoutAsync();
-        await HubConnectionHandler.StopHubConnection();
+        await HubConnectionHandler.StopHubConnectionAsync();
         NavMgr.NavigateTo("/");
     }
 
