@@ -6,11 +6,11 @@ namespace HttpClients.Implementations.Signalr;
 
 public class ChatHub : IChatHub
 {
-    private readonly HubConnectionWrapper _hubConnectionWrapper;
+    private readonly IHubConnectionWrapper _hubConnectionWrapper;
     public event Action<MessageDto>? MessageReceived;
     public event Action<List<MessageDto>>? ChatLogReceived;
 
-    public ChatHub(HubConnectionWrapper hubConnectionWrapper)
+    public ChatHub(IHubConnectionWrapper hubConnectionWrapper)
     {
         _hubConnectionWrapper = hubConnectionWrapper;
         if (_hubConnectionWrapper.HubConnection is null) return;
@@ -25,7 +25,7 @@ public class ChatHub : IChatHub
     {
         if (_hubConnectionWrapper.HubConnection is not null)
         {
-            await _hubConnectionWrapper.HubConnection.SendAsync("SendMessage", dto.GameRoom, dto.Body);
+            await _hubConnectionWrapper.HubConnection.SendAsync("SendMessage", dto);
         }
     }
 

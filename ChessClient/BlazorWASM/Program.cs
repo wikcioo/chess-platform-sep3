@@ -42,7 +42,7 @@ builder.Services.AddScoped<IAuthService, JwtAuthService>();
 builder.Services.AddScoped<IGameService, GameService>();
 
 builder.Services.AddSingleton<IHubConnectionWrapper, HubConnectionWrapper>();
-builder.Services.AddScoped<IChatHub, ChatHub>();
+builder.Services.AddTransient<IChatHub, ChatHub>();
 builder.Services.AddScoped<IAuthUserService, AuthUserService>();
 
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthProvider>();

@@ -15,14 +15,14 @@ public class GameHub : Hub<IGameHub>
         _chatLogic = chatLogic;
     }
 
-    public async Task SendMessage(ulong gameRoom, string message)
+    public async Task SendMessage(MessageDto dto)
     {
-        var groupName = gameRoom.ToString();
+        var groupName = dto.GameRoom.ToString();
         var messageDto = new MessageDto
         {
             Username = Context.User?.Identity?.Name!,
-            Body = message,
-            GameRoom = gameRoom
+            Body = dto.Body,
+            GameRoom = dto.GameRoom
         };
         _chatLogic.Add(messageDto);
         await Clients.Group(groupName).ReceiveMessage(messageDto);
