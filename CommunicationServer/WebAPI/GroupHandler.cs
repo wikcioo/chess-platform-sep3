@@ -1,5 +1,6 @@
 using Application.Hubs;
 using Application.LogicInterfaces;
+using Domain.DTOs.AuthorizedUserEvents;
 using Domain.DTOs.GameEvents;
 using Microsoft.AspNetCore.SignalR;
 
@@ -12,12 +13,17 @@ public class GroupHandler
     public GroupHandler(IHubContext<GameHub> hubContext, IGameLogic gameLogic)
     {
         _hubContext = hubContext;
-        gameLogic.GameEvent += FireEvent;
+        gameLogic.GameEvent += FireGameEvent;
+        gameLogic.AuthUserEvent += FireAuthUserEvent;
     }
 
-
-    private void FireEvent(GameRoomEventDto dto)
+    private void FireGameEvent(GameRoomEventDto dto)
     {
         _hubContext.Clients.Group(dto.GameRoomId.ToString()).SendAsync("GameStreamDto", dto.GameEventDto);
+    }
+
+    private void FireAuthUserEvent(AuthorizedUserEventDto dto)
+    {
+        _hubContext.Clients.User(dto.ReceiverUsername).SendAsync("AuthorizedUserEventDto", dto);
     }
 }
