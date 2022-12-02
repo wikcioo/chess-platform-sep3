@@ -47,7 +47,7 @@
             try
             {
                 await AuthService.LoginAsync(_email, _password);
-                await GameService.StartHubConnection();
+                await GameService.StartHubConnectionAsync();
                 await AuthUserService.JoinUserEvents();
                 
                 NavMgr.NavigateTo("/");

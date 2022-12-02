@@ -55,18 +55,7 @@ public class UserHttpClient : IUserService
         try
         {
             HttpResponseMessage response = await _client.GetAsync("/users" + query);
-            string result = await response.Content.ReadAsStringAsync();
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new HttpRequestException(result);
-            }
-            
-            ICollection<UserSearchResultDto> users = JsonSerializer.Deserialize<ICollection<UserSearchResultDto>>(result, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-            return users;
-            
+            return await ResponseParser.ParseAsync<IEnumerable<UserSearchResultDto>>(response);
         }
         catch (HttpRequestException e)
         {

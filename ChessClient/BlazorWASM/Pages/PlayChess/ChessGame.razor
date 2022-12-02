@@ -115,7 +115,7 @@
         GameService.EndOfTheGameReached -= OnEndOfTheGameReached;
         GameService.GameFirstJoined -= OnGameFirstJoined;
         GameService.StateReceived -= OnGameStateReceived;
-        GameService.LeaveRoom();
+        GameService.LeaveRoomAsync();
         GameService.GameRoomId = null;
     }
 
@@ -131,7 +131,7 @@
             var user = authState.User;
             if (user.Identity == null) return;
             _currentUser = user.Identity.Name!;
-            await GameService.GetCurrentGameState();
+            await GameService.GetCurrentGameStateAsync();
         }
     }
 
@@ -165,10 +165,10 @@
         try
         {
             _whiteTimerActive = !_whiteTimerActive;
-            var ack = await GameService.MakeMove(move);
+            var ack = await GameService.MakeMoveAsync(move);
             if (ack is AckTypes.InvalidMove or AckTypes.GameHasFinished or AckTypes.GameNotFound)
             {
-                SetFenPosition(await GameService.GetLastFen());
+                SetFenPosition(await GameService.GetLastFenAsync());
             }
         }
         catch (InvalidOperationException e)
@@ -185,7 +185,7 @@
     {
         try
         {
-            var ack = await GameService.Resign();
+            var ack = await GameService.ResignAsync();
             if (ack == (uint)AckTypes.Success) return;
             Notify("Failed to resign", Severity.Error);
         }
@@ -205,7 +205,7 @@
 
         try
         {
-            ack = await GameService.OfferDraw();
+            ack = await GameService.OfferDrawAsync();
 
             switch (ack)
             {
@@ -233,7 +233,7 @@
         AckTypes ack;
         try
         {
-            ack = await GameService.SendDrawResponse(accepted);
+            ack = await GameService.SendDrawResponseAsync(accepted);
             GameService.IsDrawOfferPending = false;
             if (ack == AckTypes.Success)
             {

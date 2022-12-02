@@ -23,7 +23,7 @@
     private async Task Logout()
     {
         await AuthService.LogoutAsync();
-        await GameService.StopHubConnection();
+        await GameService.StopHubConnectionAsync();
         NavMgr.NavigateTo("/");
     }
 

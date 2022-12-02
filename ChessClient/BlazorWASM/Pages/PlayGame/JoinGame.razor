@@ -47,7 +47,7 @@
     {
         try
         {
-            _joinableGames = await GameService.GetGameRooms(new GameRoomSearchParameters
+            _joinableGames = await GameService.GetGameRoomsAsync(new GameRoomSearchParameters
             {
                 Joinable = true
             });
@@ -78,7 +78,7 @@
             var randomGameRoomId = _joinableGames[new Random().Next(_joinableGames.Count)].GameRoom;
             try
             {
-                await GameService.JoinGame(new RequestJoinGameDto
+                await GameService.JoinGameAsync(new RequestJoinGameDto
                 {
                     GameRoom = randomGameRoomId
                 });

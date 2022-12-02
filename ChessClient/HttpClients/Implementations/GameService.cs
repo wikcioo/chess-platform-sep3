@@ -49,7 +49,7 @@ public class GameService : IGameService
         _client = client;
     }
 
-    public async Task StartHubConnection()
+    public async Task StartHubConnectionAsync()
     {
         try
         {
@@ -73,12 +73,12 @@ public class GameService : IGameService
         }
     }
     
-    public Task<string> GetLastFen()
+    public Task<string> GetLastFenAsync()
     {
         return Task.FromResult(LastFen);
     }
 
-    public async void LeaveRoom()
+    public async void LeaveRoomAsync()
     {
         if (_hubDto.HubConnection is not null)
         {
@@ -86,7 +86,7 @@ public class GameService : IGameService
         }
     }
 
-    public async Task StopHubConnection()
+    public async Task StopHubConnectionAsync()
     {
         if (_hubDto.HubConnection is not null)
         {
@@ -96,7 +96,7 @@ public class GameService : IGameService
         }
     }
 
-    public async Task<ResponseGameDto> CreateGame(RequestGameDto dto)
+    public async Task<ResponseGameDto> CreateGameAsync(RequestGameDto dto)
     {
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
@@ -111,7 +111,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/games", dto);
-            var created = await ResponseParser.Parse<ResponseGameDto>(response);
+            var created = await ResponseParser.ParseAsync<ResponseGameDto>(response);
             OnWhiteSide = created.IsWhite;
             return created;
         }
@@ -121,7 +121,7 @@ public class GameService : IGameService
         }
     }
 
-    public async Task JoinGame(RequestJoinGameDto dto)
+    public async Task JoinGameAsync(RequestJoinGameDto dto)
     {
         _hubDto.HubConnection?.Remove("GameStreamDto");
         _hubDto.HubConnection?.On<GameEventDto>("GameStreamDto",
@@ -137,7 +137,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsync($"/games/{dto.GameRoom}/users", null);
-            var ack = await ResponseParser.Parse<AckTypes>(response);
+            var ack = await ResponseParser.ParseAsync<AckTypes>(response);
 
             if(ack != AckTypes.Success)
                 throw new HttpRequestException($"Ack code: {ack}");
@@ -207,7 +207,7 @@ public class GameService : IGameService
         TimeUpdate(dto);
     }
 
-    public async Task GetCurrentGameState()
+    public async Task GetCurrentGameStateAsync()
     {
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
@@ -222,7 +222,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.GetAsync($"/games/{GameRoomId.Value}");
-            var streamDto = await ResponseParser.Parse<CurrentGameStateDto>(response);
+            var streamDto = await ResponseParser.ParseAsync<CurrentGameStateDto>(response);
 
             var myName = user.Identity!.Name!;
             if (streamDto.UsernameBlack.Equals(myName))
@@ -265,7 +265,7 @@ public class GameService : IGameService
         DrawOfferAccepted?.Invoke(dto);
     }
 
-    public async Task<AckTypes> MakeMove(Move move)
+    public async Task<AckTypes> MakeMoveAsync(Move move)
     {
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
@@ -291,7 +291,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/moves", dto);
-            return await ResponseParser.Parse<AckTypes>(response);
+            return await ResponseParser.ParseAsync<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
@@ -299,7 +299,7 @@ public class GameService : IGameService
         }
     }
 
-    public async Task<AckTypes> OfferDraw()
+    public async Task<AckTypes> OfferDrawAsync()
     {
         var user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
@@ -321,7 +321,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/draw-offers", dto);
-            return await ResponseParser.Parse<AckTypes>(response);
+            return await ResponseParser.ParseAsync<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
@@ -335,7 +335,7 @@ public class GameService : IGameService
         NewPlayerJoined?.Invoke(dto);
     }
 
-    public async Task<AckTypes> Resign()
+    public async Task<AckTypes> ResignAsync()
     {
         var user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
@@ -357,7 +357,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/resignation", dto);
-            return await ResponseParser.Parse<AckTypes>(response);
+            return await ResponseParser.ParseAsync<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
@@ -365,7 +365,7 @@ public class GameService : IGameService
         }
     }
 
-    public async Task<AckTypes> SendDrawResponse(bool accepted)
+    public async Task<AckTypes> SendDrawResponseAsync(bool accepted)
     {
         var user = await _authService.GetAuthAsync();
         var isLoggedIn = user.Identity != null;
@@ -389,7 +389,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.PostAsJsonAsync("/draw-responses", dto);
-            return await ResponseParser.Parse<AckTypes>(response);
+            return await ResponseParser.ParseAsync<AckTypes>(response);
         }
         catch (HttpRequestException e)
         {
@@ -397,7 +397,7 @@ public class GameService : IGameService
         }
     }
 
-    public async Task<IList<GameRoomDto>> GetGameRooms(GameRoomSearchParameters parameters)
+    public async Task<IList<GameRoomDto>> GetGameRoomsAsync(GameRoomSearchParameters parameters)
     {
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
@@ -418,7 +418,7 @@ public class GameService : IGameService
         try
         {
             var response = await _client.GetAsync(uri);
-            var roomList = await ResponseParser.Parse<IEnumerable<GameRoomDto>>(response);
+            var roomList = await ResponseParser.ParseAsync<IEnumerable<GameRoomDto>>(response);
             return roomList.ToList();
         }
         catch (HttpRequestException e)

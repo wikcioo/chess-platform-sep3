@@ -25,7 +25,7 @@
     {
         try
         {
-            _spectateableGames = await GameService.GetGameRooms(new GameRoomSearchParameters()
+            _spectateableGames = await GameService.GetGameRoomsAsync(new GameRoomSearchParameters()
             {
                 Spectateable = true
             });

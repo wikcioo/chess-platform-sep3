@@ -30,9 +30,11 @@
     [Parameter]
     public IList<GameRoomDto>? SpectateableGames { get; set; }
 
+    
+    
     private async void SpectateGame(ulong i)
     {
-        await GameService.JoinGame(new RequestJoinGameDto
+        await GameService.JoinGameAsync(new RequestJoinGameDto
         {
             GameRoom = i
         });

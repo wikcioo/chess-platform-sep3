@@ -4,7 +4,7 @@ namespace HttpClients.Implementations;
 
 public static class ResponseParser
 {
-    public static async Task<T> Parse<T>(HttpResponseMessage response)
+    public static async Task<T> ParseAsync<T>(HttpResponseMessage response)
     {
         var responseContent = await response.Content.ReadAsStringAsync();
         if (!response.IsSuccessStatusCode)

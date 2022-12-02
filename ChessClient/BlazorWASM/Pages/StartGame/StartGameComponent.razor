@@ -88,13 +88,13 @@
 
         try
         {
-            var response = await GameService.CreateGame(request);
+            var response = await GameService.CreateGameAsync(request);
 
             if (!response.Success)
             {
                 throw new InvalidOperationException(response.ErrorMessage);
             }
-            await GameService.JoinGame(new RequestJoinGameDto
+            await GameService.JoinGameAsync(new RequestJoinGameDto
             {
                 GameRoom = response.GameRoom
             });
