@@ -1,22 +1,24 @@
 @using Domain.DTOs
 @using Domain.DTOs.GameRoomData
+@using Domain.Models
 @using HttpClients.ClientInterfaces
+@using System.Security.Claims
 @inject IGameService GameService
 @inject NavigationManager NavMgr
 
 <MudTable Items="@JoinableGames" Hover="true">
     <HeaderContent>
         <MudTh>Game Id</MudTh>
-        <MudTh>Opponent</MudTh>
+        <MudTh>Player White</MudTh>
+        <MudTh>Player Black</MudTh>
         <MudTh>Time Control</MudTh>
-        <MudTh>Opponent Side</MudTh>
         <MudTh>Join Game</MudTh>
     </HeaderContent>
     <RowTemplate>
         <MudTd DataLabel="Id">@context.GameRoom</MudTd>
-        <MudTd DataLabel="User">@context.Username</MudTd>
+        <MudTd DataLabel="Player White">@context.UsernameWhite</MudTd>
+        <MudTd DataLabel="Player Black">@context.UsernameBlack</MudTd>
         <MudTd DataLabel="Time Control">@(context.Seconds + "+" + context.Increment)</MudTd>
-        <MudTd DataLabel="Side">@context.Side</MudTd>
         <MudTd DataLabel="Join">
             <MudButton @onclick="() => JoinGame(context.GameRoom)">Join</MudButton>
         </MudTd>
@@ -28,7 +30,10 @@
 
 @code {
     [Parameter]
-    public IList<JoinableGameRoomDataDto>? JoinableGames { get; set; }
+    public IList<GameRoomDto>? JoinableGames { get; set; }
+    
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; } = null!;
 
     private async void JoinGame(ulong i)
     {
