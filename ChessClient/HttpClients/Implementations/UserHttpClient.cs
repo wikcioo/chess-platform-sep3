@@ -22,37 +22,56 @@ public class UserHttpClient : IUserService
     {
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
-        var response = await _client.PostAsJsonAsync("/users", user);
-        var result = await response.Content.ReadAsStringAsync();
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new HttpRequestException("Network error. Failed to create a user.");
-        }
 
-        var created = JsonSerializer.Deserialize<User>(result, new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true
-        })!;
-        return created;
+            var response = await _client.PostAsJsonAsync("/users", user);
+            var result = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(result);
+            }
+
+            var created = JsonSerializer.Deserialize<User>(result, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })!;
+            return created;
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to create a user.", e);
+        }
+       
     }
     
     public async Task<IEnumerable<UserSearchResultDto>> GetAsync(UserSearchParamsDto paramsDto)
     {
+        
         var query = ConstructQuery(paramsDto.Username);
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
-        HttpResponseMessage response = await _client.GetAsync("/users"+query);
-        string result = await response.Content.ReadAsStringAsync();
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new HttpRequestException("Network error. Failed to get users.");
-        }
 
-        ICollection<UserSearchResultDto> users = JsonSerializer.Deserialize<ICollection<UserSearchResultDto>>(result, new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true
-        })!;
-        return users;
+            HttpResponseMessage response = await _client.GetAsync("/users" + query);
+            string result = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(result);
+            }
+            
+            ICollection<UserSearchResultDto> users = JsonSerializer.Deserialize<ICollection<UserSearchResultDto>>(result, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })!;
+            return users;
+            
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to get users.", e);
+        }
     }
     
     private static string ConstructQuery(string? userName)

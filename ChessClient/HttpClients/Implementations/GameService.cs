@@ -45,7 +45,7 @@ public class GameService : IGameService
         _hubDto = hubDto;
         _client = client;
     }
-    
+
     public async Task StartHubConnection()
     {
         try
@@ -68,7 +68,6 @@ public class GameService : IGameService
         {
             throw new HttpRequestException("Network error. Failed to connect to a stream");
         }
-       
     }
 
     public async void LeaveRoom()
@@ -98,21 +97,30 @@ public class GameService : IGameService
 
         if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
             throw new InvalidOperationException("User not logged in.");
+
         dto.Username = user.Identity!.Name!;
-        var response = await _client.PostAsJsonAsync("/games", dto);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException("Network error. Failed to create the game");
+            var response = await _client.PostAsJsonAsync("/games", dto);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(responseContent);
+            }
+
+            var created = JsonSerializer.Deserialize<ResponseGameDto>(responseContent, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })!;
+            OnWhiteSide = created.IsWhite;
+            return created;
         }
-
-        var created = JsonSerializer.Deserialize<ResponseGameDto>(responseContent, new JsonSerializerOptions
+        catch (HttpRequestException e)
         {
-            PropertyNameCaseInsensitive = true
-        })!;
-        OnWhiteSide = created.IsWhite;
-        return created;
+            throw new HttpRequestException("Network error. Failed to create the game", e);
+        }
     }
 
     public async Task JoinGame(RequestJoinGameDto dto)
@@ -127,29 +135,20 @@ public class GameService : IGameService
 
         if (isLoggedIn == null || isLoggedIn.IsAuthenticated == false)
             throw new InvalidOperationException("User not logged in.");
-        dto.Username = user.Identity!.Name!;
-        var response = await _client.PostAsync($"/games/{dto.GameRoom}/users", null);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException("Network error. Failed to join the game");
+            var response = await _client.PostAsync($"/games/{dto.GameRoom}/users", null);
+            await ValidatePostResponse(response);
+
+            if (_hubDto.HubConnection is not null)
+            {
+                await _hubDto.HubConnection.SendAsync("JoinRoom", GameRoomId);
+            }
         }
-
-        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent, new JsonSerializerOptions
+        catch (HttpRequestException e)
         {
-            PropertyNameCaseInsensitive = true
-        })!;
-        GameRoomId = dto.GameRoom;
-
-        if (ack != AckTypes.Success)
-        {
-            throw new HttpRequestException($"Ack code: {ack}. Failed to join the game.");
-        }
-
-        if (_hubDto.HubConnection is not null)
-        {
-            await _hubDto.HubConnection.SendAsync("JoinRoom", GameRoomId);
+            throw new HttpRequestException("Network error. Failed to join the game", e);
         }
     }
 
@@ -206,33 +205,40 @@ public class GameService : IGameService
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
 
-        var response = await _client.GetAsync($"/games/{GameRoomId.Value}");
-        var responseContent = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException("Network error. Failed get current game state");
+            var response = await _client.GetAsync($"/games/{GameRoomId.Value}");
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(responseContent);
+            }
+
+            var streamDto = JsonSerializer.Deserialize<CurrentGameStateDto>(responseContent, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })!;
+
+
+            var myName = user.Identity!.Name!;
+            if (streamDto.UsernameBlack.Equals(myName))
+            {
+                OnWhiteSide = false;
+            }
+
+            if (streamDto.UsernameWhite.Equals(myName))
+            {
+                OnWhiteSide = true;
+            }
+
+            StateReceived?.Invoke(streamDto);
+            GameFirstJoined?.Invoke();
         }
-
-        var streamDto = JsonSerializer.Deserialize<CurrentGameStateDto>(responseContent, new JsonSerializerOptions
+        catch (HttpRequestException e)
         {
-            PropertyNameCaseInsensitive = true
-        })!;
-
-
-        var myName = user.Identity!.Name!;
-        if (streamDto.UsernameBlack.Equals(myName))
-        {
-            OnWhiteSide = false;
+            throw new HttpRequestException("Network error. Failed to get current game state", e);
         }
-
-        if (streamDto.UsernameWhite.Equals(myName))
-        {
-            OnWhiteSide = true;
-        }
-
-        StateReceived?.Invoke(streamDto);
-        GameFirstJoined?.Invoke();
     }
 
     private async void DrawOffer(GameEventDto dto)
@@ -274,31 +280,20 @@ public class GameService : IGameService
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
             GameRoom = GameRoomId.Value,
-            MoveType = (uint) move.MoveType(),
-            Promotion = (uint) move.PromotedPieceType().AsInt(),
+            MoveType = (uint)move.MoveType(),
+            Promotion = (uint)move.PromotedPieceType().AsInt(),
             Username = user.Identity!.Name!
         };
-        var response = await _client.PostAsJsonAsync("/moves", dto);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException("Network error. Failed to make a move.");
+            var response = await _client.PostAsJsonAsync("/moves", dto);
+            return await ValidatePostResponse(response);
         }
-
-        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-
-        if (ack != AckTypes.Success)
+        catch (HttpRequestException e)
         {
-            throw new HttpRequestException($"Ack code: {ack}. Failed to make a move.");
-
+            throw new HttpRequestException("Network error. Failed to make a move.", e);
         }
-        
-        return ack;
     }
 
     public async Task<AckTypes> OfferDraw()
@@ -308,7 +303,6 @@ public class GameService : IGameService
 
         if (!GameRoomId.HasValue)
             throw new InvalidOperationException("You didn't join a game room!");
-
 
         if (!isLoggedIn)
             throw new InvalidOperationException("User not logged in");
@@ -320,27 +314,16 @@ public class GameService : IGameService
             Username = user.Identity!.Name!,
             GameRoom = GameRoomId.Value
         };
-        var response = await _client.PostAsJsonAsync("/draw-offers", dto);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException("Network error. Failed to offer a draw.");
+            var response = await _client.PostAsJsonAsync("/draw-offers", dto);
+            return await ValidatePostResponse(response);
         }
-
-        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-        
-        if (ack != AckTypes.Success)
+        catch (HttpRequestException e)
         {
-            throw new HttpRequestException($"Ack code: {ack}. Failed to offer a draw.");
-
+            throw new HttpRequestException("Network error. Failed to offer a draw.", e);
         }
-
-        return ack;
     }
 
     public void PlayerJoined(GameEventDto dto)
@@ -367,27 +350,16 @@ public class GameService : IGameService
             Username = user.Identity!.Name!,
             GameRoom = GameRoomId.Value
         };
-        var response = await _client.PostAsJsonAsync("/resignation", dto);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException("Network error. Failed to resign from the game.");
+            var response = await _client.PostAsJsonAsync("/resignation", dto);
+            return await ValidatePostResponse(response);
         }
-
-        var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-
-        if (ack != AckTypes.Success)
+        catch (HttpRequestException e)
         {
-            throw new HttpRequestException($"Ack code: {ack}. Failed to resign.");
-
+            throw new HttpRequestException("Network error. Failed to resign from the game.", e);
         }
-        
-        return ack;
     }
 
     public async Task<AckTypes> SendDrawResponse(bool accepted)
@@ -403,17 +375,31 @@ public class GameService : IGameService
 
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+
+
         var dto = new ResponseDrawDto
         {
             GameRoom = GameRoomId.Value,
             Accept = accepted
         };
-        var response = await _client.PostAsJsonAsync("/draw-responses", dto);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
+        try
+        {
+            var response = await _client.PostAsJsonAsync("/draw-responses", dto);
+            return await ValidatePostResponse(response);
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to respond to a draw offer.", e);
+        }
+    }
+
+    private async Task<AckTypes> ValidatePostResponse(HttpResponseMessage response)
+    {
+        var responseContent = await response.Content.ReadAsStringAsync();
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException("Network error. Failed to respond to a draw offer.");
+            throw new HttpRequestException(responseContent);
         }
 
         var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
@@ -421,10 +407,10 @@ public class GameService : IGameService
             {
                 PropertyNameCaseInsensitive = true
             })!;
-        
+
         if (ack != AckTypes.Success)
         {
-            throw new HttpRequestException($"Ack code: {ack}. Failed to respond to a draw offer.");
+            throw new HttpRequestException(responseContent);
         }
 
         return ack;
@@ -439,30 +425,38 @@ public class GameService : IGameService
 
         if (parameters.Spectateable)
         {
-            queryParams.Add("spectateable",parameters.Spectateable.ToString());
+            queryParams.Add("spectateable", parameters.Spectateable.ToString());
         }
-        
+
         if (parameters.Joinable)
         {
-            queryParams.Add("joinable",parameters.Joinable.ToString());
+            queryParams.Add("joinable", parameters.Joinable.ToString());
         }
-        
+
         var uri = QueryHelpers.AddQueryString("/rooms", queryParams);
-        
-        var response = await _client.GetAsync(uri);
-        var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException("Network error. Failed to retrieve game rooms.");
-        }
+            var response = await _client.GetAsync(uri);
 
-        var roomList = JsonSerializer.Deserialize<IEnumerable<GameRoomDto>>(responseContent,
-            new JsonSerializerOptions
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
             {
-                PropertyNameCaseInsensitive = true
-            })!;
+                throw new HttpRequestException(responseContent);
+            }
 
-        return roomList.ToList();
+            var roomList = JsonSerializer.Deserialize<IEnumerable<GameRoomDto>>(responseContent,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                })!;
+
+            return roomList.ToList();
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to retrieve game rooms.", e);
+        }
     }
 }

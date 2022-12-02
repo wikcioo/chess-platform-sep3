@@ -72,20 +72,26 @@ public class JwtAuthService : IAuthService
             Password = password
         };
 
-        var response = await _client.PostAsJsonAsync("/auth/login", userLoginDto);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        Console.WriteLine(responseContent);
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new HttpRequestException("Network Error. Failed to login.");
+            var response = await _client.PostAsJsonAsync("/auth/login", userLoginDto);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(responseContent);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(responseContent);
+            }
+            var token = responseContent;
+            Jwt = token;
+            var principal = CreateClaimsPrincipal();
+
+            OnAuthStateChanged.Invoke(principal);
         }
-
-        var token = responseContent;
-        Jwt = token;
-        var principal = CreateClaimsPrincipal();
-
-        OnAuthStateChanged.Invoke(principal);
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network Error. Failed to login.", e);
+        }
     }
 
     public Task LogoutAsync()
