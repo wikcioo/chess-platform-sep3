@@ -1,10 +1,9 @@
 ﻿@page "/Login"
 @using HttpClients.ClientInterfaces
-@using Microsoft.AspNetCore.SignalR.Client
 @using System.Text.Json.Nodes
-@using HttpClients.Signalr
+@using HttpClients.ClientInterfaces.Signalr
 @inject IAuthService AuthService
-@inject IGameService GameService
+@inject IHubConnectionWrapper HubConnectionWrapper
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 
@@ -46,7 +45,7 @@
             try
             {
                 await AuthService.LoginAsync(_email, _password);
-                await GameService.StartHubConnection();
+                await HubConnectionWrapper.StartHubConnection(AuthService);
                 NavMgr.NavigateTo("/");
             }
             catch (Exception e)

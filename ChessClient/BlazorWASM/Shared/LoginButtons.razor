@@ -1,9 +1,10 @@
 ﻿@using HttpClients.ClientInterfaces
-@using HttpClients.Signalr
+@using HttpClients.ClientInterfaces.Signalr
+@using HttpClients.Implementations.Signalr
 @using MudBlazor
 @inject NavigationManager NavMgr
 @inject IAuthService AuthService
-@inject IGameService GameService
+@inject IHubConnectionWrapper HubConnectionWrapper
 <AuthorizeView>
     <Authorized>
         <MudIconButton Icon="@Icons.Filled.Logout" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Logout())"/>
@@ -23,7 +24,7 @@
     private async Task Logout()
     {
         await AuthService.LogoutAsync();
-        await GameService.StopHubConnection();
+        await HubConnectionWrapper.StopHubConnection();
         NavMgr.NavigateTo("/");
     }
 

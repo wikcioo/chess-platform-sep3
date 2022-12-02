@@ -6,7 +6,8 @@ using HttpClients.Implementations;
 using MudBlazor.Services;
 using BlazorWASM.Auth;
 using Domain.Auth;
-using HttpClients.Signalr;
+using HttpClients.ClientInterfaces.Signalr;
+using HttpClients.Implementations.Signalr;
 using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
 
@@ -38,7 +39,8 @@ AuthorizationPolicies.AddPolicies(builder.Services);
 builder.Services.AddScoped<IUserService, UserHttpClient>();
 builder.Services.AddScoped<IAuthService, JwtAuthService>();
 builder.Services.AddScoped<IGameService, GameService>();
-builder.Services.AddSingleton<HubConnectionWrapper>();
+
+builder.Services.AddSingleton<IHubConnectionWrapper, HubConnectionWrapper>();
 builder.Services.AddScoped<IChatHub, ChatHub>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthProvider>();
 
