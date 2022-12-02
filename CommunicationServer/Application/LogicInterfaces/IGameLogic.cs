@@ -1,5 +1,6 @@
 using Domain.DTOs;
 using Domain.DTOs.Chat;
+using Domain.DTOs.AuthorizedUserEvents;
 using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
@@ -17,4 +18,5 @@ public interface IGameLogic
     CurrentGameStateDto GetCurrentGameState(ulong gameRoomId);
     IEnumerable<GameRoomDto> GetGameRooms(GameRoomSearchParameters parameters);
     event Action<GameRoomEventDto>? GameEvent;
+    event Action<AuthorizedUserEventDto>? AuthUserEvent;
 }

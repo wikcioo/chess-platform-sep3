@@ -35,6 +35,7 @@ builder.Services.AddMudServices(config =>
     config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
     config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomCenter;
 });
+
 AuthorizationPolicies.AddPolicies(builder.Services);
 builder.Services.AddScoped<IUserService, UserHttpClient>();
 builder.Services.AddScoped<IAuthService, JwtAuthService>();
@@ -42,6 +43,8 @@ builder.Services.AddScoped<IGameService, GameService>();
 
 builder.Services.AddSingleton<IHubConnectionWrapper, HubConnectionWrapper>();
 builder.Services.AddScoped<IChatHub, ChatHub>();
+builder.Services.AddScoped<IAuthUserService, AuthUserService>();
+
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthProvider>();
 
 builder.Services.AddAuthorizationCore();

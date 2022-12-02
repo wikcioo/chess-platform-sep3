@@ -1,0 +1,50 @@
+@using HttpClients.ClientInterfaces
+@using Domain.DTOs.AuthorizedUserEvents
+@using Domain.DTOs
+@inject IAuthUserService AuthUserService
+@inject ISnackbar Snackbar
+@inject IGameService GameService
+@inject NavigationManager NavMgr
+
+@code {
+    
+    protected override void OnInitialized()
+    {
+        BindToAuthUserServiceCallbacks();
+    }
+
+    private void DisposeOfAuthUserServiceCallbacks()
+    {
+        AuthUserService.NewGameOffer -= OnNewGameOffer;
+    }
+
+    private void BindToAuthUserServiceCallbacks()
+    {
+        AuthUserService.NewGameOffer += OnNewGameOffer;
+    }
+
+    private void OnNewGameOffer(AuthorizedUserEventDto dto)
+    {
+        Snackbar.Add(
+            $"<div>New game offer from <strong>{dto.SenderUsername}</strong></div>",
+            Severity.Info,
+            config =>
+        {
+            config.Action = "Join";
+            config.ActionColor = Color.Primary;
+            config.Onclick = async _ =>
+            {
+                await GameService.JoinGame(new RequestJoinGameDto()
+                {
+                    GameRoom = dto.GameRoomId
+                });
+                
+                NavMgr.NavigateTo("/ChessGame");
+            };
+            config.CloseAfterNavigation = false;
+            config.RequireInteraction = true;
+            config.ShowCloseIcon = true;
+        });
+    }
+    
+}
