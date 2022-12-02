@@ -1,16 +1,13 @@
-using Application.Hubs;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
-using Microsoft.AspNetCore.SignalR;
 using Rudzoft.ChessLib;
 using Rudzoft.ChessLib.Enums;
 using Rudzoft.ChessLib.Factories;
 using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.MoveGeneration;
 using Rudzoft.ChessLib.Types;
-
 
 namespace Application.Entities;
 
@@ -55,8 +52,8 @@ public class GameRoom
 
     public GameSides GameSide;
 
-
-    public GameRoom(string creator, uint timeControlSeconds, uint timeControlIncrement, bool isVisible, OpponentTypes gameType,
+    public GameRoom(string creator, uint timeControlSeconds, uint timeControlIncrement, bool isVisible,
+        OpponentTypes gameType,
         string? fen = null)
     {
         Creator = creator;
@@ -76,7 +73,7 @@ public class GameRoom
     {
         _chessTimer.ThrowEvent += (_, _, dto) =>
         {
-            if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) GameIsActive = false;
+            if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp) GameIsActive = false;
             GameEvent?.Invoke(new GameRoomEventDto
             {
                 GameRoomId = Id,
@@ -115,6 +112,19 @@ public class GameRoom
         {
             GameRoomId = Id,
             GameEventDto = streamDto
+        });
+    }
+
+    public void SendNewGameRoomIdToPlayers(ulong id)
+    {
+        GameEvent?.Invoke(new GameRoomEventDto()
+        {
+            GameRoomId = Id,
+            GameEventDto = new GameEventDto()
+            {
+                Event = GameStreamEvents.RematchInvitation,
+                GameRoomId = id
+            }
         });
     }
 
@@ -162,7 +172,7 @@ public class GameRoom
             {
                 Event = GameStreamEvents.ReachedEndOfTheGame,
                 FenString = _game.Pos.FenNotation,
-                GameEndType = (uint) gameEndType,
+                GameEndType = (uint)gameEndType,
                 IsWhite = !_whitePlaying,
                 TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             };
@@ -182,7 +192,7 @@ public class GameRoom
             Event = GameStreamEvents.NewFenPosition,
             FenString = _game.Pos.FenNotation,
             TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
-            GameEndType = (uint) _game.GameEndType,
+            GameEndType = (uint)_game.GameEndType,
             IsWhite = _whitePlaying
         };
 
@@ -210,16 +220,19 @@ public class GameRoom
 
         _chessTimer.StopTimers();
         GameIsActive = false;
+        
         var streamDto = new GameEventDto()
         {
             Event = GameStreamEvents.Resignation,
             IsWhite = PlayerWhite!.Equals(dto.Username)
         };
+        
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
             GameEventDto = streamDto
         });
+        
         return AckTypes.Success;
     }
 
@@ -242,11 +255,13 @@ public class GameRoom
             UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
             UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
         };
+
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
             GameEventDto = streamDto
         });
+
         _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (true)
         {
@@ -481,8 +496,8 @@ public class GameRoom
     {
         var fromSquare = UciToSquare(dto.FromSquare);
         var toSquare = UciToSquare(dto.ToSquare);
-        var moveType = (MoveTypes) (dto.MoveType ?? 0);
-        var promotionPiece = (PieceTypes?) dto.Promotion;
+        var moveType = (MoveTypes)(dto.MoveType ?? 0);
+        var promotionPiece = (PieceTypes?)dto.Promotion;
 
         return moveType switch
         {
@@ -506,7 +521,7 @@ public class GameRoom
             Increment = GetInitialTimeControlIncrement
         };
     }
-    
+
     public bool CanUsernameJoin(string username)
     {
         if (GameType is OpponentTypes.Random or OpponentTypes.Ai)
