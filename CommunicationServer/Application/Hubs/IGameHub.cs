@@ -4,6 +4,6 @@ namespace Application.Hubs;
 
 public interface IGameHub
 {
-    Task ReceiveMessage(string username, string body);
+    Task ReceiveMessage(MessageDto dto);
     Task GetLog(List<MessageDto> log);
 }
