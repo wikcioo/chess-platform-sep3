@@ -1,13 +1,13 @@
 using Application.ClientInterfaces;
 using Application.Entities;
-using Application.Hubs;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.Chat;
+using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
+using Domain.DTOs.Stockfish;
 using Domain.Enums;
 using Domain.Models;
-using Microsoft.AspNetCore.SignalR;
 using Rudzoft.ChessLib.Fen;
 
 namespace Application.Logic;
@@ -18,14 +18,19 @@ public class GameLogic : IGameLogic
     private readonly IStockfishService _stockfishService;
     private readonly IChatLogic _chatLogic;
     private readonly IUserService _userService;
-    private readonly IHubContext<GameHub> _hubContext;
+    public event Action<GameRoomEventDto>? GameEvent;
 
-    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IHubContext<GameHub> hubContext,  IUserService userService)
+
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService)
     {
         _stockfishService = stockfishService;
         _chatLogic = chatLogic;
-        _hubContext = hubContext;
         _userService = userService;
+    }
+
+    private void FireEvent(GameRoomEventDto dto)
+    {
+        GameEvent?.Invoke(dto);
     }
 
     public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
@@ -43,11 +48,11 @@ public class GameLogic : IGameLogic
             };
             return responseFail;
         }
-        GameRoom gameRoom = new(dto.Username, dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType, _hubContext)
+        GameRoom gameRoom = new(dto.Username, dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType)
         {
             GameSide = dto.Side
         };
-
+        gameRoom.GameEvent += FireEvent;
         var requesterIsWhite = true;
         switch (dto.Side)
         {
@@ -92,7 +97,7 @@ public class GameLogic : IGameLogic
             gameRoom.NumPlayersJoined++;
 
         if (gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
-            RequestAiMove(id);
+            await RequestAiMove(id);
 
         ResponseGameDto responseDto = new()
         {
@@ -121,12 +126,12 @@ public class GameLogic : IGameLogic
             {
                 throw new InvalidOperationException("Player cannot play against themselves");
             }
-            
+
             if (IsAi(dto.OpponentName))
             {
                 throw new InvalidOperationException("Opponent is an AI in the not ai game.");
             }
-            
+
             if (dto.OpponentName == null || !await ValidateUserExists(dto.OpponentName))
             {
                 throw new InvalidOperationException("Opponent incorrect.");
@@ -205,7 +210,7 @@ public class GameLogic : IGameLogic
         throw new ArgumentException("Cannot join the game!");
     }
 
-    public Task<AckTypes> MakeMove(MakeMoveDto dto)
+    public async Task<AckTypes> MakeMove(MakeMoveDto dto)
     {
         try
         {
@@ -214,25 +219,25 @@ public class GameLogic : IGameLogic
             var ack = room.MakeMove(dto);
             if (ack != AckTypes.Success)
             {
-                return Task.FromResult(ack);
+                return ack;
             }
 
             if (room.CurrentPlayer != null && IsAi(room.CurrentPlayer))
             {
-                Task.Run(() => RequestAiMove(dto.GameRoom));
+                await RequestAiMove(dto.GameRoom);
             }
 
-            return Task.FromResult(ack);
+            return ack;
         }
         catch (KeyNotFoundException e)
         {
-            return Task.FromResult(AckTypes.GameNotFound);
+            return AckTypes.GameNotFound;
         }
     }
 
     private static bool IsAi(string? playerName) => StockfishLevels.IsAi(playerName);
 
-    private async void RequestAiMove(ulong roomId)
+    private async Task RequestAiMove(ulong roomId)
     {
         var room = _gameRoomsData.Get(roomId);
 

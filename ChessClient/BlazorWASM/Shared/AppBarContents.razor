@@ -1,10 +1,11 @@
 <MudButton Color="Color.Inherit" Href="/">Home</MudButton>
+
+<AuthorizeView>
+    <MudButton Color="Color.Inherit" Href="SpectateGame">Spectate Games</MudButton>
+</AuthorizeView>
+
 <AuthorizeView Roles="admin">
     <MudButton Color="Color.Inherit" Href="CreateUser">Add Users</MudButton>
-</AuthorizeView>
-<AuthorizeView>
-    <MudButton Color="Color.Inherit" Href="PlayGame">Play</MudButton>
-    <MudButton Color="Color.Inherit" Href="SpectateGame">Spectate Games</MudButton>
 </AuthorizeView>
 
 @code {

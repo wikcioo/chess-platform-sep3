@@ -1,6 +1,7 @@
 using System.Threading;
 using Application.Entities;
 using Domain.DTOs;
+using Domain.DTOs.GameEvents;
 using Rudzoft.ChessLib.Enums;
 using Xunit;
 
@@ -71,7 +72,7 @@ public class ChessTimerUnitTests
     [InlineData(4)]
     public void ReturnsTimeIsUpGameEndTypeForLastEvent(int baseTime)
     {
-        var timeEvent = new JoinedGameStreamDto();
+        var timeEvent = new GameEventDto();
         
         var timer = new ChessTimer(true, (uint)baseTime, 0);
         timer.ThrowEvent += (_, _, dto) => timeEvent = dto;

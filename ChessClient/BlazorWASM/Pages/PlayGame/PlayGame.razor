@@ -1,4 +1,4 @@
-@page "/PlayGame"
+@page "/"
 @using BlazorWASM.Pages.StartGame
 @using Domain.DTOs
 @using Domain.DTOs.Chat
@@ -8,25 +8,37 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 @inject IGameService GameService
-
-<MudContainer>
-    <MudContainer Class="mt-10 d-flex flex-row gap-10">
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="DisplayCreateGameDialog">Create a Game</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinRandomGame">Play Random</MudButton>
-    </MudContainer>
-    <MudSpacer/>
-    <MudContainer Class="d-flex justify-end">
-        <MudIconButton Icon="@Icons.Filled.Refresh"
-                       @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshJoinableGames(); })"/>
-    </MudContainer>
-    <JoinableGameListComponent JoinableGames="@_joinableGames"/>
-</MudContainer>
+<AuthorizeView>
+    <Authorized>
+        <MudContainer>
+            <MudContainer Class="mt-10 d-flex flex-row gap-10">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="DisplayCreateGameDialog">Create a Game</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinRandomGame">Play Random</MudButton>
+            </MudContainer>
+            <MudSpacer/>
+            <MudContainer Class="d-flex justify-end">
+                <MudIconButton Icon="@Icons.Filled.Refresh"
+                               @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshJoinableGames(); })"/>
+            </MudContainer>
+            <JoinableGameListComponent JoinableGames="@_joinableGames"/>
+        </MudContainer>
+    </Authorized>
+    <NotAuthorized>
+        <MudText Typo="Typo.h2" Align="Align.Center" Class="ma-5">Please login to start playing.</MudText>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
     private IList<GameRoomDto>? _joinableGames = new List<GameRoomDto>();
 
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; } = null!;
+
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthState;
+        var user = authState.User;
+        if (user.Identity == null) return;
         await RefreshJoinableGames();
     }
 
@@ -84,4 +96,5 @@
             });
         }
     }
+
 }

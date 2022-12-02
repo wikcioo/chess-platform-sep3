@@ -1,6 +1,8 @@
 using Application.ClientInterfaces;
+using Application.Hubs;
 using Application.LogicInterfaces;
 using Domain.DTOs;
+using Domain.DTOs.GameEvents;
 using Domain.DTOs.Chat;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
@@ -14,13 +16,15 @@ namespace WebAPI.Controllers;
 [Route("[controller]")]
 public class GameController : ControllerBase
 {
+    private readonly GroupHandler _groupHandler;
     private readonly IGameLogic _gameLogic;
     private readonly IStockfishService _stockfishService;
 
-    public GameController(IGameLogic gameLogic,IStockfishService stockfishService)
+    public GameController(IGameLogic gameLogic,IStockfishService stockfishService, GroupHandler groupHandler)
     {
         _gameLogic = gameLogic;
         _stockfishService = stockfishService;
+        _groupHandler = groupHandler;
     }
 
     [HttpPost("/games")]

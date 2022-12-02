@@ -1,4 +1,5 @@
 using Domain.DTOs;
+using Domain.DTOs.GameEvents;
 using Domain.DTOs.Chat;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
@@ -11,7 +12,7 @@ public interface IGameService
 {
     public event Action<CurrentGameStateDto>? StateReceived;
     bool OnWhiteSide { get; set; }
-    ulong? GameRoomId { get; }
+    ulong? GameRoomId { get; set; }
     bool IsDrawOfferPending { get; set; }
     public event GameService.StreamUpdate? TimeUpdated;
     public event GameService.StreamUpdate? NewFenReceived;
@@ -23,6 +24,7 @@ public interface IGameService
     public event GameService.StreamUpdate? EndOfTheGameReached;
     public event Action? GameFirstJoined;
 
+    Task StartHubConnection();
     public Task<ResponseGameDto> CreateGame(RequestGameDto dto);
     public Task JoinGame(RequestJoinGameDto dto);
     public Task<AckTypes> MakeMove(Move move);
@@ -32,4 +34,5 @@ public interface IGameService
     public Task<IList<GameRoomDto>> GetGameRooms(GameRoomSearchParameters parameters);
     Task GetCurrentGameState();
     void LeaveRoom();
+    Task StopHubConnection();
 }

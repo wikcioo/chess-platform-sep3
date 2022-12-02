@@ -71,6 +71,9 @@ builder.Services.AddSingleton(_ => GrpcChannel.ForAddress("https://localhost:700
 builder.Services.AddSingleton<IChatLogic, ChatLogic>();
 builder.Services.AddSingleton<IGameLogic, GameLogic>();
 
+builder.Services.AddSingleton<GroupHandler>();
+
+
 AuthorizationPolicies.AddPolicies(builder.Services);
 var app = builder.Build();
 app.UseResponseCompression();

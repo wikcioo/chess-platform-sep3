@@ -4,15 +4,16 @@
 @using Rudzoft.ChessLib.Enums
 @using Rudzoft.ChessLib.Fen
 @using Position = Rudzoft.ChessLib.Position
-@using Domain.DTOs
 @using Domain.Enums
 @using BlazorWASM.Pages.ChessComponents
 @using System.Security.Claims
+@using Domain.DTOs.GameEvents
 @using HttpClients.ClientInterfaces
 @inject IDialogService DialogService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
 @inject IGameService GameService
+@inject NavigationManager NavMgr
 @implements IDisposable
 
 
@@ -114,16 +115,25 @@
         GameService.DrawOfferAccepted -= OnDrawOfferAccepted;
         GameService.EndOfTheGameReached -= OnEndOfTheGameReached;
         GameService.GameFirstJoined -= OnGameFirstJoined;
+        GameService.StateReceived -= OnGameStateReceived;
         GameService.LeaveRoom();
+        GameService.GameRoomId = null;
     }
 
     protected override async Task OnInitializedAsync()
     {
-        AuthenticationState authState = await AuthState;
-        ClaimsPrincipal user = authState.User;
-        if (user.Identity == null) return;
-        _currentUser = user.Identity.Name!;
-        await GameService.GetCurrentGameState();
+        if (GameService.GameRoomId == null)
+        {
+            NavMgr.NavigateTo("/");
+        }
+        else
+        {
+            var authState = await AuthState;
+            var user = authState.User;
+            if (user.Identity == null) return;
+            _currentUser = user.Identity.Name!;
+            await GameService.GetCurrentGameState();
+        }
     }
 
     private void InitGameLogic()
@@ -140,7 +150,7 @@
         GameService.StateReceived += OnGameStateReceived;
     }
 
-    public void OnGameStateReceived(CurrentGameStateDto dto)
+    private void OnGameStateReceived(CurrentGameStateDto dto)
     {
         _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
         PlaySound("notify");
@@ -151,12 +161,12 @@
         StateHasChanged();
     }
 
-    public async Task<AckTypes> MakeMove(Move move)
+    private async Task<AckTypes> MakeMove(Move move)
     {
         try
         {
-            var t = await GameService.MakeMove(move);
             _whiteTimerActive = !_whiteTimerActive;
+            var t = await GameService.MakeMove(move);
             return t;
         }
         catch (InvalidOperationException e)
@@ -236,7 +246,7 @@
         _isWhiteSide = side;
     }
 
-    private void OnEndOfTheGameReached(JoinedGameStreamDto dto)
+    private void OnEndOfTheGameReached(GameEventDto dto)
     {
         PlaySound("notify");
         switch (dto.GameEndType)
@@ -262,7 +272,7 @@
         }
     }
 
-    private void OnTimeUpdated(JoinedGameStreamDto dto)
+    private void OnTimeUpdated(GameEventDto dto)
     {
         if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp)
         {
@@ -292,7 +302,7 @@
         }
     }
 
-    private void OnNewFenReceived(JoinedGameStreamDto dto)
+    private void OnNewFenReceived(GameEventDto dto)
     {
         SetFenPosition(dto.FenString);
         PlaySound("move");
@@ -307,7 +317,7 @@
         StateHasChanged();
     }
 
-    private void OnResignationReceived(JoinedGameStreamDto dto)
+    private void OnResignationReceived(GameEventDto dto)
     {
         PlaySound("notify");
         if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
@@ -320,7 +330,7 @@
         }
     }
 
-    private void OnPlayerJoined(JoinedGameStreamDto dto)
+    private void OnPlayerJoined(GameEventDto dto)
     {
         _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
         PlaySound("notify");
@@ -328,19 +338,19 @@
         StateHasChanged();
     }
 
-    private void OnDrawOffered(JoinedGameStreamDto dto)
+    private void OnDrawOffered(GameEventDto dto)
     {
         Notify($"Draw offer", Severity.Info);
         StateHasChanged();
     }
 
-    private void OnDrawOfferTimedOut(JoinedGameStreamDto dto)
+    private void OnDrawOfferTimedOut(GameEventDto dto)
     {
         Notify("Draw offer expired", Severity.Info);
         StateHasChanged();
     }
 
-    private void OnDrawOfferAccepted(JoinedGameStreamDto dto)
+    private void OnDrawOfferAccepted(GameEventDto dto)
     {
         PlaySound("notify");
         DisplayDefaultDialog("The game finished in a draw!");

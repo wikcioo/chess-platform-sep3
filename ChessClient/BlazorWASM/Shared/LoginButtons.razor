@@ -3,7 +3,7 @@
 @using MudBlazor
 @inject NavigationManager NavMgr
 @inject IAuthService AuthService
-@inject HubConnectionDto HubDto
+@inject IGameService GameService
 <AuthorizeView>
     <Authorized>
         <MudIconButton Icon="@Icons.Filled.Logout" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Logout())"/>
@@ -23,13 +23,8 @@
     private async Task Logout()
     {
         await AuthService.LogoutAsync();
-        NavMgr.NavigateTo("/", true);
-        if (HubDto.HubConnection is not null)
-        {
-            await HubDto.HubConnection.StopAsync();
-            await HubDto.HubConnection.DisposeAsync();
-            Console.WriteLine("WHy even");
-        }
+        await GameService.StopHubConnection();
+        NavMgr.NavigateTo("/");
     }
 
 }

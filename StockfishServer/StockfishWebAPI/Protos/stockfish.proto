@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-option csharp_namespace = "StockfishWebAPI";
+option csharp_namespace = "StockfishGrpc";
 
-package stockfish;
+package grpc.stockfish;
 
 message RequestBestMove {
   string Fen = 1;
@@ -26,7 +26,7 @@ message StockfishSettings{
   int32 SkillLevel = 5;
 }
 
-service Stockfish {
+service StockfishService {
   rpc GetBestMove(RequestBestMove) returns (BestMove) {}
   rpc GetStockfishReady(Empty) returns (IsReady){}
 }

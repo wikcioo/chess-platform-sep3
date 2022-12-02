@@ -10,9 +10,9 @@ public class ChatService : IChatService
     public event Action<string>? MessageReceived;
     private string _chatLog = "";
 
-    private readonly HubConnectionDto _hubDto;
+    private readonly HubConnectionWrapper _hubDto;
 
-    public ChatService(HubConnectionDto hubDto)
+    public ChatService(HubConnectionWrapper hubDto)
     {
         _hubDto = hubDto;
         if (_hubDto.HubConnection is null) return;

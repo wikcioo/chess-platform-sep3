@@ -1,4 +1,4 @@
-﻿using Domain.DTOs;
+﻿using Domain.DTOs.Stockfish;
 
 namespace HttpClients.ClientInterfaces;
 
