@@ -54,19 +54,27 @@ public class GameService : IGameService
 
     public async Task StartHubConnection()
     {
-        if (_hubDto.HubConnection is not null)
+        try
         {
-            await _hubDto.HubConnection.DisposeAsync();
-        }
+            if (_hubDto.HubConnection is not null)
+            {
+                await _hubDto.HubConnection.DisposeAsync();
+            }
 
-        _hubDto.HubConnection = new HubConnectionBuilder()
-            .WithUrl("https://localhost:7233/gamehub",
-                options => { options.AccessTokenProvider = () => Task.FromResult(_authService.GetJwtToken())!; })
-            .WithAutomaticReconnect()
-            .Build();
-        //Required so the connection is not dropped
-        _hubDto.HubConnection.On<string>("DummyConnection", _ => { });
-        await _hubDto.HubConnection.StartAsync();
+            _hubDto.HubConnection = new HubConnectionBuilder()
+                .WithUrl("https://localhost:7233/gamehub",
+                    options => { options.AccessTokenProvider = () => Task.FromResult(_authService.GetJwtToken())!; })
+                .WithAutomaticReconnect()
+                .Build();
+            //Required so the connection is not dropped
+            _hubDto.HubConnection.On<string>("DummyConnection", _ => { });
+            await _hubDto.HubConnection.StartAsync();
+        }
+        catch (HttpRequestException)
+        {
+            throw new HttpRequestException("Network error. Failed to connect to a stream");
+        }
+       
     }
 
     public async void LeaveRoom()
@@ -102,7 +110,7 @@ public class GameService : IGameService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(responseContent);
+            throw new HttpRequestException("Network error. Failed to create the game");
         }
 
         var created = JsonSerializer.Deserialize<ResponseGameDto>(responseContent, new JsonSerializerOptions
@@ -131,7 +139,7 @@ public class GameService : IGameService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(responseContent);
+            throw new HttpRequestException("Network error. Failed to join the game");
         }
 
         var ack = JsonSerializer.Deserialize<AckTypes>(responseContent, new JsonSerializerOptions
@@ -204,7 +212,7 @@ public class GameService : IGameService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(responseContent);
+            throw new HttpRequestException("Network error. Failed get current game state");
         }
 
         var streamDto = JsonSerializer.Deserialize<CurrentGameStateDto>(responseContent, new JsonSerializerOptions
@@ -276,7 +284,7 @@ public class GameService : IGameService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(responseContent);
+            throw new HttpRequestException("Network error. Failed to make a move.");
         }
 
         var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
@@ -312,7 +320,7 @@ public class GameService : IGameService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(responseContent);
+            throw new HttpRequestException("Network error. Failed to offer a draw.");
         }
 
         var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
@@ -353,7 +361,7 @@ public class GameService : IGameService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(responseContent);
+            throw new HttpRequestException("Network error. Failed to resign from the game.");
         }
 
         var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
@@ -388,7 +396,7 @@ public class GameService : IGameService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(responseContent);
+            throw new HttpRequestException("Network error. Failed to respond to a draw offer.");
         }
 
         var ack = JsonSerializer.Deserialize<AckTypes>(responseContent,
@@ -424,7 +432,7 @@ public class GameService : IGameService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(responseContent);
+            throw new HttpRequestException("Network error. Failed to retrieve game rooms.");
         }
 
         var roomList = JsonSerializer.Deserialize<IEnumerable<GameRoomDto>>(responseContent,
