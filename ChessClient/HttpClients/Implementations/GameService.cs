@@ -148,6 +148,11 @@ public class GameService : IGameService
         })!;
         GameRoomId = dto.GameRoom;
 
+        if (ack != AckTypes.Success)
+        {
+            throw new HttpRequestException($"Ack code: {ack}. Failed to join the game.");
+        }
+
         if (_hubDto.HubConnection is not null)
         {
             await _hubDto.HubConnection.SendAsync("JoinRoom", GameRoomId);
@@ -293,6 +298,12 @@ public class GameService : IGameService
                 PropertyNameCaseInsensitive = true
             })!;
 
+        if (ack != AckTypes.Success)
+        {
+            throw new HttpRequestException($"Ack code: {ack}. Failed to make a move.");
+
+        }
+        
         return ack;
     }
 
@@ -328,6 +339,12 @@ public class GameService : IGameService
             {
                 PropertyNameCaseInsensitive = true
             })!;
+        
+        if (ack != AckTypes.Success)
+        {
+            throw new HttpRequestException($"Ack code: {ack}. Failed to offer a draw.");
+
+        }
 
         return ack;
     }
@@ -370,6 +387,12 @@ public class GameService : IGameService
                 PropertyNameCaseInsensitive = true
             })!;
 
+        if (ack != AckTypes.Success)
+        {
+            throw new HttpRequestException($"Ack code: {ack}. Failed to resign.");
+
+        }
+        
         return ack;
     }
 
@@ -404,6 +427,11 @@ public class GameService : IGameService
             {
                 PropertyNameCaseInsensitive = true
             })!;
+        
+        if (ack != AckTypes.Success)
+        {
+            throw new HttpRequestException($"Ack code: {ack}. Failed to respond to a draw offer.");
+        }
 
         return ack;
     }
