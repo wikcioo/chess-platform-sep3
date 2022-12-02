@@ -5,6 +5,7 @@
 @using HttpClients.Signalr
 @inject IAuthService AuthService
 @inject IGameService GameService
+@inject IAuthUserService AuthUserService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 
@@ -47,6 +48,8 @@
             {
                 await AuthService.LoginAsync(_email, _password);
                 await GameService.StartHubConnection();
+                await AuthUserService.JoinUserEvents();
+                
                 NavMgr.NavigateTo("/");
             }
             catch (HttpRequestException e)

@@ -34,11 +34,13 @@ builder.Services.AddMudServices(config =>
     config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
     config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomCenter;
 });
+
 AuthorizationPolicies.AddPolicies(builder.Services);
 builder.Services.AddScoped<IUserService, UserHttpClient>();
 builder.Services.AddSingleton<HubConnectionWrapper>();
 builder.Services.AddScoped<IAuthService, JwtAuthService>();
 builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IAuthUserService, AuthUserService>();
 builder.Services.AddTransient<IChatService, ChatService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthProvider>();
 
