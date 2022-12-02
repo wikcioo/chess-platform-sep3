@@ -367,11 +367,10 @@ public class GameService : IGameService
 
         if (parameters.Joinable)
         {
-            queryParams.Add("joinable", parameters.Spectateable.ToString());
+            queryParams.Add("joinable", parameters.Joinable.ToString());
         }
 
         var uri = QueryHelpers.AddQueryString("/rooms", queryParams);
-
         try
         {
             var response = await _client.GetAsync(uri);
