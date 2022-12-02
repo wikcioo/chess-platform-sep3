@@ -13,7 +13,10 @@ namespace Application.Logic;
 
 public class GameLogic : IGameLogic
 {
-    private readonly GameRoomsData _gameRoomsData = new();
+    private static ulong _nextGameId = 1;
+
+    private readonly Dictionary<ulong, GameRoomHandler> _gameRooms = new();
+
     private readonly IStockfishService _stockfishService;
     private readonly IChatLogic _chatLogic;
     private readonly IUserService _userService;
@@ -95,7 +98,9 @@ public class GameLogic : IGameLogic
             }
         }
 
-        var id = _gameRoomsData.Add(gameRoomHandler);
+        var id = _nextGameId++;
+        gameRoomHandler.Id = id;
+        _gameRooms.Add(id, gameRoomHandler);
         gameRoomHandler.Initialize();
         _chatLogic.StartChatRoom(id);
 
@@ -197,7 +202,8 @@ public class GameLogic : IGameLogic
 
     public AckTypes JoinGame(RequestJoinGameDto dto)
     {
-        var gameRoom = _gameRoomsData.Get(dto.GameRoom);
+        var gameRoom = GetGameRoom(dto.GameRoom);
+
         if (gameRoom.IsJoinable && gameRoom.CanUsernameJoin(dto.Username))
         {
             if (string.IsNullOrEmpty(gameRoom.PlayerWhite) && !dto.Username.Equals(gameRoom.PlayerBlack))
@@ -227,11 +233,19 @@ public class GameLogic : IGameLogic
         throw new ArgumentException("Cannot join the game!");
     }
 
+    private GameRoomHandler GetGameRoom(ulong id)
+    {
+        if (_gameRooms.ContainsKey(id))
+            return _gameRooms[id];
+
+        throw new KeyNotFoundException();
+    }
+
     public async Task<AckTypes> MakeMove(MakeMoveDto dto)
     {
         try
         {
-            var room = _gameRoomsData.Get(dto.GameRoom);
+            var room = GetGameRoom(dto.GameRoom);
 
             var ack = room.MakeMove(dto);
             if (ack != AckTypes.Success)
@@ -256,7 +270,7 @@ public class GameLogic : IGameLogic
 
     private async Task RequestAiMove(ulong roomId)
     {
-        var room = _gameRoomsData.Get(roomId);
+        var room = GetGameRoom(roomId);
 
         if (!IsAi(room.CurrentPlayer))
             throw new InvalidOperationException("Current player is not an AI");
@@ -280,10 +294,10 @@ public class GameLogic : IGameLogic
     {
         try
         {
-            var result = Task.FromResult(_gameRoomsData.Get(dto.GameRoom).Resign(dto));
+            var result = Task.FromResult(GetGameRoom(dto.GameRoom).Resign(dto));
             if (result.Result == AckTypes.Success)
             {
-                _gameRoomsData.Remove(dto.GameRoom);
+                _gameRooms.Remove(dto.GameRoom);
             }
 
             return result;
@@ -298,7 +312,7 @@ public class GameLogic : IGameLogic
     {
         try
         {
-            return await _gameRoomsData.Get(dto.GameRoom).OfferDraw(dto);
+            return await GetGameRoom(dto.GameRoom).OfferDraw(dto);
         }
         catch (KeyNotFoundException e)
         {
@@ -310,10 +324,10 @@ public class GameLogic : IGameLogic
     {
         try
         {
-            var result = Task.FromResult(_gameRoomsData.Get(dto.GameRoom).DrawOfferResponse(dto));
+            var result = Task.FromResult(GetGameRoom(dto.GameRoom).DrawOfferResponse(dto));
             if (result.Result == AckTypes.Success && dto.Accept)
             {
-                _gameRoomsData.Remove(dto.GameRoom);
+                _gameRooms.Remove(dto.GameRoom);
             }
 
             return result;
@@ -324,9 +338,14 @@ public class GameLogic : IGameLogic
         }
     }
 
+    private IEnumerable<GameRoomHandler> GetAll()
+    {
+        return _gameRooms.Select(pair => pair.Value).ToList();
+    }
+
     public IEnumerable<GameRoomDto> GetGameRooms(GameRoomSearchParameters parameters)
     {
-        var rooms = _gameRoomsData.GetAll();
+        var rooms = GetAll();
 
         if (parameters.Spectateable)
         {
@@ -343,6 +362,6 @@ public class GameLogic : IGameLogic
 
     public CurrentGameStateDto GetCurrentGameState(ulong gameRoomId)
     {
-        return _gameRoomsData.Get(gameRoomId).GetCurrentGameState();
+        return GetGameRoom(gameRoomId).GetCurrentGameState();
     }
 }

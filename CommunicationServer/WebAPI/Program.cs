@@ -39,27 +39,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
     };
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            var accessToken = context.Request.Query["access_token"];
-            // If the request is for our hub...
-            var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) &&
-                (path.StartsWithSegments("/gamehub")))
-            {
-                // Read the token out of the query string
-                context.Token = accessToken;
-            }
-
-            return Task.CompletedTask;
-        }
-    };
 });
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IUserLogic, UserLogic>();
-builder.Services.AddHttpClient<IUserService, UserHttpClient>(client => client.BaseAddress = new Uri("http://localhost:8080"));
+builder.Services.AddHttpClient<IUserService, UserHttpClient>(client =>
+    client.BaseAddress = new Uri("http://localhost:8080"));
 
 builder.Services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
 
