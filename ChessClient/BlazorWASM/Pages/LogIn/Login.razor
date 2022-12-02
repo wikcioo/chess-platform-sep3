@@ -47,16 +47,15 @@
             try
             {
                 await AuthService.LoginAsync(_email, _password);
-                await GameService.StartHubConnection();
+                await GameService.StartHubConnectionAsync();
                 await AuthUserService.JoinUserEvents();
                 
                 NavMgr.NavigateTo("/");
             }
-            catch (Exception e)
+            catch (HttpRequestException e)
             {
                 Console.WriteLine(e);
-                var res = JsonNode.Parse(e.Message)!;
-                Notify("" + res["message"], Severity.Error);
+                Notify(e.Message, Severity.Error);
             }
         }
     }

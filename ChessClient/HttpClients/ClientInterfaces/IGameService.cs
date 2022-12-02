@@ -24,15 +24,16 @@ public interface IGameService
     public event GameService.StreamUpdate? EndOfTheGameReached;
     public event Action? GameFirstJoined;
 
-    Task StartHubConnection();
-    public Task<ResponseGameDto> CreateGame(RequestGameDto dto);
-    public Task JoinGame(RequestJoinGameDto dto);
-    public Task<AckTypes> MakeMove(Move move);
-    public Task<AckTypes> OfferDraw();
-    public Task<AckTypes> Resign();
-    public Task<AckTypes> SendDrawResponse(bool accepted);
-    public Task<IList<GameRoomDto>> GetGameRooms(GameRoomSearchParameters parameters);
-    Task GetCurrentGameState();
-    void LeaveRoom();
-    Task StopHubConnection();
+    Task StartHubConnectionAsync();
+    Task<ResponseGameDto> CreateGameAsync(RequestGameDto dto);
+    Task JoinGameAsync(RequestJoinGameDto dto);
+    Task<AckTypes> MakeMoveAsync(Move move);
+    Task<AckTypes> OfferDrawAsync();
+    Task<AckTypes> ResignAsync();
+    Task<string> GetLastFenAsync();
+    Task<AckTypes> SendDrawResponseAsync(bool accepted);
+    Task<IList<GameRoomDto>> GetGameRoomsAsync(GameRoomSearchParameters parameters);
+    Task GetCurrentGameStateAsync();
+    void LeaveRoomAsync();
+    Task StopHubConnectionAsync();
 }
