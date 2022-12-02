@@ -36,7 +36,7 @@
                     <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@(_isWhiteSide == GameSides.White)"/>
                 </MudItem>
                 <MudItem xs="8">
-                    <NicknameComponent Nickname="@_currentUser"/>
+                    <NicknameComponent Nickname="@_protagonistName"/>
                 </MudItem>
                 <MudItem xs="4">
                     <TimerComponent Active="@(_isWhiteSide == GameSides.White ? _whiteTimerActive : !_whiteTimerActive)"
@@ -46,32 +46,43 @@
         </MudItem>
         <MudItem xs="12" sm="9" md="4">
             <MudGrid>
-                @if (GameService.IsDrawOfferPending)
+                @if (!_spectating)
                 {
-                    <MudItem Style="text-align: center" xs="12">
-                        <MudPaper Class="my-2 pa-2 mud-theme-primary">
-                            <MudGrid Spacing="2" Justify="Justify.SpaceBetween">
-                                <MudItem Class="d-flex align-center" xs="12" sm="6" md="12">
-                                    <MudText Class="flex-1" Typo="Typo.subtitle1" Align="Align.Center">You have a draw offer!</MudText>
-                                </MudItem>
-                                <MudItem xs="6" sm="3" md="6">
-                                    <MudButton @onclick="() => SendDrawResponse(true)" Variant="Variant.Filled" FullWidth="true" Color="Color.Tertiary">Accept</MudButton>
-                                </MudItem>
-                                <MudItem xs="6" sm="3" md="6">
-                                    <MudButton @onclick="() => SendDrawResponse(false)" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Decline</MudButton>
-                                </MudItem>
-                            </MudGrid>
-                        </MudPaper>
+                    @if (GameService.IsDrawOfferPending)
+                    {
+                        <MudItem Style="text-align: center" xs="12">
+                            <MudPaper Class="my-2 pa-2 mud-theme-primary">
+                                <MudGrid Spacing="2" Justify="Justify.SpaceBetween">
+                                    <MudItem Class="d-flex align-center" xs="12" sm="6" md="12">
+                                        <MudText Class="flex-1" Typo="Typo.subtitle1" Align="Align.Center">You have a draw offer!</MudText>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="3" md="6">
+                                        <MudButton @onclick="() => SendDrawResponse(true)" Variant="Variant.Filled" FullWidth="true" Color="Color.Tertiary">Accept</MudButton>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="3" md="6">
+                                        <MudButton @onclick="() => SendDrawResponse(false)" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Decline</MudButton>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudPaper>
+                        </MudItem>
+                    }
+                    <MudItem xs="6">
+                        <MudButton @onclick="Resign" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
+                            Resign <MudIcon Icon="@Icons.Filled.OutlinedFlag" Size="Size.Small"></MudIcon>
+                        </MudButton>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudButton @onclick="OfferDraw" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Offer Draw</MudButton>
                     </MudItem>
                 }
-                <MudItem xs="6">
-                    <MudButton @onclick="Resign" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
-                        Resign <MudIcon Icon="@Icons.Filled.OutlinedFlag" Size="Size.Small"></MudIcon>
-                    </MudButton>
-                </MudItem>
-                <MudItem xs="6">
-                    <MudButton @onclick="OfferDraw" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Offer Draw</MudButton>
-                </MudItem>
+                else
+                {
+                    <MudItem xs="12">
+                        <MudPaper Class="my-2 pa-2 mud-theme-secondary">
+                            <MudText Align="Align.Center" Typo="Typo.h5">Spectating</MudText>
+                        </MudPaper>
+                    </MudItem> 
+                }
                 <MudItem xs="12">
                     <ChatWindow GameRoom="@GameService.GameRoomId"></ChatWindow>
                 </MudItem>
@@ -86,13 +97,14 @@
     [CascadingParameter]
     public Task<AuthenticationState> AuthState { get; set; } = null!;
 
-    private string _currentUser = "NotLoggedInMaster";
-
+    private string _protagonistName = "NotLoggedInMaster";
+    private string _currentUser = string.Empty;
     private readonly IPosition _position = new Position(new Board(), new PieceValue());
     private double _whiteSeconds;
     private double _blackSeconds;
     private bool _whiteTimerActive = true;
     private string _opponentName = "PlaceholderJoe";
+    private bool _spectating;
 
     //Form input bindings
     private GameSides _isWhiteSide = GameSides.White;
@@ -130,8 +142,8 @@
         {
             var authState = await AuthState;
             var user = authState.User;
-            if (user.Identity == null) return;
-            _currentUser = user.Identity.Name!;
+            if (user.Identity?.Name == null) return;
+            _currentUser = user.Identity.Name;
             await GameService.GetCurrentGameStateAsync();
         }
     }
@@ -152,12 +164,26 @@
 
     private void OnGameStateReceived(CurrentGameStateDto dto)
     {
-        _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
-        PlaySound("notify");
         SetFenPosition(dto.FenString);
-        Notify("Game joined. Have fun!", Severity.Success);
         _whiteSeconds = dto.WhiteTimeLeftMs / 1000;
         _blackSeconds = dto.BlackTimeLeftMs / 1000;
+
+
+        if (_currentUser != dto.UsernameWhite && _currentUser != dto.UsernameBlack)
+        {
+            _spectating = true;
+            _protagonistName = dto.UsernameWhite;
+            _opponentName = dto.UsernameBlack;
+            Notify("Spectating. Enjoy!", Severity.Success);
+        }
+        else
+        {
+            _spectating = false;
+            _protagonistName = _currentUser;
+            _opponentName = dto.UsernameWhite.Equals(_currentUser) ? dto.UsernameBlack : dto.UsernameWhite;
+            Notify("Game joined. Have fun!", Severity.Success);
+        }
+        PlaySound("notify");
         StateHasChanged();
     }
 
@@ -167,7 +193,7 @@
         {
             _whiteTimerActive = !_whiteTimerActive;
             var ack = await GameService.MakeMoveAsync(move);
-            if (ack is AckTypes.InvalidMove or AckTypes.GameHasFinished or AckTypes.GameNotFound)
+            if (ack != AckTypes.Success)
                 RevertToLastFen();
         }
         catch (InvalidOperationException e)
