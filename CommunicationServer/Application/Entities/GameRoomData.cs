@@ -6,17 +6,17 @@ public class GameRoomsData
 {
     private static ulong _nextGameId = 1;
 
-    private readonly Dictionary<ulong, GameRoom> _gameRooms = new();
+    private readonly Dictionary<ulong, GameRoomHandler> _gameRooms = new();
 
-    public ulong Add(GameRoom gameRoom)
+    public ulong Add(GameRoomHandler gameRoomHandler)
     {
         var id = _nextGameId++;
-        gameRoom.Id = id;
-        _gameRooms.Add(id, gameRoom);
+        gameRoomHandler.Id = id;
+        _gameRooms.Add(id, gameRoomHandler);
         return id;
     }
 
-    public GameRoom Get(ulong id)
+    public GameRoomHandler Get(ulong id)
     {
         if (_gameRooms.ContainsKey(id))
             return _gameRooms[id];
@@ -28,7 +28,7 @@ public class GameRoomsData
     {
         _gameRooms.Remove(id);
     }
-    public IEnumerable<GameRoom> GetAll()
+    public IEnumerable<GameRoomHandler> GetAll()
     {
         return _gameRooms.Select(pair => pair.Value).ToList();
     }

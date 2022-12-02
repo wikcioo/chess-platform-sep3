@@ -11,7 +11,7 @@ using Rudzoft.ChessLib.Types;
 
 namespace Application.Entities;
 
-public class GameRoom
+public class GameRoomHandler
 {
     private readonly IGame _game;
     private readonly ChessTimer _chessTimer;
@@ -48,8 +48,7 @@ public class GameRoom
     public GameSides GameSide;
 
 
-    public GameRoom(string creator, uint timeControlSeconds, uint timeControlIncrement, bool isVisible,
-        OpponentTypes gameType,
+    public GameRoomHandler(string creator, uint timeControlSeconds, uint timeControlIncrement, bool isVisible, OpponentTypes gameType,
         string? fen = null)
     {
         Creator = creator;

@@ -15,15 +15,15 @@ namespace Application.Tests;
 
 public class GameRoomUnitTests
 {
-    private GameRoom? _gameRoom;
+    private GameRoomHandler? _gameRoom;
     private const string PlayerWhite = "Bob";
     private const string PlayerBlack = "Jim";
     private const uint TimeControlSeconds = 60;
     private const uint TimeControlIncrement = 5;
 
-    private GameRoom GetNewGameRoom()
+    private GameRoomHandler GetNewGameRoom()
     {
-        var gameRoom = new GameRoom("", TimeControlSeconds, TimeControlIncrement, false, OpponentTypes.Random)
+        var gameRoom = new GameRoomHandler("", TimeControlSeconds, TimeControlIncrement, false, OpponentTypes.Random)
         {
             PlayerWhite = PlayerWhite,
             PlayerBlack = PlayerBlack,
@@ -253,12 +253,12 @@ public class GameRoomUnitTests
         Assert.Equal(2, newFenPositionEventsCount);
     }
 
-    private static void PlayBasicMoves(GameRoom gameRoom, List<Tuple<string, string>> moves)
+    private static void PlayBasicMoves(GameRoomHandler gameRoomHandler, List<Tuple<string, string>> moves)
     {
         var currentUsername = PlayerWhite;
         foreach (var move in moves)
         {
-            gameRoom.MakeMove(new MakeMoveDto()
+            gameRoomHandler.MakeMove(new MakeMoveDto()
             {
                 Username = currentUsername,
                 FromSquare = move.Item1,

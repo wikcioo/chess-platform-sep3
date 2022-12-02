@@ -52,25 +52,27 @@ public class GameLogic : IGameLogic
             };
             return responseFail;
         }
-        GameRoom gameRoom = new(dto.Username, dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType)
+
+        GameRoomHandler gameRoomHandler = new(dto.Username, dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType)
         {
             GameSide = dto.Side
         };
-        gameRoom.GameEvent += FireGameRoomEvent;
+        gameRoomHandler.GameEvent += FireGameRoomEvent;
+
         var requesterIsWhite = true;
         switch (dto.Side)
         {
             case GameSides.White:
             {
-                gameRoom.PlayerWhite = dto.Username;
-                gameRoom.PlayerBlack = dto.OpponentName;
+                gameRoomHandler.PlayerWhite = dto.Username;
+                gameRoomHandler.PlayerBlack = dto.OpponentName;
                 requesterIsWhite = true;
                 break;
             }
             case GameSides.Black:
             {
-                gameRoom.PlayerWhite = dto.OpponentName;
-                gameRoom.PlayerBlack = dto.Username;
+                gameRoomHandler.PlayerWhite = dto.OpponentName;
+                gameRoomHandler.PlayerBlack = dto.Username;
                 requesterIsWhite = false;
                 break;
             }
@@ -78,14 +80,14 @@ public class GameLogic : IGameLogic
             {
                 if (new Random().Next(100) <= 50)
                 {
-                    gameRoom.PlayerWhite = dto.Username;
-                    gameRoom.PlayerBlack = dto.OpponentName;
+                    gameRoomHandler.PlayerWhite = dto.Username;
+                    gameRoomHandler.PlayerBlack = dto.OpponentName;
                     requesterIsWhite = true;
                 }
                 else
                 {
-                    gameRoom.PlayerWhite = dto.OpponentName;
-                    gameRoom.PlayerBlack = dto.Username;
+                    gameRoomHandler.PlayerWhite = dto.OpponentName;
+                    gameRoomHandler.PlayerBlack = dto.Username;
                     requesterIsWhite = false;
                 }
 
@@ -93,14 +95,14 @@ public class GameLogic : IGameLogic
             }
         }
 
-        var id = _gameRoomsData.Add(gameRoom);
-        gameRoom.Initialize();
+        var id = _gameRoomsData.Add(gameRoomHandler);
+        gameRoomHandler.Initialize();
         _chatLogic.StartChatRoom(id);
 
         if (dto.OpponentType == OpponentTypes.Ai)
-            gameRoom.NumPlayersJoined++;
+            gameRoomHandler.NumPlayersJoined++;
 
-        if (gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
+        if (gameRoomHandler.CurrentPlayer != null && IsAi(gameRoomHandler.CurrentPlayer))
             await RequestAiMove(id);
 
         if (dto.OpponentType == OpponentTypes.Friend)
