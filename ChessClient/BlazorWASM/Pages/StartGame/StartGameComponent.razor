@@ -98,7 +98,10 @@
             {
                 GameRoom = response.GameRoom
             });
+
             NavMgr.NavigateTo("/ChessGame");
+            await GameService.GetCurrentGameStateAsync();
+
             Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
         }
         catch (InvalidOperationException e)
@@ -110,9 +113,10 @@
             Notify(e.Message, Severity.Error);
         }
     }
-    
+
     private void Notify(string message, Severity severity)
     {
         Snackbar.Add(message, severity);
     }
+
 }
