@@ -3,6 +3,7 @@ using Application.Entities;
 using Application.Hubs;
 using Application.LogicInterfaces;
 using Domain.DTOs;
+using Domain.DTOs.Chat;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Domain.Models;
@@ -301,33 +302,21 @@ public class GameLogic : IGameLogic
         }
     }
 
-    public IEnumerable<SpectateableGameRoomDataDto> GetSpectateableGameRoomData()
+    public IEnumerable<GameRoomDto> GetGameRooms(GameRoomSearchParameters parameters)
     {
-        IList<SpectateableGameRoomDataDto> list = new List<SpectateableGameRoomDataDto>();
-        foreach (var room in _gameRoomsData.GetSpectateable())
+        var rooms = _gameRoomsData.GetAll();
+
+        if (parameters.Spectateable)
         {
             rooms = rooms.Where(room => room.IsSpectateable);
         }
 
-    public IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData(string requesterUsername)
-    {
-        IList<JoinableGameRoomDataDto> list = new List<JoinableGameRoomDataDto>();
-        foreach (var room in _gameRoomsData.GetJoinableByUsername(requesterUsername))
+        if (parameters.Joinable)
         {
-            var username = string.IsNullOrEmpty(room.PlayerWhite)
-                ? room.PlayerBlack!
-                : room.PlayerWhite!;
-            list.Add(new JoinableGameRoomDataDto()
-            {
-                GameRoom = room.Id,
-                Username = username,
-                Seconds = room.GetInitialTimeControlSeconds,
-                Increment = room.GetInitialTimeControlIncrement,
-                Side = room.GameSide
-            });
+            rooms = rooms.Where(room => room.IsJoinable && room.CanUsernameJoin(parameters.RequesterName));
         }
 
-        return list;
+        return rooms.Select(room => room.GetGameRoomData());
     }
 
     public CurrentGameStateDto GetCurrentGameState(ulong gameRoomId)
