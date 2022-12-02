@@ -68,7 +68,11 @@ public class GameController : ControllerBase
 
         try
         {
-            var dto = new RequestJoinGameDto(id, User.Identity.Name);
+            var dto = new RequestJoinGameDto()
+            {
+                GameRoom = id,
+                Username = User.Identity.Name
+            };
             var ack = _gameLogic.JoinGame(dto);
             return Ok(ack);
         }
