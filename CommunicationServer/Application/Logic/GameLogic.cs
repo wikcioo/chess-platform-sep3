@@ -40,7 +40,7 @@ public class GameLogic : IGameLogic
         AuthUserEvent?.Invoke(dto);
     }
 
-    public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
+    public async Task<ResponseGameDto> StartGame(RequestGameDto dto, bool isRematch)
     {
         try
         {
@@ -110,7 +110,7 @@ public class GameLogic : IGameLogic
         if (gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
             await RequestAiMove(id);
 
-        if (dto.OpponentType == OpponentTypes.Friend)
+        if (dto.OpponentType == OpponentTypes.Friend && !isRematch)
         {
             FireAuthUserEvent(new AuthorizedUserEventDto()
             {
