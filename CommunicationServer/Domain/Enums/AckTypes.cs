@@ -10,5 +10,8 @@ public enum AckTypes
     NotUserTurn = 5,
     DrawNotOffered = 6,
     DrawOfferDeclined = 7,
-    DrawOfferExpired = 8
+    DrawOfferExpired = 8,
+    RematchNotOffered = 9,
+    RematchOfferDeclined = 10,
+    RematchOfferExpired = 11
 }
