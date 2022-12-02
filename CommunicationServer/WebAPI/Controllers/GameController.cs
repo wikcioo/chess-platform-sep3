@@ -29,6 +29,11 @@ public class GameController : ControllerBase
     {
         try
         {
+            if (User.Identity?.Name == null)
+            {
+                return StatusCode(401, "Identity not found.");
+            } 
+            
             request.Username = User.Identity.Name;
             if (request.OpponentType == OpponentTypes.Ai)
             {
@@ -53,6 +58,11 @@ public class GameController : ControllerBase
     [HttpPost("/joinGame")]
     public ActionResult<AckTypes> JoinGame([FromBody] RequestJoinGameDto dto)
     {
+        if (User.Identity?.Name == null)
+        {
+            return StatusCode(401, "Identity not found.");
+        } 
+
         try
         {
             dto.Username = User.Identity.Name;
@@ -87,6 +97,11 @@ public class GameController : ControllerBase
     {
         try
         {
+            if (User.Identity?.Name == null)
+            {
+                return StatusCode(401, "Identity not found.");
+            } 
+            
             AckTypes ack = await _gameLogic.Resign(new RequestResignDto()
             {
                 GameRoom = request.GameRoom,
@@ -108,6 +123,11 @@ public class GameController : ControllerBase
     {
         try
         {
+            if (User.Identity?.Name == null)
+            {
+                return StatusCode(401, "Identity not found.");
+            } 
+            
             dto.Username = User.Identity.Name;
             var ack = await _gameLogic.MakeMove(dto);
 
@@ -146,6 +166,12 @@ public class GameController : ControllerBase
     {
         try
         {
+            if (User.Identity?.Name == null)
+            {
+                return StatusCode(401, "Identity not found.");
+            }
+            
+            request.Username = User.Identity.Name;
             var ack = await _gameLogic.DrawOfferResponse(request);
             return Ok(ack);
         }
