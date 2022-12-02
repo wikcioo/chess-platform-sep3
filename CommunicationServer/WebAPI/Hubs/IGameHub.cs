@@ -1,6 +1,6 @@
 using Domain.DTOs.Chat;
 
-namespace Application.Hubs;
+namespace WebAPI.Hubs;
 
 public interface IGameHub
 {

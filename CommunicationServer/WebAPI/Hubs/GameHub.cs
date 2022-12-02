@@ -3,7 +3,7 @@ using Domain.DTOs.Chat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Application.Hubs;
+namespace WebAPI.Hubs;
 
 [Authorize]
 public class GameHub : Hub<IGameHub>

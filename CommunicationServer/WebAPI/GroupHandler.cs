@@ -1,7 +1,7 @@
-using Application.Hubs;
 using Application.LogicInterfaces;
 using Domain.DTOs.GameEvents;
 using Microsoft.AspNetCore.SignalR;
+using WebAPI.Hubs;
 
 namespace WebAPI;
 

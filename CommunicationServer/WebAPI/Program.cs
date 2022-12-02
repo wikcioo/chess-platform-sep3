@@ -1,6 +1,5 @@
 using System.Text;
 using Application.ClientInterfaces;
-using Application.Hubs;
 using Application.Logic;
 using Application.LogicInterfaces;
 using DatabaseClient.Implementations;
@@ -11,6 +10,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.IdentityModel.Tokens;
 using WebAPI;
+using WebAPI.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
