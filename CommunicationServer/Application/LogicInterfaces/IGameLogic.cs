@@ -1,5 +1,5 @@
-using Application.Entities;
 using Domain.DTOs;
+using Domain.DTOs.Chat;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 
@@ -13,7 +13,6 @@ public interface IGameLogic
     Task<AckTypes> Resign(RequestResignDto dto);
     Task<AckTypes> OfferDraw(RequestDrawDto dto);
     Task<AckTypes> DrawOfferResponse(ResponseDrawDto dto);
-    IEnumerable<SpectateableGameRoomDataDto> GetSpectateableGameRoomData();
-    IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData(string requesterUsername);
     CurrentGameStateDto GetCurrentGameState(ulong gameRoomId);
+    IEnumerable<GameRoomDto> GetGameRooms(GameRoomSearchParameters parameters);
 }
