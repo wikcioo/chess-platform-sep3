@@ -46,12 +46,6 @@ public class GameService : IGameService
         _client = client;
     }
     
-
-    public GameService(IAuthService authService)
-    {
-        _authService = authService;
-    }
-
     public async Task StartHubConnection()
     {
         try
