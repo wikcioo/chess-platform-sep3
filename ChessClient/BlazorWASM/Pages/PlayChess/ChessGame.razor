@@ -161,18 +161,20 @@
         StateHasChanged();
     }
 
-    private async Task<AckTypes> MakeMove(Move move)
+    private async Task MakeMove(Move move)
     {
         try
         {
             _whiteTimerActive = !_whiteTimerActive;
-            var t = await GameService.MakeMove(move);
-            return t;
+            await GameService.MakeMove(move);
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            return AckTypes.GameNotFound;
+        }
+        catch (HttpRequestException e)
+        {
+            Notify(e.Message, Severity.Error);
         }
     }
 

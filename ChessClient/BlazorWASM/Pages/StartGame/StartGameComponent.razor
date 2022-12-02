@@ -86,8 +86,6 @@
             IsVisible = _isGamePublic
         };
 
-        Console.WriteLine(request);
-
         try
         {
             var response = await GameService.CreateGame(request);
@@ -107,9 +105,9 @@
         {
             Notify(e.Message, Severity.Warning);
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException e)
         {
-            Notify("Network error, Failed to create a game.", Severity.Error);
+            Notify(e.Message, Severity.Error);
         }
     }
     

@@ -54,7 +54,7 @@
         }
         catch (HttpRequestException e)
         {
-            Snackbar.Add("Network error. Unable to refresh games.", Severity.Error);
+            Snackbar.Add(e.Message, Severity.Error);
         }
     }
 
@@ -76,11 +76,18 @@
         if (_joinableGames?.Count > 0)
         {
             var randomGameRoomId = _joinableGames[new Random().Next(_joinableGames.Count)].GameRoom;
-            await GameService.JoinGame(new RequestJoinGameDto
+            try
             {
-                GameRoom = randomGameRoomId
-            });
-            NavMgr.NavigateTo("/ChessGame");
+                await GameService.JoinGame(new RequestJoinGameDto
+                {
+                    GameRoom = randomGameRoomId
+                });
+                NavMgr.NavigateTo("/ChessGame");
+            }
+            catch (HttpRequestException e)
+            {
+                Snackbar.Add(e.Message, Severity.Error);
+            }
         }
         else
         {

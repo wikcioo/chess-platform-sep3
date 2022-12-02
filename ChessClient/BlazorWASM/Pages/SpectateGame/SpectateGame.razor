@@ -33,7 +33,7 @@
         }
         catch(HttpRequestException e)
         {
-            Snackbar.Add("Network error. Unable to refresh games.", Severity.Error);
+            Snackbar.Add(e.Message, Severity.Error);
         }
         
     }
