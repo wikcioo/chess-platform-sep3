@@ -1,6 +1,7 @@
 @page "/"
 @using BlazorWASM.Pages.StartGame
 @using Domain.DTOs
+@using Domain.DTOs.Chat
 @using Domain.DTOs.GameRoomData
 @using HttpClients.ClientInterfaces
 @inject IDialogService DialogService
@@ -10,12 +11,12 @@
 <AuthorizeView>
     <Authorized>
         <MudContainer>
-            <MudContainer Class="mt-10" Style="display: flex; flex-direction: row; gap: 25px">
+            <MudContainer Class="mt-10 d-flex flex-row gap-10">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="DisplayCreateGameDialog">Create a Game</MudButton>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinRandomGame">Play Random</MudButton>
             </MudContainer>
             <MudSpacer/>
-            <MudContainer Style="display: flex; justify-content: right">
+            <MudContainer Class="d-flex justify-end">
                 <MudIconButton Icon="@Icons.Filled.Refresh"
                                @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshJoinableGames(); })"/>
             </MudContainer>
@@ -28,11 +29,10 @@
 </AuthorizeView>
 
 @code {
+    private IList<GameRoomDto>? _joinableGames = new List<GameRoomDto>();
 
     [CascadingParameter]
     public Task<AuthenticationState> AuthState { get; set; } = null!;
-
-    private IList<JoinableGameRoomDataDto>? _joinableGames;
 
     protected override async Task OnInitializedAsync()
     {
@@ -44,7 +44,18 @@
 
     private async Task RefreshJoinableGames()
     {
-        _joinableGames = await GameService.GetAllJoinableGames();
+        try
+        {
+            _joinableGames = await GameService.GetGameRooms(new GameRoomSearchParameters
+            {
+                Joinable = true
+            });
+        }
+        catch (HttpRequestException e)
+        {
+            Snackbar.Add("Network error. Unable to refresh games.", Severity.Error);
+        }
+        
     }
 
     private void DisplayCreateGameDialog()
@@ -61,7 +72,7 @@
     private async void JoinRandomGame()
     {
         await RefreshJoinableGames();
-
+        
         if (_joinableGames?.Count > 0)
         {
             var randomGameRoomId = _joinableGames[new Random().Next(_joinableGames.Count)].GameRoom;

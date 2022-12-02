@@ -2,6 +2,7 @@ using Application.ClientInterfaces;
 using Application.Entities;
 using Application.LogicInterfaces;
 using Domain.DTOs;
+using Domain.DTOs.Chat;
 using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
 using Domain.DTOs.Stockfish;
@@ -47,8 +48,7 @@ public class GameLogic : IGameLogic
             };
             return responseFail;
         }
-
-        GameRoom gameRoom = new(dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType)
+        GameRoom gameRoom = new(dto.Username, dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType)
         {
             GameSide = dto.Side
         };
@@ -181,7 +181,7 @@ public class GameLogic : IGameLogic
     public AckTypes JoinGame(RequestJoinGameDto dto)
     {
         var gameRoom = _gameRoomsData.Get(dto.GameRoom);
-        if ((gameRoom.IsJoinable && _gameRoomsData.CanUsernameJoin(gameRoom, dto.Username)))
+        if (gameRoom.IsJoinable && gameRoom.CanUsernameJoin(dto.Username))
         {
             if (string.IsNullOrEmpty(gameRoom.PlayerWhite) && !dto.Username.Equals(gameRoom.PlayerBlack))
             {
@@ -201,7 +201,7 @@ public class GameLogic : IGameLogic
             return AckTypes.Success;
         }
 
-        if (gameRoom.IsSpectatable)
+        if (gameRoom.IsSpectateable)
         {
             gameRoom.NumSpectatorsJoined++;
             return AckTypes.Success;
@@ -307,43 +307,21 @@ public class GameLogic : IGameLogic
         }
     }
 
-    public IEnumerable<SpectateableGameRoomDataDto> GetSpectateableGameRoomData()
+    public IEnumerable<GameRoomDto> GetGameRooms(GameRoomSearchParameters parameters)
     {
-        IList<SpectateableGameRoomDataDto> list = new List<SpectateableGameRoomDataDto>();
-        foreach (var room in _gameRoomsData.GetSpectateable())
+        var rooms = _gameRoomsData.GetAll();
+
+        if (parameters.Spectateable)
         {
-            list.Add(new SpectateableGameRoomDataDto()
-            {
-                GameRoom = room.Id,
-                UsernameWhite = room.PlayerWhite!,
-                UsernameBlack = room.PlayerBlack!,
-                Seconds = room.GetInitialTimeControlSeconds,
-                Increment = room.GetInitialTimeControlIncrement
-            });
+            rooms = rooms.Where(room => room.IsSpectateable);
         }
 
-        return list;
-    }
-
-    public IEnumerable<JoinableGameRoomDataDto> GetJoinableGameRoomData(string requesterUsername)
-    {
-        IList<JoinableGameRoomDataDto> list = new List<JoinableGameRoomDataDto>();
-        foreach (var room in _gameRoomsData.GetJoinableByUsername(requesterUsername))
+        if (parameters.Joinable)
         {
-            var username = string.IsNullOrEmpty(room.PlayerWhite)
-                ? room.PlayerBlack!
-                : room.PlayerWhite!;
-            list.Add(new JoinableGameRoomDataDto()
-            {
-                GameRoom = room.Id,
-                Username = username,
-                Seconds = room.GetInitialTimeControlSeconds,
-                Increment = room.GetInitialTimeControlIncrement,
-                Side = room.GameSide
-            });
+            rooms = rooms.Where(room => room.IsJoinable && room.CanUsernameJoin(parameters.RequesterName));
         }
 
-        return list;
+        return rooms.Select(room => room.GetGameRoomData());
     }
 
     public CurrentGameStateDto GetCurrentGameState(ulong gameRoomId)

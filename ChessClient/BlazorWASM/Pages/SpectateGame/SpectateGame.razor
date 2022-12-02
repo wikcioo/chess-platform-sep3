@@ -1,19 +1,20 @@
 @page "/SpectateGame"
 @using Domain.DTOs.GameRoomData
 @using HttpClients.ClientInterfaces
+@using Domain.DTOs.Chat
 @inject IGameService GameService
 @inject ISnackbar Snackbar
 
 <MudContainer Class="mt-10">
-    <MudContainer Style="display: flex; justify-content: flex-end">
+    <MudContainer Class="d-flex justify-end">
         <MudIconButton Icon="@Icons.Filled.Refresh"
-                       @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshSpectateableGames(); })"/>
+                       @onclick="@(async () => { await RefreshSpectateableGames(); })"/>
     </MudContainer>
     <SpectateableGameListComponent SpectateableGames="@_spectateableGames"/>
 </MudContainer>
 
 @code {
-    private IList<SpectateableGameRoomDataDto>? _spectateableGames;
+    private IList<GameRoomDto>? _spectateableGames = new List<GameRoomDto>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -22,7 +23,18 @@
 
     private async Task RefreshSpectateableGames()
     {
-        _spectateableGames = await GameService.GetAllSpectateableGames();
-        Snackbar.Add("Refreshed", Severity.Success);
+        try
+        {
+            _spectateableGames = await GameService.GetGameRooms(new GameRoomSearchParameters()
+            {
+                Spectateable = true
+            });
+            Snackbar.Add("Refreshed", Severity.Success);
+        }
+        catch(HttpRequestException e)
+        {
+            Snackbar.Add("Network error. Unable to refresh games.", Severity.Error);
+        }
+        
     }
 }

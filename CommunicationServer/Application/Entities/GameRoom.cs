@@ -1,6 +1,7 @@
 using Application.Hubs;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
+using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Microsoft.AspNetCore.SignalR;
 using Rudzoft.ChessLib;
@@ -31,11 +32,13 @@ public class GameRoom
     public event Action<GameRoomEventDto>? GameEvent;
 
     public ulong Id { get; set; }
+    
+    public string Creator { get; }  
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
     public bool IsVisible { get; set; }
     public bool IsJoinable { get; set; } = true;
-    public bool IsSpectatable => IsVisible && !IsJoinable;
+    public bool IsSpectateable => IsVisible && !IsJoinable;
     public OpponentTypes GameType { get; set; }
 
     public uint NumPlayersJoined { get; set; }
@@ -48,9 +51,10 @@ public class GameRoom
     public GameSides GameSide;
 
 
-    public GameRoom(uint timeControlSeconds, uint timeControlIncrement, bool isVisible, OpponentTypes gameType,
+    public GameRoom(string creator, uint timeControlSeconds, uint timeControlIncrement, bool isVisible, OpponentTypes gameType,
         string? fen = null)
     {
+        Creator = creator;
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
         _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
@@ -388,5 +392,26 @@ public class GameRoom
             MoveTypes.Promotion => new Move(fromSquare, toSquare, moveType, promotionPiece ?? PieceTypes.Queen),
             _ => throw new Exception("Invalid move type value.")
         };
+    }
+
+    public GameRoomDto GetGameRoomData()
+    {
+        return new GameRoomDto()
+        {
+            GameRoom = Id,
+            Creator = Creator,
+            UsernameWhite = PlayerWhite!,
+            UsernameBlack = PlayerBlack!,
+            Seconds = GetInitialTimeControlSeconds,
+            Increment = GetInitialTimeControlIncrement
+        };
+    }
+    
+    public bool CanUsernameJoin(string username)
+    {
+        if (GameType is OpponentTypes.Random or OpponentTypes.Ai)
+            return true;
+
+        return PlayerWhite!.Equals(username) || PlayerBlack!.Equals(username);
     }
 }

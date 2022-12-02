@@ -1,5 +1,6 @@
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
+using Domain.DTOs.Chat;
 using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using HttpClients.Implementations;
@@ -30,8 +31,7 @@ public interface IGameService
     public Task<AckTypes> OfferDraw();
     public Task<AckTypes> Resign();
     public Task<AckTypes> SendDrawResponse(bool accepted);
-    public Task<IList<SpectateableGameRoomDataDto>> GetAllSpectateableGames();
-    public Task<IList<JoinableGameRoomDataDto>> GetAllJoinableGames();
+    public Task<IList<GameRoomDto>> GetGameRooms(GameRoomSearchParameters parameters);
     Task GetCurrentGameState();
     void LeaveRoom();
     Task StopHubConnection();

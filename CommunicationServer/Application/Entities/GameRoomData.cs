@@ -28,23 +28,8 @@ public class GameRoomsData
     {
         _gameRooms.Remove(id);
     }
-
-    public bool CanUsernameJoin(GameRoom room, string username)
+    public IEnumerable<GameRoom> GetAll()
     {
-        if (room.GameType is OpponentTypes.Random or OpponentTypes.Ai)
-            return true;
-
-        return room.PlayerWhite!.Equals(username) || room.PlayerBlack!.Equals(username);
-    }
-
-    public IEnumerable<GameRoom> GetJoinableByUsername(string requesterUsername)
-    {
-        return _gameRooms.Select(pair => pair.Value)
-            .Where(room => room.IsJoinable && CanUsernameJoin(room, requesterUsername));
-    }
-
-    public IEnumerable<GameRoom> GetSpectateable()
-    {
-        return _gameRooms.Select(pair => pair.Value).Where(room => room.IsSpectatable).ToList();
+        return _gameRooms.Select(pair => pair.Value).ToList();
     }
 }
