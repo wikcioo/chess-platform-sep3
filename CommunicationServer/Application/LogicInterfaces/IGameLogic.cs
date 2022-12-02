@@ -15,6 +15,8 @@ public interface IGameLogic
     Task<AckTypes> Resign(RequestResignDto dto);
     Task<AckTypes> OfferDraw(RequestDrawDto dto);
     Task<AckTypes> DrawOfferResponse(ResponseDrawDto dto);
+    Task<AckTypes> OfferRematch(RequestRematchDto dto);
+    Task<AckTypes> RematchOfferResponse(ResponseRematchDto dto);
     CurrentGameStateDto GetCurrentGameState(ulong gameRoomId);
     IEnumerable<GameRoomDto> GetGameRooms(GameRoomSearchParameters parameters);
     event Action<GameRoomEventDto>? GameEvent;
