@@ -42,7 +42,7 @@ public class GameLogic : IGameLogic
             };
             return responseFail;
         }
-        GameRoom gameRoom = new(dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType, _hubContext)
+        GameRoom gameRoom = new(dto.Username, dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType, _hubContext)
         {
             GameSide = dto.Side
         };
@@ -175,7 +175,7 @@ public class GameLogic : IGameLogic
     public AckTypes JoinGame(RequestJoinGameDto dto)
     {
         var gameRoom = _gameRoomsData.Get(dto.GameRoom);
-        if ((gameRoom.IsJoinable && _gameRoomsData.CanUsernameJoin(gameRoom, dto.Username)))
+        if (gameRoom.IsJoinable && gameRoom.CanUsernameJoin(dto.Username))
         {
             if (string.IsNullOrEmpty(gameRoom.PlayerWhite) && !dto.Username.Equals(gameRoom.PlayerBlack))
             {
