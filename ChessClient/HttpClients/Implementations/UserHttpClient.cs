@@ -26,17 +26,7 @@ public class UserHttpClient : IUserService
         try
         {
             var response = await _client.PostAsJsonAsync("/users", user);
-            var result = await response.Content.ReadAsStringAsync();
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new HttpRequestException(result);
-            }
-
-            var created = JsonSerializer.Deserialize<User>(result, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-            return created;
+            return await ResponseParser.ParseAsync<User>(response);
         }
         catch (HttpRequestException e)
         {
