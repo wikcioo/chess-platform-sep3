@@ -15,10 +15,8 @@
 @inject NavigationManager NavMgr
 @implements IDisposable
 
-
 <audio id="move" src="sounds/move.mp3"></audio>
 <audio id="notify" src="sounds/notify.mp3"></audio>
-
 
 <MudContainer Class="mt-10" MaxWidth="MaxWidth.Medium">
     <MudGrid Style="align-items: center" Justify="Justify.SpaceAround" Spacing="6">
@@ -93,6 +91,8 @@
     private bool _whiteTimerActive = true;
     private string _opponentName = "PlaceholderJoe";
 
+    private IDialogReference? _gameFinishedOptionsDialogRef;
+
     //Form input bindings
     private GameSides _isWhiteSide = GameSides.White;
 
@@ -101,7 +101,6 @@
         SetFenPosition(Fen.StartPositionFen);
         InitGameLogic();
     }
-
 
     public void Dispose()
     {
@@ -115,6 +114,7 @@
         GameService.EndOfTheGameReached -= OnEndOfTheGameReached;
         GameService.GameFirstJoined -= OnGameFirstJoined;
         GameService.StateReceived -= OnGameStateReceived;
+        GameService.JoinRematchedGame -= OnJoinRematchGame;
         GameService.LeaveRoomAsync();
         GameService.GameRoomId = null;
     }
@@ -147,6 +147,7 @@
         GameService.EndOfTheGameReached += OnEndOfTheGameReached;
         GameService.GameFirstJoined += OnGameFirstJoined;
         GameService.StateReceived += OnGameStateReceived;
+        GameService.JoinRematchedGame += OnJoinRematchGame;
     }
 
     private void OnGameStateReceived(CurrentGameStateDto dto)
@@ -158,6 +159,23 @@
         _whiteSeconds = dto.WhiteTimeLeftMs / 1000;
         _blackSeconds = dto.BlackTimeLeftMs / 1000;
         StateHasChanged();
+    }
+
+    private async void OnJoinRematchGame(GameEventDto dto)
+    {
+        _gameFinishedOptionsDialogRef?.Close();
+        await GameService.GetCurrentGameStateAsync();
+    }
+
+    private void DisplayGameFinishedOptions(string title)
+    {
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            DisableBackdropClick = true
+        };
+
+        _gameFinishedOptionsDialogRef = DialogService.Show<GameFinishedOptionsComponent>(title, options);
     }
 
     private async Task MakeMove(Move move)
@@ -269,27 +287,31 @@
     private void OnEndOfTheGameReached(GameEventDto dto)
     {
         PlaySound("notify");
+
+        var endOfGameReachedReason = string.Empty;
         switch (dto.GameEndType)
         {
             case (uint)GameEndTypes.CheckMate:
                 if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
-                    DisplayDefaultDialog("You got checkmated!");
+                    endOfGameReachedReason = "You got checkmated!";
                 else
-                    DisplayDefaultDialog("You checkmated your opponent!");
+                    endOfGameReachedReason = "You checkmated your opponent!";
                 break;
             case (uint)GameEndTypes.Repetition:
-                DisplayDefaultDialog("Draw by repetition!");
+                endOfGameReachedReason = "Draw by repetition!";
                 break;
             case (uint)GameEndTypes.Pat:
-                DisplayDefaultDialog("Stalemate!");
+                endOfGameReachedReason = "Stalemate!";
                 break;
             case (uint)GameEndTypes.FiftyMove:
-                DisplayDefaultDialog("Draw by 50 moves!");
+                endOfGameReachedReason = "Draw by 50 moves!";
                 break;
             case (uint)GameEndTypes.MaterialDrawn:
-                DisplayDefaultDialog("Draw! Insufficient material!");
+                endOfGameReachedReason = "Draw! Insufficient material!";
                 break;
         }
+
+        DisplayGameFinishedOptions(endOfGameReachedReason);
     }
 
     private void OnTimeUpdated(GameEventDto dto)
@@ -298,11 +320,11 @@
         {
             if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
             {
-                DisplayDefaultDialog("You ran out of time! You loose!");
+                DisplayGameFinishedOptions("You ran out of time! You loose!");
             }
             else
             {
-                DisplayDefaultDialog("Your opponent ran out of time! You win!");
+                DisplayGameFinishedOptions("Your opponent ran out of time! You win!");
             }
         }
         else
@@ -342,11 +364,11 @@
         PlaySound("notify");
         if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
         {
-            DisplayDefaultDialog("You resigned the game!");
+            DisplayGameFinishedOptions("You resigned the game!");
         }
         else
         {
-            DisplayDefaultDialog("Your opponent resigned the game!");
+            DisplayGameFinishedOptions("Your opponent resigned the game!");
         }
     }
 
@@ -373,7 +395,7 @@
     private void OnDrawOfferAccepted(GameEventDto dto)
     {
         PlaySound("notify");
-        DisplayDefaultDialog("The game finished in a draw!");
+        DisplayGameFinishedOptions("The game finished in a draw!");
         StateHasChanged();
     }
 
