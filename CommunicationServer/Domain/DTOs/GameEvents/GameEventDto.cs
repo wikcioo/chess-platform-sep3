@@ -11,4 +11,5 @@ public class GameEventDto
     public GameStreamEvents Event { get; set; }
     public string UsernameWhite { get; set; } = string.Empty;
     public string UsernameBlack { get; set; } = string.Empty;
+    public ulong GameRoomId { get; set; }
 }
