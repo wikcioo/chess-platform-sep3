@@ -4,7 +4,7 @@
 @using MudBlazor
 @inject NavigationManager NavMgr
 @inject IAuthService AuthService
-@inject IHubConnectionWrapper HubConnectionWrapper
+@inject IHubConnectionHandler HubConnectionHandler
 <AuthorizeView>
     <Authorized>
         <MudIconButton Icon="@Icons.Filled.Logout" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Logout())"/>
@@ -24,7 +24,7 @@
     private async Task Logout()
     {
         await AuthService.LogoutAsync();
-        await HubConnectionWrapper.StopHubConnection();
+        await HubConnectionHandler.StopHubConnection();
         NavMgr.NavigateTo("/");
     }
 

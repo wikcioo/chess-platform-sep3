@@ -1,12 +1,15 @@
+using Domain.DTOs.AuthorizedUserEvents;
+using Domain.Enums;
 using HttpClients.ClientInterfaces;
 using HttpClients.ClientInterfaces.Signalr;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace HttpClients.Implementations.Signalr;
 
-public class HubConnectionWrapper : IHubConnectionWrapper
+public class HubConnectionHandler : IHubConnectionHandler
 {
     public HubConnection? HubConnection { get; set; }
+    public event Action<AuthorizedUserEventDto>? NewGameOffer;
 
     public async Task StartHubConnection(IAuthService authService)
     {
@@ -48,6 +51,24 @@ public class HubConnectionWrapper : IHubConnectionWrapper
             await HubConnection.StopAsync();
             await HubConnection.DisposeAsync();
             HubConnection = null;
+        }
+    }
+
+    public void JoinUserEvents()
+    {
+        HubConnection?.Remove("AuthorizedUserEventDto");
+        HubConnection?.On<AuthorizedUserEventDto>("AuthorizedUserEventDto",
+            ListenToAuthorizedUserEvents);
+    }
+
+    private void ListenToAuthorizedUserEvents(AuthorizedUserEventDto dto)
+    {
+        switch (dto.Event)
+        {
+            case AuthUserEvents.NewGameOffer:
+                NewGameOffer?.Invoke(dto);
+                break;
+            default: throw new ArgumentOutOfRangeException();
         }
     }
 }
