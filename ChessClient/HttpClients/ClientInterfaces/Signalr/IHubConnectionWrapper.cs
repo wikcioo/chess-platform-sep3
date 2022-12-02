@@ -6,7 +6,7 @@ public interface IHubConnectionWrapper
 {
     public HubConnection? HubConnection { get; }
     Task StartHubConnection(IAuthService authService);
-    void LeaveRoom(ulong? gameRoomId);
-    void JoinRoom(ulong? gameRoomId);
+    Task LeaveRoom(ulong? gameRoomId);
+    Task JoinRoom(ulong? gameRoomId);
     Task StopHubConnection();
 }

@@ -25,7 +25,7 @@ public class HubConnectionWrapper : IHubConnectionWrapper
         await HubConnection.StartAsync();
     }
 
-    public async void LeaveRoom(ulong? gameRoomId)
+    public async Task LeaveRoom(ulong? gameRoomId)
     {
         if (HubConnection is not null)
         {
@@ -33,7 +33,7 @@ public class HubConnectionWrapper : IHubConnectionWrapper
         }
     }
 
-    public async void JoinRoom(ulong? gameRoomId)
+    public async Task JoinRoom(ulong? gameRoomId)
     {
         if (HubConnection is not null)
         {

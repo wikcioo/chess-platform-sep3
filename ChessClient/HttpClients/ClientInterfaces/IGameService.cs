@@ -23,7 +23,6 @@ public interface IGameService
     public event GameService.StreamUpdate? EndOfTheGameReached;
     public event Action? GameFirstJoined;
 
-    Task StartHubConnection();
     public Task<ResponseGameDto> CreateGame(RequestGameDto dto);
     public Task JoinGame(RequestJoinGameDto dto);
     public Task<AckTypes> MakeMove(Move move);
@@ -33,5 +32,4 @@ public interface IGameService
     public Task<IList<GameRoomDto>> GetGameRooms(GameRoomSearchParameters parameters);
     Task GetCurrentGameState();
     void LeaveRoom();
-    Task StopHubConnection();
 }
