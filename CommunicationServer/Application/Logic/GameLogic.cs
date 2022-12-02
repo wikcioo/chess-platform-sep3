@@ -3,6 +3,7 @@ using Application.Entities;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.Chat;
+using Domain.DTOs.AuthorizedUserEvents;
 using Domain.DTOs.GameEvents;
 using Domain.DTOs.GameRoomData;
 using Domain.DTOs.Stockfish;
@@ -19,7 +20,7 @@ public class GameLogic : IGameLogic
     private readonly IChatLogic _chatLogic;
     private readonly IUserService _userService;
     public event Action<GameRoomEventDto>? GameEvent;
-
+    public event Action<AuthorizedUserEventDto>? AuthUserEvent;
 
     public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService)
     {
@@ -28,9 +29,14 @@ public class GameLogic : IGameLogic
         _userService = userService;
     }
 
-    private void FireEvent(GameRoomEventDto dto)
+    private void FireGameRoomEvent(GameRoomEventDto dto)
     {
         GameEvent?.Invoke(dto);
+    }
+
+    private void FireAuthUserEvent(AuthorizedUserEventDto dto)
+    {
+        AuthUserEvent?.Invoke(dto);
     }
 
     public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
@@ -52,7 +58,7 @@ public class GameLogic : IGameLogic
         {
             GameSide = dto.Side
         };
-        gameRoom.GameEvent += FireEvent;
+        gameRoom.GameEvent += FireGameRoomEvent;
         var requesterIsWhite = true;
         switch (dto.Side)
         {
@@ -98,6 +104,17 @@ public class GameLogic : IGameLogic
 
         if (gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
             await RequestAiMove(id);
+
+        if (dto.OpponentType == OpponentTypes.Friend)
+        {
+            FireAuthUserEvent(new AuthorizedUserEventDto()
+            {
+                Event = AuthUserEvents.NewGameOffer,
+                SenderUsername = dto.Username,
+                ReceiverUsername = dto.OpponentName!,
+                GameRoomId = id
+            });
+        }
 
         ResponseGameDto responseDto = new()
         {
