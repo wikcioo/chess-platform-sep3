@@ -143,7 +143,6 @@ public class GameService : IGameService
                 throw new HttpRequestException($"Ack code: {ack}");
             
             GameRoomId = dto.GameRoom;
-
             if (_hubDto.HubConnection is not null)
             {
                 await _hubDto.HubConnection.SendAsync("JoinRoom", GameRoomId);
@@ -223,7 +222,8 @@ public class GameService : IGameService
         {
             var response = await _client.GetAsync($"/games/{GameRoomId.Value}");
             var streamDto = await ResponseParser.ParseAsync<CurrentGameStateDto>(response);
-
+            
+            LastFen = streamDto.FenString;
             var myName = user.Identity!.Name!;
             if (streamDto.UsernameBlack.Equals(myName))
             {
