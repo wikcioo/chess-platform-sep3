@@ -23,7 +23,7 @@ public class GameRoomUnitTests
 
     private GameRoomHandler GetNewGameRoom()
     {
-        var gameRoom = new GameRoomHandler("", TimeControlDurationSeconds, TimeControlIncrementSeconds, false, OpponentTypes.Random)
+        var gameRoom = new GameRoomHandler("", TimeControlDurationSeconds, TimeControlIncrementSeconds, false, OpponentTypes.Random, GameSides.White)
         {
             PlayerWhite = PlayerWhite,
             PlayerBlack = PlayerBlack,
