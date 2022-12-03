@@ -29,7 +29,9 @@
                     {
                         GameRoom = dto.GameRoomId
                     });
-                
+                    await GameService.GetCurrentGameStateAsync();
+                    
+                    GameService.RequestedGameDto = null;
                     NavMgr.NavigateTo("/ChessGame");
                 };
                 config.CloseAfterNavigation = false;
