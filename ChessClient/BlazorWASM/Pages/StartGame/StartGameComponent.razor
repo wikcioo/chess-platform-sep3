@@ -94,11 +94,13 @@
             {
                 throw new InvalidOperationException(response.ErrorMessage);
             }
+            
             await GameService.JoinGameAsync(new RequestJoinGameDto
             {
                 GameRoom = response.GameRoom
             });
 
+            GameService.RequestedGameDto = request;
             NavMgr.NavigateTo("/ChessGame");
             await GameService.GetCurrentGameStateAsync();
 
