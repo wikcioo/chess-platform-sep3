@@ -14,6 +14,7 @@ namespace Application.Logic;
 public class GameLogic : IGameLogic
 {
     private readonly GameRoomsData _gameRoomsData = new();
+    private readonly GameRoomsData _tempGameRoomsData = new();
     private readonly IStockfishService _stockfishService;
     private readonly IChatLogic _chatLogic;
     private readonly IUserService _userService;
@@ -37,7 +38,7 @@ public class GameLogic : IGameLogic
         AuthUserEvent?.Invoke(dto);
     }
 
-    public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
+    public async Task<ResponseGameDto> StartGame(RequestGameDto dto, bool isRematch)
     {
         try
         {
@@ -52,11 +53,14 @@ public class GameLogic : IGameLogic
             };
             return responseFail;
         }
+
         GameRoom gameRoom = new(dto.Username, dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType)
         {
             GameSide = dto.Side
         };
+        
         gameRoom.GameEvent += FireGameRoomEvent;
+        
         var requesterIsWhite = true;
         switch (dto.Side)
         {
@@ -95,6 +99,7 @@ public class GameLogic : IGameLogic
 
         var id = _gameRoomsData.Add(gameRoom);
         gameRoom.Initialize();
+        
         _chatLogic.StartChatRoom(id);
 
         if (dto.OpponentType == OpponentTypes.Ai)
@@ -103,7 +108,7 @@ public class GameLogic : IGameLogic
         if (gameRoom.CurrentPlayer != null && IsAi(gameRoom.CurrentPlayer))
             await RequestAiMove(id);
 
-        if (dto.OpponentType == OpponentTypes.Friend)
+        if (dto.OpponentType == OpponentTypes.Friend && !isRematch)
         {
             FireAuthUserEvent(new AuthorizedUserEventDto()
             {
@@ -268,8 +273,8 @@ public class GameLogic : IGameLogic
             Username = room.CurrentPlayer!,
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
-            MoveType = (uint) move.MoveType(),
-            Promotion = (uint) move.PromotedPieceType()
+            MoveType = (uint)move.MoveType(),
+            Promotion = (uint)move.PromotedPieceType()
         };
         await MakeMove(dto);
     }
@@ -281,6 +286,7 @@ public class GameLogic : IGameLogic
             var result = Task.FromResult(_gameRoomsData.Get(dto.GameRoom).Resign(dto));
             if (result.Result == AckTypes.Success)
             {
+                _tempGameRoomsData.Add(_gameRoomsData.Get(dto.GameRoom), dto.GameRoom);
                 _gameRoomsData.Remove(dto.GameRoom);
             }
 
@@ -311,6 +317,7 @@ public class GameLogic : IGameLogic
             var result = Task.FromResult(_gameRoomsData.Get(dto.GameRoom).DrawOfferResponse(dto));
             if (result.Result == AckTypes.Success && dto.Accept)
             {
+                _tempGameRoomsData.Add(_gameRoomsData.Get(dto.GameRoom), dto.GameRoom);
                 _gameRoomsData.Remove(dto.GameRoom);
             }
 
@@ -319,6 +326,49 @@ public class GameLogic : IGameLogic
         catch (KeyNotFoundException e)
         {
             return Task.FromResult(AckTypes.GameNotFound);
+        }
+    }
+
+    public async Task<AckTypes> OfferRematch(RequestRematchDto dto)
+    {
+        try
+        {
+            return await _tempGameRoomsData.Get(dto.GameRoom).OfferRematch(dto);
+        }
+        catch (KeyNotFoundException e)
+        {
+            return await Task.FromResult(AckTypes.GameNotFound);
+        }
+    }
+
+    public async Task<AckTypes> RematchOfferResponse(ResponseRematchDto dto)
+    {
+        try
+        {
+            var result = Task.FromResult(_tempGameRoomsData.Get(dto.GameRoom).RematchOfferResponse(dto));
+            if (result.Result == AckTypes.Success && dto.Accept)
+            {
+                var gr = _tempGameRoomsData.Get(dto.GameRoom);
+                var res = await StartGame(new RequestGameDto()
+                {
+                    Increment = gr.GetInitialTimeControlIncrement,
+                    Seconds = gr.GetInitialTimeControlSeconds,
+                    Side = gr.GameSide,
+                    Username = dto.Username,
+                    IsVisible = gr.IsVisible,
+                    OpponentType = OpponentTypes.Friend,
+                    OpponentName = gr.PlayerWhite!.Equals(dto.Username) ? gr.PlayerBlack : gr.PlayerWhite
+                }, true);
+
+                _tempGameRoomsData.Remove(dto.GameRoom);
+                gr.SendNewGameRoomIdToPlayers(res.GameRoom);
+            }
+
+            return await result;
+        }
+        catch (KeyNotFoundException e)
+        {
+            return AckTypes.GameNotFound;
         }
     }
 

@@ -17,7 +17,7 @@ public class GameController : ControllerBase
     private readonly IGameLogic _gameLogic;
     private readonly IStockfishService _stockfishService;
 
-    public GameController(IGameLogic gameLogic,IStockfishService stockfishService, GroupHandler groupHandler)
+    public GameController(IGameLogic gameLogic, IStockfishService stockfishService, GroupHandler groupHandler)
     {
         _gameLogic = gameLogic;
         _stockfishService = stockfishService;
@@ -32,17 +32,16 @@ public class GameController : ControllerBase
             if (User.Identity?.Name == null)
             {
                 return StatusCode(401, "Identity not found.");
-            } 
-            
+            }
+
             request.Username = User.Identity.Name;
             if (request.OpponentType == OpponentTypes.Ai)
             {
                 var aiIsReady = await _stockfishService.GetStockfishIsReadyAsync();
                 if (!aiIsReady)
                 {
-                    return StatusCode(500, "Cannot create game. Ai is not ready."); 
+                    return StatusCode(500, "Cannot create game. Ai is not ready.");
                 }
-                
             }
 
             var response = await _gameLogic.StartGame(request);
@@ -61,7 +60,7 @@ public class GameController : ControllerBase
         if (User.Identity?.Name == null)
         {
             return StatusCode(401, "Identity not found.");
-        } 
+        }
 
         try
         {
@@ -70,6 +69,7 @@ public class GameController : ControllerBase
                 GameRoom = id,
                 Username = User.Identity.Name
             };
+            
             var ack = _gameLogic.JoinGame(dto);
             return Ok(ack);
         }
@@ -104,14 +104,13 @@ public class GameController : ControllerBase
             if (User.Identity?.Name == null)
             {
                 return StatusCode(401, "Identity not found.");
-            } 
-            
-            AckTypes ack = await _gameLogic.Resign(new RequestResignDto()
+            }
+
+            var ack = await _gameLogic.Resign(new RequestResignDto()
             {
                 GameRoom = request.GameRoom,
                 Username = User.Identity.Name
             });
-
 
             return Ok(ack);
         }
@@ -130,11 +129,10 @@ public class GameController : ControllerBase
             if (User.Identity?.Name == null)
             {
                 return StatusCode(401, "Identity not found.");
-            } 
-            
+            }
+
             dto.Username = User.Identity.Name;
             var ack = await _gameLogic.MakeMove(dto);
-
 
             return Ok(ack);
         }
@@ -154,7 +152,7 @@ public class GameController : ControllerBase
             {
                 return StatusCode(401, "Identity not found.");
             }
-            
+
             request.Username = User.Identity.Name;
             var ack = await _gameLogic.OfferDraw(request);
 
@@ -176,9 +174,53 @@ public class GameController : ControllerBase
             {
                 return StatusCode(401, "Identity not found.");
             }
-            
+
             request.Username = User.Identity.Name;
             var ack = await _gameLogic.DrawOfferResponse(request);
+            return Ok(ack);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    [HttpPost("/rematch-offers")]
+    public async Task<ActionResult<AckTypes>> OfferRematch([FromBody] RequestRematchDto request)
+    {
+        try
+        {
+            if (User.Identity?.Name == null)
+            {
+                return StatusCode(401, "Identity not found.");
+            }
+
+            request.Username = User.Identity.Name;
+            var ack = await _gameLogic.OfferRematch(request);
+
+            return Ok(ack);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    [HttpPost("/rematch-responses")]
+    public async Task<ActionResult<AckTypes>> RematchOfferResponse([FromBody] ResponseRematchDto request)
+    {
+        try
+        {
+            if (User.Identity?.Name == null)
+            {
+                return StatusCode(401, "Identity not found.");
+            }
+
+            request.Username = User.Identity.Name;
+            var ack = await _gameLogic.RematchOfferResponse(request);
+            
             return Ok(ack);
         }
         catch (Exception e)
@@ -193,12 +235,11 @@ public class GameController : ControllerBase
     {
         try
         {
-            
             if (User.Identity?.Name == null)
             {
                 return StatusCode(401, "Identity not found.");
-            } 
-            
+            }
+
             var rooms = _gameLogic.GetGameRooms(new GameRoomSearchParameters()
             {
                 RequesterName = User.Identity.Name,

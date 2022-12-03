@@ -16,6 +16,13 @@ public class GameRoomsData
         return id;
     }
 
+    public bool Add(GameRoom gameRoom, ulong index)
+    {
+        var ret = _gameRooms.ContainsKey(index);
+        _gameRooms.Add(index, gameRoom);
+        return ret;
+    }
+
     public GameRoom Get(ulong id)
     {
         if (_gameRooms.ContainsKey(id))
@@ -28,6 +35,7 @@ public class GameRoomsData
     {
         _gameRooms.Remove(id);
     }
+
     public IEnumerable<GameRoom> GetAll()
     {
         return _gameRooms.Select(pair => pair.Value).ToList();
