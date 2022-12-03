@@ -259,7 +259,7 @@ public class GameLogic : IGameLogic
 
             return ack;
         }
-        catch (KeyNotFoundException e)
+        catch (KeyNotFoundException)
         {
             return AckTypes.GameNotFound;
         }
@@ -275,7 +275,7 @@ public class GameLogic : IGameLogic
             throw new InvalidOperationException("Current player is not an AI");
 
         var uci = await _stockfishService.GetBestMoveAsync(new StockfishBestMoveDto(room.GetFen().ToString(),
-            room.CurrentPlayer));
+            room.CurrentPlayer!));
         var move = room.UciMoveToRudzoftMove(uci);
         var dto = new MakeMoveDto
         {
@@ -301,7 +301,7 @@ public class GameLogic : IGameLogic
 
             return result;
         }
-        catch (KeyNotFoundException e)
+        catch (KeyNotFoundException)
         {
             return Task.FromResult(AckTypes.GameNotFound);
         }
@@ -313,7 +313,7 @@ public class GameLogic : IGameLogic
         {
             return await GetGameRoom(dto.GameRoom).OfferDraw(dto);
         }
-        catch (KeyNotFoundException e)
+        catch (KeyNotFoundException)
         {
             return await Task.FromResult(AckTypes.GameNotFound);
         }
@@ -331,7 +331,7 @@ public class GameLogic : IGameLogic
 
             return result;
         }
-        catch (KeyNotFoundException e)
+        catch (KeyNotFoundException)
         {
             return Task.FromResult(AckTypes.GameNotFound);
         }
