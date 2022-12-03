@@ -65,6 +65,7 @@
 
     private async void PlayAgain()
     {
+        if (GameService.RequestedGameDto == null) return;
         var res = await GameService.CreateGameAsync(GameService.RequestedGameDto);
         await GameService.JoinGameAsync(new RequestJoinGameDto
         {
@@ -171,7 +172,7 @@
 
     private void PlaySound(string sound)
     {
-        Js.InvokeAsync<string>("PlaySound", new object[] { sound });
+        Js.InvokeAsync<string>("PlaySound", new object[] {sound});
     }
 
 }
