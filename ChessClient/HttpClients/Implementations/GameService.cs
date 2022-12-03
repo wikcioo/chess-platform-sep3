@@ -106,6 +106,7 @@ public class GameService : IGameService
             if (ack != AckTypes.Success)
                 throw new HttpRequestException($"Ack code: {ack}");
 
+            LeaveRoomAsync();
             GameRoomId = dto.GameRoom;
             await _gameHub.JoinRoomAsync(GameRoomId);
         }
