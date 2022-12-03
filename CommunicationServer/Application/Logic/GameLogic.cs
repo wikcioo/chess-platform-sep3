@@ -356,7 +356,7 @@ public class GameLogic : IGameLogic
                     Side = gr.GameSide,
                     Username = dto.Username,
                     IsVisible = gr.IsVisible,
-                    OpponentType = gr.GameType,
+                    OpponentType = OpponentTypes.Friend,
                     OpponentName = gr.PlayerWhite!.Equals(dto.Username) ? gr.PlayerBlack : gr.PlayerWhite
                 }, true);
 
