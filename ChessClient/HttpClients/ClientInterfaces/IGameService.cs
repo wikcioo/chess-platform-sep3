@@ -9,26 +9,26 @@ namespace HttpClients.ClientInterfaces;
 
 public interface IGameService
 {
-    public event Action<CurrentGameStateDto>? StateReceived;
+    event Action<CurrentGameStateDto>? StateReceived;
     bool OnWhiteSide { get; set; }
     ulong? GameRoomId { get; set; }
     bool IsDrawOfferPending { get; set; }
     bool IsRematchOfferRequestPending { get; set; }
     bool IsRematchOfferResponsePending { get; set; }
-    public RequestGameDto? RequestedGameDto { get; set; }
-    public event GameService.StreamUpdate? TimeUpdated;
-    public event GameService.StreamUpdate? NewFenReceived;
-    public event GameService.StreamUpdate? ResignationReceived;
-    public event GameService.StreamUpdate? NewPlayerJoined;
-    public event GameService.StreamUpdate? DrawOffered;
-    public event GameService.StreamUpdate? DrawOfferTimedOut;
-    public event GameService.StreamUpdate? DrawOfferAccepted;
-    public event GameService.StreamUpdate? RematchOffered;
-    public event GameService.StreamUpdate? RematchOfferTimedOut;
-    public event GameService.StreamUpdate? RematchOfferAccepted;
-    public event GameService.StreamUpdate? EndOfTheGameReached;
-    public event GameService.StreamUpdate? JoinRematchedGame;
-    public event Action? GameFirstJoined;
+    RequestGameDto? RequestedGameDto { get; set; }
+    event GameService.StreamUpdate? TimeUpdated;
+    event GameService.StreamUpdate? NewFenReceived;
+    event GameService.StreamUpdate? ResignationReceived;
+    event GameService.StreamUpdate? NewPlayerJoined;
+    event GameService.StreamUpdate? DrawOffered;
+    event GameService.StreamUpdate? DrawOfferTimedOut;
+    event GameService.StreamUpdate? DrawOfferAccepted;
+    event GameService.StreamUpdate? RematchOffered;
+    event GameService.StreamUpdate? RematchOfferTimedOut;
+    event GameService.StreamUpdate? RematchOfferAccepted;
+    event GameService.StreamUpdate? EndOfTheGameReached;
+    event GameService.StreamUpdate? JoinRematchedGame;
+    event Action? GameFirstJoined;
 
 
     Task<ResponseGameDto> CreateGameAsync(RequestGameDto dto);
