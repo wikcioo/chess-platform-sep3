@@ -1,5 +1,4 @@
-@using MudBlazor
-
+@inject MudDialogInstance MudDialog
 
 <MudDialog>
     <DialogContent>
@@ -10,9 +9,8 @@
         <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
     </DialogActions>
 </MudDialog>
-@code {
-    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
 
+@code {
     void Submit() => MudDialog.Close(DialogResult.Ok(true));
     void Cancel() => MudDialog.Cancel();
 }
