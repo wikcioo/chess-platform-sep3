@@ -1,6 +1,7 @@
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.Enums;
+using Domain.Models;
 using Rudzoft.ChessLib;
 using Rudzoft.ChessLib.Enums;
 using Rudzoft.ChessLib.Factories;
@@ -30,34 +31,44 @@ public class GameRoomHandler
 
     public ulong Id { get; set; }
 
-    public string Creator { get; }
-    public string? PlayerWhite { get; set; }
-    public string? PlayerBlack { get; set; }
-    public bool IsVisible { get; set; }
+    private readonly GameRoom _gameRoom;
+
+    private string Creator => _gameRoom.Creator;
+
+    public string? PlayerWhite
+    {
+        get => _gameRoom.PlayerWhite;
+        set => _gameRoom.PlayerWhite = value;
+    }
+
+    public string? PlayerBlack
+    {
+        get => _gameRoom.PlayerBlack;
+        set => _gameRoom.PlayerBlack = value;
+    }
+
+    private OpponentTypes GameType => _gameRoom.GameType;
+    private bool IsVisible { get; set; }
     public bool IsJoinable { get; set; } = true;
     public bool IsSpectateable => IsVisible && !IsJoinable;
-    public OpponentTypes GameType { get; set; }
 
     public uint NumPlayersJoined { get; set; }
     public uint NumSpectatorsJoined { get; set; }
 
-    public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
+    public string? CurrentPlayer => _game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack;
+    private uint GetInitialTimeControlSeconds => _gameRoom.TimeControlDurationSeconds;
+    private uint GetInitialTimeControlIncrement => _gameRoom.TimeControlIncrementSeconds;
 
-    public GameSides GameSide;
-
-    private uint GetInitialTimeControlSeconds => _chessTimer.TimeControlDurationMs / 1000;
-    private uint GetInitialTimeControlIncrement => _chessTimer.TimeControlIncrementMs / 1000;
-
-    public GameRoomHandler(string creator, uint timeControlDurationSeconds, uint timeControlIncrementSeconds, bool isVisible,
+    public GameRoomHandler(string creator, uint timeControlDurationSeconds, uint timeControlIncrementSeconds,
+        bool isVisible,
         OpponentTypes gameType,
         string? fen = null)
     {
-        Creator = creator;
+        _gameRoom = new GameRoom(creator, gameType, timeControlDurationSeconds, timeControlIncrementSeconds);
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
         _chessTimer = new ChessTimer(_whitePlaying, timeControlDurationSeconds, timeControlIncrementSeconds);
         IsVisible = isVisible;
-        GameType = gameType;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
         if (gameType == OpponentTypes.Ai)
         {
