@@ -238,8 +238,8 @@ public class GameLogic : IGameLogic
 
     private GameRoomHandler GetGameRoom(ulong id, Dictionary<ulong, GameRoomHandler> gameRoomHandlers)
     {
-        if (_gameRooms.ContainsKey(id))
-            return _gameRooms[id];
+        if (gameRoomHandlers.ContainsKey(id))
+            return gameRoomHandlers[id];
 
         throw new KeyNotFoundException();
     }
@@ -300,7 +300,7 @@ public class GameLogic : IGameLogic
             var result = Task.FromResult(GetGameRoom(dto.GameRoom, _gameRooms).Resign(dto));
             if (result.Result == AckTypes.Success)
             {
-                // _tempGameRoomsData.Add(_gameRoomsData.Get(dto.GameRoom), dto.GameRoom);
+                _tempGameRoomsData.Add(dto.GameRoom, GetGameRoom(dto.GameRoom, _gameRooms));
                 _gameRooms.Remove(dto.GameRoom);
             }
 
@@ -331,7 +331,7 @@ public class GameLogic : IGameLogic
             var result = Task.FromResult(GetGameRoom(dto.GameRoom, _gameRooms).DrawOfferResponse(dto));
             if (result.Result == AckTypes.Success && dto.Accept)
             {
-                // _tempGameRoomsData.Add(_gameRoomsData.Get(dto.GameRoom), dto.GameRoom);
+                _tempGameRoomsData.Add(dto.GameRoom, GetGameRoom(dto.GameRoom, _gameRooms));
                 _gameRooms.Remove(dto.GameRoom);
             }
 
@@ -364,26 +364,28 @@ public class GameLogic : IGameLogic
     {
         try
         {
-            var result = Task.FromResult(GetGameRoom(dto.GameRoom, _tempGameRoomsData).RematchOfferResponse(dto));
-            if (result.Result == AckTypes.Success && dto.Accept)
+            var gameRoom = GetGameRoom(dto.GameRoom, _tempGameRoomsData);
+            var result = gameRoom.RematchOfferResponse(dto);
+            if (result == AckTypes.Success && dto.Accept)
             {
-                var gr = GetGameRoom(dto.GameRoom, _tempGameRoomsData);
                 var res = await StartGame(new RequestGameDto()
                 {
-                    DurationSeconds = gr.GetInitialTimeControlSeconds,
-                    IncrementSeconds = gr.GetInitialTimeControlIncrement,
-                    Side = gr.GameSide,
+                    DurationSeconds = gameRoom.GetInitialTimeControlSeconds,
+                    IncrementSeconds = gameRoom.GetInitialTimeControlIncrement,
+                    Side = gameRoom.GameSide,
                     Username = dto.Username,
-                    IsVisible = gr.IsVisible,
+                    IsVisible = gameRoom.IsVisible,
                     OpponentType = OpponentTypes.Friend,
-                    OpponentName = gr.PlayerWhite!.Equals(dto.Username) ? gr.PlayerBlack : gr.PlayerWhite
+                    OpponentName = gameRoom.PlayerWhite!.Equals(dto.Username)
+                        ? gameRoom.PlayerBlack
+                        : gameRoom.PlayerWhite
                 }, true);
 
                 _tempGameRoomsData.Remove(dto.GameRoom);
-                gr.SendNewGameRoomIdToPlayers(res.GameRoom);
+                gameRoom.SendNewGameRoomIdToPlayers(res.GameRoom);
             }
 
-            return await result;
+            return result;
         }
         catch (KeyNotFoundException)
         {
