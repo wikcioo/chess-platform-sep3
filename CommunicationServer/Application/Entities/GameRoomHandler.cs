@@ -1,6 +1,7 @@
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.Enums;
+using Domain.Models;
 using Rudzoft.ChessLib;
 using Rudzoft.ChessLib.Enums;
 using Rudzoft.ChessLib.Factories;
@@ -10,7 +11,7 @@ using Rudzoft.ChessLib.Types;
 
 namespace Application.Entities;
 
-public class GameRoom
+public class GameRoomHandler
 {
     private readonly IGame _game;
     private readonly ChessTimer _chessTimer;
@@ -35,32 +36,45 @@ public class GameRoom
     public event Action<GameRoomEventDto>? GameEvent;
 
     public ulong Id { get; set; }
-    public string Creator { get; }
-    public string? PlayerWhite { get; set; }
-    public string? PlayerBlack { get; set; }
+
+    private readonly GameRoom _gameRoom;
+
+    private string Creator => _gameRoom.Creator;
+
+    public string? PlayerWhite
+    {
+        get => _gameRoom.PlayerWhite;
+        set => _gameRoom.PlayerWhite = value;
+    }
+
+    public string? PlayerBlack
+    {
+        get => _gameRoom.PlayerBlack;
+        set => _gameRoom.PlayerBlack = value;
+    }
+
+    public GameSides GameSide => _gameRoom.GameSide;
+
+    private OpponentTypes GameType => _gameRoom.GameType;
     public bool IsVisible { get; set; }
     public bool IsJoinable { get; set; } = true;
     public bool IsSpectateable => IsVisible && !IsJoinable;
-    public OpponentTypes GameType { get; set; }
+
     public uint NumPlayersJoined { get; set; }
     public uint NumSpectatorsJoined { get; set; }
 
-    public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
-    public uint GetInitialTimeControlSeconds => (_chessTimer.TimeControlBaseMs / 1000);
-    public uint GetInitialTimeControlIncrement => (_chessTimer.TimeControlIncrementMs / 1000);
+    public string? CurrentPlayer => _game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack;
+    public uint GetInitialTimeControlSeconds => _gameRoom.TimeControlDurationSeconds;
+    public uint GetInitialTimeControlIncrement => _gameRoom.TimeControlIncrementSeconds;
 
-    public GameSides GameSide;
-
-    public GameRoom(string creator, uint timeControlSeconds, uint timeControlIncrement, bool isVisible,
-        OpponentTypes gameType,
-        string? fen = null)
+    public GameRoomHandler(string creator, uint timeControlDurationSeconds, uint timeControlIncrementSeconds,
+        bool isVisible, OpponentTypes gameType, GameSides gameSide, string? fen = null)
     {
-        Creator = creator;
+        _gameRoom = new GameRoom(creator, gameType, timeControlDurationSeconds, timeControlIncrementSeconds, gameSide);
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
-        _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
+        _chessTimer = new ChessTimer(_whitePlaying, timeControlDurationSeconds, timeControlIncrementSeconds);
         IsVisible = isVisible;
-        GameType = gameType;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
         if (gameType == OpponentTypes.Ai)
         {
@@ -72,7 +86,7 @@ public class GameRoom
     {
         _chessTimer.ThrowEvent += (_, _, dto) =>
         {
-            if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp) GameIsActive = false;
+            if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) GameIsActive = false;
             GameEvent?.Invoke(new GameRoomEventDto
             {
                 GameRoomId = Id,
@@ -103,7 +117,7 @@ public class GameRoom
         {
             FenString = _game.Pos.FenNotation,
             Event = GameStreamEvents.PlayerJoined,
-            TimeLeftMs = _chessTimer.TimeControlBaseMs,
+            TimeLeftMs = _chessTimer.TimeControlDurationMs,
             UsernameWhite = PlayerWhite ?? "",
             UsernameBlack = PlayerBlack ?? ""
         };
@@ -133,7 +147,7 @@ public class GameRoom
 
         if (!dto.Username.Equals(CurrentPlayer))
             return AckTypes.NotUserTurn;
-        
+
         var move = ParseMove(dto);
 
         if (!IsValidMove(move))
@@ -144,7 +158,7 @@ public class GameRoom
             _chessTimer.StartTimers();
             _firstMovePlayed = true;
         }
-        
+
 
         _game.Pos.MakeMove(move, _game.Pos.State);
         _chessTimer.UpdateTimers(_whitePlaying);
@@ -165,7 +179,7 @@ public class GameRoom
         }
 
         _whitePlaying = _game.CurrentPlayer().IsWhite;
-        
+
         if (reachedTheEnd)
         {
             GameIsActive = false;
@@ -221,19 +235,19 @@ public class GameRoom
 
         _chessTimer.StopTimers();
         GameIsActive = false;
-        
+
         var streamDto = new GameEventDto()
         {
             Event = GameStreamEvents.Resignation,
             IsWhite = PlayerWhite!.Equals(dto.Username)
         };
-        
+
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
             GameEventDto = streamDto
         });
-        
+
         return AckTypes.Success;
     }
 
@@ -497,8 +511,8 @@ public class GameRoom
     {
         var fromSquare = UciToSquare(dto.FromSquare);
         var toSquare = UciToSquare(dto.ToSquare);
-        var moveType = (MoveTypes)(dto.MoveType ?? 0);
-        var promotionPiece = (PieceTypes?)dto.Promotion;
+        var moveType = (MoveTypes) (dto.MoveType ?? 0);
+        var promotionPiece = (PieceTypes?) dto.Promotion;
 
         return moveType switch
         {
@@ -518,8 +532,8 @@ public class GameRoom
             Creator = Creator,
             UsernameWhite = PlayerWhite!,
             UsernameBlack = PlayerBlack!,
-            Seconds = GetInitialTimeControlSeconds,
-            Increment = GetInitialTimeControlIncrement
+            DurationSeconds = GetInitialTimeControlSeconds,
+            IncrementSeconds = GetInitialTimeControlIncrement
         };
     }
 

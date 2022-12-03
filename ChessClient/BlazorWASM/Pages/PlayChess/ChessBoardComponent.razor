@@ -124,7 +124,7 @@
             return;
         }
 
-        if (dto.PieceType != Pieces.NoPiece)
+        if (dto.PieceType != Pieces.NoPiece && dto.PieceType != null)
         {
             if ((dto.PieceType.Value.AsInt() <= 6 && IsWhiteSide) || (dto.PieceType.Value.AsInt() >= 9 && !IsWhiteSide))
                 _currentMoves = GenerateMovesForSquare(dto);
