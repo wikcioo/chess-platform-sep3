@@ -15,7 +15,7 @@ public interface IGameService
     bool IsDrawOfferPending { get; set; }
     bool IsRematchOfferRequestPending { get; set; }
     bool IsRematchOfferResponsePending { get; set; }
-    public RequestGameDto RequestedGameDto { get; set; }
+    public RequestGameDto? RequestedGameDto { get; set; }
     public event GameService.StreamUpdate? TimeUpdated;
     public event GameService.StreamUpdate? NewFenReceived;
     public event GameService.StreamUpdate? ResignationReceived;

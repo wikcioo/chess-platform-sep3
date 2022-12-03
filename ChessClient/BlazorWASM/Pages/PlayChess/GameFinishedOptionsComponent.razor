@@ -1,5 +1,6 @@
 @using HttpClients.ClientInterfaces
 @using BlazorWASM.Pages.StartGame
+@using Domain.DTOs
 @using Domain.DTOs.GameEvents
 @using Domain.Enums
 @inject NavigationManager NavMgr
@@ -24,7 +25,15 @@
             }
             else
             {
-                <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="OfferRematch">Send rematch offer</MudButton>
+                if (GameService.RequestedGameDto != null &&
+                    GameService.RequestedGameDto.OpponentName!.Contains("stockfishai", StringComparison.OrdinalIgnoreCase))
+                {
+                    <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="PlayAgain">Play again</MudButton>
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="OfferRematch">Send rematch offer</MudButton>
+                }
                 <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="CreateNewGame">Create a new game</MudButton>
                 <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="RedirectHome">Home</MudButton>
             }
@@ -51,6 +60,17 @@
         GameService.RematchOffered -= OnRematchOffered;
         GameService.RematchOfferTimedOut -= OnRematchOfferTimedOut;
         GameService.RematchOfferAccepted -= OnRematchOfferAccepted;
+    }
+
+    private async void PlayAgain()
+    {
+        var res = await GameService.CreateGameAsync(GameService.RequestedGameDto);
+        await GameService.JoinGameAsync(new RequestJoinGameDto
+        {
+            GameRoom = res.GameRoom
+        });
+        await GameService.GetCurrentGameStateAsync();
+        NavMgr.NavigateTo("/ChessGame");
     }
 
     private async void OfferRematch()
