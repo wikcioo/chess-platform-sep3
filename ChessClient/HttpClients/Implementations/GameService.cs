@@ -20,6 +20,7 @@ public class GameService : IGameService
     public bool OnWhiteSide { get; set; } = true;
     public ulong? GameRoomId { get; set; }
     public string LastFen { get; set; } = Fen.StartPositionFen;
+    public RequestGameDto RequestedGameDto { get; set; }
 
     public delegate void StreamUpdate(GameEventDto dto);
     public event StreamUpdate? TimeUpdated;
