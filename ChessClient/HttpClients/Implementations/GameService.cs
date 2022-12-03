@@ -22,19 +22,18 @@ public class GameService : IGameService
     public string LastFen { get; set; } = Fen.StartPositionFen;
     public RequestGameDto? RequestedGameDto { get; set; }
 
-    public delegate void StreamUpdate(GameEventDto dto);
-    public event StreamUpdate? TimeUpdated;
-    public event StreamUpdate? NewFenReceived;
-    public event StreamUpdate? ResignationReceived;
-    public event StreamUpdate? NewPlayerJoined;
-    public event StreamUpdate? DrawOffered;
-    public event StreamUpdate? DrawOfferTimedOut;
-    public event StreamUpdate? DrawOfferAccepted;
-    public event StreamUpdate? RematchOffered;
-    public event StreamUpdate? RematchOfferTimedOut;
-    public event StreamUpdate? RematchOfferAccepted;
-    public event StreamUpdate? EndOfTheGameReached;
-    public event StreamUpdate? JoinRematchedGame;
+    public event Action<GameEventDto>? TimeUpdated;
+    public event Action<GameEventDto>? NewFenReceived;
+    public event Action<GameEventDto>? ResignationReceived;
+    public event Action<GameEventDto>? NewPlayerJoined;
+    public event Action<GameEventDto>? DrawOffered;
+    public event Action<GameEventDto>? DrawOfferTimedOut;
+    public event Action<GameEventDto>? DrawOfferAccepted;
+    public event Action<GameEventDto>? RematchOffered;
+    public event Action<GameEventDto>? RematchOfferTimedOut;
+    public event Action<GameEventDto>? RematchOfferAccepted;
+    public event Action<GameEventDto>? EndOfTheGameReached;
+    public event Action<GameEventDto>? JoinRematchedGame;
     public event Action? GameFirstJoined;
 
     public event Action<CurrentGameStateDto>? StateReceived;

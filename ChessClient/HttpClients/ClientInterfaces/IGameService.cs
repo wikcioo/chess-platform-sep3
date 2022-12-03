@@ -16,18 +16,18 @@ public interface IGameService
     bool IsRematchOfferRequestPending { get; set; }
     bool IsRematchOfferResponsePending { get; set; }
     RequestGameDto? RequestedGameDto { get; set; }
-    event GameService.StreamUpdate? TimeUpdated;
-    event GameService.StreamUpdate? NewFenReceived;
-    event GameService.StreamUpdate? ResignationReceived;
-    event GameService.StreamUpdate? NewPlayerJoined;
-    event GameService.StreamUpdate? DrawOffered;
-    event GameService.StreamUpdate? DrawOfferTimedOut;
-    event GameService.StreamUpdate? DrawOfferAccepted;
-    event GameService.StreamUpdate? RematchOffered;
-    event GameService.StreamUpdate? RematchOfferTimedOut;
-    event GameService.StreamUpdate? RematchOfferAccepted;
-    event GameService.StreamUpdate? EndOfTheGameReached;
-    event GameService.StreamUpdate? JoinRematchedGame;
+    event Action<GameEventDto>? TimeUpdated;
+    event Action<GameEventDto>? NewFenReceived;
+    event Action<GameEventDto>? ResignationReceived;
+    event Action<GameEventDto>? NewPlayerJoined;
+    event Action<GameEventDto>? DrawOffered;
+    event Action<GameEventDto>? DrawOfferTimedOut;
+    event Action<GameEventDto>? DrawOfferAccepted;
+    event Action<GameEventDto>? RematchOffered;
+    event Action<GameEventDto>? RematchOfferTimedOut;
+    event Action<GameEventDto>? RematchOfferAccepted;
+    event Action<GameEventDto>? EndOfTheGameReached;
+    event Action<GameEventDto>? JoinRematchedGame;
     event Action? GameFirstJoined;
 
 
