@@ -56,10 +56,9 @@ public class GameLogic : IGameLogic
             return responseFail;
         }
 
-        GameRoomHandler gameRoomHandler = new(dto.Username, dto.Seconds, dto.Increment, dto.IsVisible, dto.OpponentType)
-        {
-            GameSide = dto.Side
-        };
+        GameRoomHandler gameRoomHandler =
+            new(dto.Username, dto.DurationSeconds, dto.IncrementSeconds, dto.IsVisible, dto.OpponentType);
+
         gameRoomHandler.GameEvent += FireGameRoomEvent;
 
         var requesterIsWhite = true;
@@ -135,7 +134,7 @@ public class GameLogic : IGameLogic
 
     private async Task ValidateGameRequest(RequestGameDto dto)
     {
-        ValidateTimeControl(dto.Seconds, dto.Increment);
+        ValidateTimeControl(dto.DurationSeconds, dto.IncrementSeconds);
 
         if (!await ValidateUserExists(dto.Username))
         {
@@ -189,7 +188,7 @@ public class GameLogic : IGameLogic
 
         if (increment > 60)
         {
-            throw new InvalidOperationException("Increment cannot be longer than a minute.");
+            throw new InvalidOperationException("IncrementSeconds cannot be longer than a minute.");
         }
     }
 

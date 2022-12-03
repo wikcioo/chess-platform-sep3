@@ -18,12 +18,12 @@ public class GameRoomUnitTests
     private GameRoomHandler? _gameRoom;
     private const string PlayerWhite = "Bob";
     private const string PlayerBlack = "Jim";
-    private const uint TimeControlSeconds = 60;
-    private const uint TimeControlIncrement = 5;
+    private const uint TimeControlDurationSeconds = 60;
+    private const uint TimeControlIncrementSeconds = 5;
 
     private GameRoomHandler GetNewGameRoom()
     {
-        var gameRoom = new GameRoomHandler("", TimeControlSeconds, TimeControlIncrement, false, OpponentTypes.Random)
+        var gameRoom = new GameRoomHandler("", TimeControlDurationSeconds, TimeControlIncrementSeconds, false, OpponentTypes.Random)
         {
             PlayerWhite = PlayerWhite,
             PlayerBlack = PlayerBlack,

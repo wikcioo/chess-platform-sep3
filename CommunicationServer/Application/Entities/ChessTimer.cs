@@ -9,7 +9,7 @@ public class ChessTimer
 {
     private readonly PausableTimer _whiteTimer = new(1000.0);
     private readonly PausableTimer _blackTimer = new(1000.0);
-    public readonly uint TimeControlBaseMs;
+    public readonly uint TimeControlDurationMs;
     public readonly uint TimeControlIncrementMs;
     private bool _whitePlaying;
     public double WhiteRemainingTimeMs { get; private set; }
@@ -18,14 +18,14 @@ public class ChessTimer
     public delegate void EventHandler(object sender, EventArgs args, GameEventDto dto);
     public event EventHandler ThrowEvent = delegate{};
 
-    public ChessTimer(bool whitePlaying, uint timeControlSeconds, uint timeControlIncrement)
+    public ChessTimer(bool whitePlaying, uint timeControlDurationSeconds, uint timeControlIncrementSeconds)
     {
         _whitePlaying = whitePlaying;
-        TimeControlBaseMs = timeControlSeconds * 1000;
-        TimeControlIncrementMs = timeControlIncrement * 1000;
+        TimeControlDurationMs = timeControlDurationSeconds * 1000;
+        TimeControlIncrementMs = timeControlIncrementSeconds * 1000;
 
-        WhiteRemainingTimeMs = TimeControlBaseMs;
-        BlackRemainingTimeMs = TimeControlBaseMs;
+        WhiteRemainingTimeMs = TimeControlDurationMs;
+        BlackRemainingTimeMs = TimeControlDurationMs;
         
         _whiteTimer.Elapsed += OnOneSecElapsed;
         _blackTimer.Elapsed += OnOneSecElapsed;

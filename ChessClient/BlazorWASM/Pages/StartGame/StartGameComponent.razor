@@ -79,10 +79,10 @@
         var request = new RequestGameDto
         {
             OpponentType = _opponentType,
-            Increment = _timeControlIncrement,
+            IncrementSeconds = _timeControlIncrement,
             Side = _isWhiteSide,
             OpponentName = opponentName,
-            Seconds = _timeControlBase,
+            DurationSeconds = _timeControlBase,
             IsVisible = _isGamePublic
         };
 

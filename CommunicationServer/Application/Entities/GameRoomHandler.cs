@@ -42,19 +42,20 @@ public class GameRoomHandler
     public uint NumSpectatorsJoined { get; set; }
 
     public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
-    public uint GetInitialTimeControlSeconds => (_chessTimer.TimeControlBaseMs / 1000);
-    public uint GetInitialTimeControlIncrement => (_chessTimer.TimeControlIncrementMs / 1000);
 
     public GameSides GameSide;
 
+    private uint GetInitialTimeControlSeconds => _chessTimer.TimeControlDurationMs / 1000;
+    private uint GetInitialTimeControlIncrement => _chessTimer.TimeControlIncrementMs / 1000;
 
-    public GameRoomHandler(string creator, uint timeControlSeconds, uint timeControlIncrement, bool isVisible, OpponentTypes gameType,
+    public GameRoomHandler(string creator, uint timeControlDurationSeconds, uint timeControlIncrementSeconds, bool isVisible,
+        OpponentTypes gameType,
         string? fen = null)
     {
         Creator = creator;
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
-        _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
+        _chessTimer = new ChessTimer(_whitePlaying, timeControlDurationSeconds, timeControlIncrementSeconds);
         IsVisible = isVisible;
         GameType = gameType;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
@@ -99,7 +100,7 @@ public class GameRoomHandler
         {
             FenString = _game.Pos.FenNotation,
             Event = GameStreamEvents.PlayerJoined,
-            TimeLeftMs = _chessTimer.TimeControlBaseMs,
+            TimeLeftMs = _chessTimer.TimeControlDurationMs,
             UsernameWhite = PlayerWhite ?? "",
             UsernameBlack = PlayerBlack ?? ""
         };
@@ -116,7 +117,7 @@ public class GameRoomHandler
 
         if (!dto.Username.Equals(CurrentPlayer))
             return AckTypes.NotUserTurn;
-        
+
         var move = ParseMove(dto);
 
         if (!IsValidMove(move))
@@ -127,7 +128,7 @@ public class GameRoomHandler
             _chessTimer.StartTimers();
             _firstMovePlayed = true;
         }
-        
+
 
         _game.Pos.MakeMove(move, _game.Pos.State);
         _chessTimer.UpdateTimers(_whitePlaying);
@@ -148,7 +149,7 @@ public class GameRoomHandler
         }
 
         _whitePlaying = _game.CurrentPlayer().IsWhite;
-        
+
         if (reachedTheEnd)
         {
             GameIsActive = false;
@@ -401,8 +402,8 @@ public class GameRoomHandler
             Creator = Creator,
             UsernameWhite = PlayerWhite!,
             UsernameBlack = PlayerBlack!,
-            Seconds = GetInitialTimeControlSeconds,
-            Increment = GetInitialTimeControlIncrement
+            DurationSeconds = GetInitialTimeControlSeconds,
+            IncrementSeconds = GetInitialTimeControlIncrement
         };
     }
 
