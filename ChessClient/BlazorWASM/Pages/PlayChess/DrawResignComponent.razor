@@ -1,0 +1,57 @@
+@if (IsDrawOfferPending)
+{
+    <MudItem Style="text-align: center" xs="12">
+        <MudPaper Class="my-2 pa-2 mud-theme-primary">
+            <MudGrid Spacing="2" Justify="Justify.SpaceBetween">
+                <MudItem Class="d-flex align-center" xs="12" sm="6" md="12">
+                    <MudText Class="flex-1" Typo="Typo.subtitle1" Align="Align.Center">You have a draw offer!</MudText>
+                </MudItem>
+                <MudItem xs="6" sm="3" md="6">
+                    <MudButton @onclick="() => OnDrawResponseSent(true)" Variant="Variant.Filled" FullWidth="true" Color="Color.Tertiary">Accept</MudButton>
+                </MudItem>
+                <MudItem xs="6" sm="3" md="6">
+                    <MudButton @onclick="() => OnDrawResponseSent(false)" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Decline</MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+}
+<MudItem xs="6">
+    <MudButton @onclick="OnResigned" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
+        Resign <MudIcon Icon="@Icons.Filled.OutlinedFlag" Size="Size.Small"></MudIcon>
+    </MudButton>
+</MudItem>
+<MudItem xs="6">
+    <MudButton @onclick="OnDrawOffered" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Offer Draw</MudButton>
+</MudItem>
+
+@code {
+
+    [Parameter]
+    public bool IsDrawOfferPending { get; set; }
+
+    [Parameter]
+    public EventCallback OnOfferDraw { get; set; }
+
+    [Parameter]
+    public EventCallback OnResign { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnSendDrawResponse { get; set; }
+
+    private async void OnDrawOffered()
+    {
+        await OnOfferDraw.InvokeAsync();
+    }
+
+    private async void OnResigned()
+    {
+        await OnResign.InvokeAsync();
+    }
+
+    private async void OnDrawResponseSent(bool response)
+    {
+        await OnSendDrawResponse.InvokeAsync(response);
+    }
+
+}

@@ -1,0 +1,177 @@
+@implements IDisposable
+@using HttpClients.ClientInterfaces
+@using BlazorWASM.Pages.StartGame
+@using Domain.DTOs
+@using Domain.DTOs.GameEvents
+@using Domain.Enums
+@inject NavigationManager NavMgr
+@inject IDialogService DialogService
+@inject IGameService GameService
+@inject ISnackbar Snackbar
+@inject IJSRuntime Js
+
+<MudDialog>
+    <DialogContent>
+        <MudContainer Style="display: flex; flex-direction: column; gap: 15px; padding: 20px">
+            @if (GameService.IsRematchOfferRequestPending)
+            {
+                <MudText>Waiting for opponent's response</MudText>
+                <MudProgressCircular Color="Color.Info" Indeterminate="true"/>
+            }
+            else if (GameService.IsRematchOfferResponsePending)
+            {
+                <MudText Class="flex-1" Typo="Typo.subtitle1" Align="Align.Center">You have a rematch offer!</MudText>
+                <MudButton @onclick="() => SendRematchResponse(true)" Variant="Variant.Filled" Color="Color.Tertiary">Accept</MudButton>
+                <MudButton @onclick="() => SendRematchResponse(false)" Variant="Variant.Filled" Color="Color.Dark">Decline</MudButton>
+            }
+            else
+            {
+                if (GameService.RequestedGameDto != null &&
+                    GameService.RequestedGameDto.OpponentName!.Contains("stockfishai", StringComparison.OrdinalIgnoreCase))
+                {
+                    <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="PlayAgain">Play again</MudButton>
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="OfferRematch">Send rematch offer</MudButton>
+                }
+                <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="CreateNewGame">Create a new game</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="RedirectHome">Home</MudButton>
+            }
+        </MudContainer>
+    </DialogContent>
+</MudDialog>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        InitGameLogic();
+    }
+
+    private void InitGameLogic()
+    {
+        GameService.RematchOffered += OnRematchOffered;
+        GameService.RematchOfferTimedOut += OnRematchOfferTimedOut;
+        GameService.RematchOfferAccepted += OnRematchOfferAccepted;
+    }
+
+    public void Dispose()
+    {
+        GameService.RematchOffered -= OnRematchOffered;
+        GameService.RematchOfferTimedOut -= OnRematchOfferTimedOut;
+        GameService.RematchOfferAccepted -= OnRematchOfferAccepted;
+    }
+
+    private async void PlayAgain()
+    {
+        var res = await GameService.CreateGameAsync(GameService.RequestedGameDto);
+        await GameService.JoinGameAsync(new RequestJoinGameDto
+        {
+            GameRoom = res.GameRoom
+        });
+        await GameService.GetCurrentGameStateAsync();
+        NavMgr.NavigateTo("/ChessGame");
+    }
+
+    private async void OfferRematch()
+    {
+        try
+        {
+            var ack = await GameService.OfferRematchAsync();
+
+            switch (ack)
+            {
+                case AckTypes.Success:
+                    Notify("Rematch Offer Successful!", Severity.Info);
+                    return;
+                case AckTypes.RematchOfferDeclined:
+                    Notify("Rematch Offer Declined!", Severity.Info);
+                    GameService.IsRematchOfferRequestPending = false;
+                    StateHasChanged();
+                    break;
+            }
+        }
+        catch (InvalidOperationException e)
+        {
+            Notify(e.Message, Severity.Warning);
+            return;
+        }
+        catch (HttpRequestException e)
+        {
+            Notify(e.Message, Severity.Error);
+        }
+    }
+
+    private async void SendRematchResponse(bool accepted)
+    {
+        try
+        {
+            var ack = await GameService.SendRematchResponseAsync(accepted);
+            GameService.IsRematchOfferResponsePending = false;
+
+            if (ack == AckTypes.Success)
+            {
+                StateHasChanged();
+            }
+            else
+            {
+                Notify($"Failed to send rematch response! AckType = {ack}", Severity.Error);
+            }
+        }
+        catch (InvalidOperationException e)
+        {
+            Notify(e.Message, Severity.Warning);
+        }
+        catch (HttpRequestException e)
+        {
+            Notify(e.Message, Severity.Error);
+        }
+    }
+
+    private void CreateNewGame()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium
+        };
+
+        DialogService.Show<StartGameComponent>("", options);
+    }
+
+    private void RedirectHome()
+    {
+        NavMgr.NavigateTo("/");
+    }
+
+    private void OnRematchOffered(GameEventDto dto)
+    {
+        Notify($"Rematch offer", Severity.Info);
+        StateHasChanged();
+    }
+
+    private void OnRematchOfferTimedOut(GameEventDto dto)
+    {
+        Notify("Rematch offer expired", Severity.Info);
+        StateHasChanged();
+    }
+
+    private void OnRematchOfferAccepted(GameEventDto dto)
+    {
+        PlaySound("notify");
+        StateHasChanged();
+    }
+
+    private void Notify(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+    }
+
+    private void PlaySound(string sound)
+    {
+        Js.InvokeAsync<string>("PlaySound", new object[] { sound });
+    }
+
+}

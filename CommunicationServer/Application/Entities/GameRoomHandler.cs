@@ -9,7 +9,6 @@ using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.MoveGeneration;
 using Rudzoft.ChessLib.Types;
 
-
 namespace Application.Entities;
 
 public class GameRoomHandler
@@ -26,6 +25,13 @@ public class GameRoomHandler
     private bool _isDrawOfferAccepted = false;
     private bool _drawResponseWithinTimespan = false;
     private CancellationTokenSource? _drawCts;
+
+    // Offer rematch related fields
+    private string _rematchOfferOrigin = string.Empty;
+    private bool _isRematchOffered = false;
+    private bool _isRematchOfferAccepted = false;
+    private bool _rematchResponseWithinTimespan = false;
+    private CancellationTokenSource? _rematchCts;
 
     public event Action<GameRoomEventDto>? GameEvent;
 
@@ -47,8 +53,10 @@ public class GameRoomHandler
         set => _gameRoom.PlayerBlack = value;
     }
 
+    public GameSides GameSide => _gameRoom.GameSide;
+
     private OpponentTypes GameType => _gameRoom.GameType;
-    private bool IsVisible { get; set; }
+    public bool IsVisible { get; set; }
     public bool IsJoinable { get; set; } = true;
     public bool IsSpectateable => IsVisible && !IsJoinable;
 
@@ -56,15 +64,13 @@ public class GameRoomHandler
     public uint NumSpectatorsJoined { get; set; }
 
     public string? CurrentPlayer => _game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack;
-    private uint GetInitialTimeControlSeconds => _gameRoom.TimeControlDurationSeconds;
-    private uint GetInitialTimeControlIncrement => _gameRoom.TimeControlIncrementSeconds;
+    public uint GetInitialTimeControlSeconds => _gameRoom.TimeControlDurationSeconds;
+    public uint GetInitialTimeControlIncrement => _gameRoom.TimeControlIncrementSeconds;
 
     public GameRoomHandler(string creator, uint timeControlDurationSeconds, uint timeControlIncrementSeconds,
-        bool isVisible,
-        OpponentTypes gameType,
-        string? fen = null)
+        bool isVisible, OpponentTypes gameType, GameSides gameSide, string? fen = null)
     {
-        _gameRoom = new GameRoom(creator, gameType, timeControlDurationSeconds, timeControlIncrementSeconds);
+        _gameRoom = new GameRoom(creator, gameType, timeControlDurationSeconds, timeControlIncrementSeconds, gameSide);
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
         _chessTimer = new ChessTimer(_whitePlaying, timeControlDurationSeconds, timeControlIncrementSeconds);
@@ -119,6 +125,19 @@ public class GameRoomHandler
         {
             GameRoomId = Id,
             GameEventDto = streamDto
+        });
+    }
+
+    public void SendNewGameRoomIdToPlayers(ulong id)
+    {
+        GameEvent?.Invoke(new GameRoomEventDto()
+        {
+            GameRoomId = Id,
+            GameEventDto = new GameEventDto()
+            {
+                Event = GameStreamEvents.RematchInvitation,
+                GameRoomId = id
+            }
         });
     }
 
@@ -216,16 +235,19 @@ public class GameRoomHandler
 
         _chessTimer.StopTimers();
         GameIsActive = false;
+
         var streamDto = new GameEventDto()
         {
             Event = GameStreamEvents.Resignation,
             IsWhite = PlayerWhite!.Equals(dto.Username)
         };
+
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
             GameEventDto = streamDto
         });
+
         return AckTypes.Success;
     }
 
@@ -248,11 +270,13 @@ public class GameRoomHandler
             UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
             UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
         };
+
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
             GameEventDto = streamDto
         });
+
         _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (true)
         {
@@ -316,6 +340,101 @@ public class GameRoomHandler
         try
         {
             _drawCts?.Cancel();
+        }
+        catch (Exception)
+        {
+            // ignored
+        }
+
+        return AckTypes.Success;
+    }
+
+    public async Task<AckTypes> OfferRematch(RequestRematchDto dto)
+    {
+        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        {
+            return AckTypes.NotUserTurn;
+        }
+
+        _isRematchOffered = true;
+        _rematchOfferOrigin = dto.Username;
+        _isRematchOfferAccepted = false;
+        _rematchResponseWithinTimespan = false;
+
+        var streamDto = new GameEventDto
+        {
+            Event = GameStreamEvents.RematchOffer,
+            UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
+            UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
+        };
+
+        GameEvent?.Invoke(new GameRoomEventDto
+        {
+            GameRoomId = Id,
+            GameEventDto = streamDto
+        });
+
+        _rematchCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        while (true)
+        {
+            if (_rematchCts.Token.IsCancellationRequested)
+            {
+                break;
+            }
+
+            await Task.Delay(50);
+        }
+
+        if (!_rematchResponseWithinTimespan)
+        {
+            GameEvent?.Invoke(new GameRoomEventDto
+            {
+                GameRoomId = Id,
+                GameEventDto = new GameEventDto()
+                {
+                    Event = GameStreamEvents.RematchOfferTimeout,
+                    IsWhite = PlayerWhite!.Equals(dto.Username)
+                }
+            });
+            return AckTypes.RematchOfferExpired;
+        }
+
+        if (!_isRematchOfferAccepted && _rematchResponseWithinTimespan) return AckTypes.RematchOfferDeclined;
+        GameEvent?.Invoke(new GameRoomEventDto
+        {
+            GameRoomId = Id,
+            GameEventDto = new GameEventDto
+            {
+                Event = GameStreamEvents.RematchOfferAcceptation,
+                IsWhite = PlayerWhite!.Equals(dto.Username)
+            }
+        });
+
+        return AckTypes.Success;
+    }
+
+    public AckTypes RematchOfferResponse(ResponseRematchDto dto)
+    {
+        if (!_isRematchOffered) return AckTypes.RematchNotOffered;
+        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        {
+            return AckTypes.NotUserTurn;
+        }
+
+        if (dto.Username.Equals(_rematchOfferOrigin))
+        {
+            return AckTypes.NotUserTurn;
+        }
+
+        _rematchResponseWithinTimespan = true;
+        if (dto.Accept)
+        {
+            _isRematchOfferAccepted = dto.Accept;
+        }
+
+        try
+        {
+            _rematchCts?.Cancel();
         }
         catch (Exception)
         {

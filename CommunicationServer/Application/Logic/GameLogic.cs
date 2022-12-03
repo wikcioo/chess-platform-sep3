@@ -17,6 +17,8 @@ public class GameLogic : IGameLogic
 
     private readonly Dictionary<ulong, GameRoomHandler> _gameRooms = new();
 
+    private readonly Dictionary<ulong, GameRoomHandler> _tempGameRoomsData = new();
+
     private readonly IStockfishService _stockfishService;
     private readonly IChatLogic _chatLogic;
     private readonly IUserService _userService;
@@ -40,7 +42,7 @@ public class GameLogic : IGameLogic
         AuthUserEvent?.Invoke(dto);
     }
 
-    public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
+    public async Task<ResponseGameDto> StartGame(RequestGameDto dto, bool isRematch)
     {
         try
         {
@@ -57,9 +59,10 @@ public class GameLogic : IGameLogic
         }
 
         GameRoomHandler gameRoomHandler =
-            new(dto.Username, dto.DurationSeconds, dto.IncrementSeconds, dto.IsVisible, dto.OpponentType);
+            new(dto.Username, dto.DurationSeconds, dto.IncrementSeconds, dto.IsVisible, dto.OpponentType, dto.Side);
 
         gameRoomHandler.GameEvent += FireGameRoomEvent;
+
 
         var requesterIsWhite = true;
         switch (dto.Side)
@@ -101,6 +104,7 @@ public class GameLogic : IGameLogic
         gameRoomHandler.Id = id;
         _gameRooms.Add(id, gameRoomHandler);
         gameRoomHandler.Initialize();
+
         _chatLogic.StartChatRoom(id);
 
         if (dto.OpponentType == OpponentTypes.Ai)
@@ -109,7 +113,7 @@ public class GameLogic : IGameLogic
         if (gameRoomHandler.CurrentPlayer != null && IsAi(gameRoomHandler.CurrentPlayer))
             await RequestAiMove(id);
 
-        if (dto.OpponentType == OpponentTypes.Friend)
+        if (dto.OpponentType == OpponentTypes.Friend && !isRematch)
         {
             FireAuthUserEvent(new AuthorizedUserEventDto()
             {
@@ -201,7 +205,7 @@ public class GameLogic : IGameLogic
 
     public AckTypes JoinGame(RequestJoinGameDto dto)
     {
-        var gameRoom = GetGameRoom(dto.GameRoom);
+        var gameRoom = GetGameRoom(dto.GameRoom, _gameRooms);
 
         if (gameRoom.IsJoinable && gameRoom.CanUsernameJoin(dto.Username))
         {
@@ -232,7 +236,7 @@ public class GameLogic : IGameLogic
         throw new ArgumentException("Cannot join the game!");
     }
 
-    private GameRoomHandler GetGameRoom(ulong id)
+    private GameRoomHandler GetGameRoom(ulong id, Dictionary<ulong, GameRoomHandler> gameRoomHandlers)
     {
         if (_gameRooms.ContainsKey(id))
             return _gameRooms[id];
@@ -244,7 +248,7 @@ public class GameLogic : IGameLogic
     {
         try
         {
-            var room = GetGameRoom(dto.GameRoom);
+            var room = GetGameRoom(dto.GameRoom, _gameRooms);
 
             var ack = room.MakeMove(dto);
             if (ack != AckTypes.Success)
@@ -269,7 +273,7 @@ public class GameLogic : IGameLogic
 
     private async Task RequestAiMove(ulong roomId)
     {
-        var room = GetGameRoom(roomId);
+        var room = GetGameRoom(roomId, _gameRooms);
 
         if (!IsAi(room.CurrentPlayer))
             throw new InvalidOperationException("Current player is not an AI");
@@ -293,9 +297,10 @@ public class GameLogic : IGameLogic
     {
         try
         {
-            var result = Task.FromResult(GetGameRoom(dto.GameRoom).Resign(dto));
+            var result = Task.FromResult(GetGameRoom(dto.GameRoom, _gameRooms).Resign(dto));
             if (result.Result == AckTypes.Success)
             {
+                // _tempGameRoomsData.Add(_gameRoomsData.Get(dto.GameRoom), dto.GameRoom);
                 _gameRooms.Remove(dto.GameRoom);
             }
 
@@ -311,7 +316,7 @@ public class GameLogic : IGameLogic
     {
         try
         {
-            return await GetGameRoom(dto.GameRoom).OfferDraw(dto);
+            return await GetGameRoom(dto.GameRoom, _gameRooms).OfferDraw(dto);
         }
         catch (KeyNotFoundException)
         {
@@ -323,9 +328,10 @@ public class GameLogic : IGameLogic
     {
         try
         {
-            var result = Task.FromResult(GetGameRoom(dto.GameRoom).DrawOfferResponse(dto));
+            var result = Task.FromResult(GetGameRoom(dto.GameRoom, _gameRooms).DrawOfferResponse(dto));
             if (result.Result == AckTypes.Success && dto.Accept)
             {
+                // _tempGameRoomsData.Add(_gameRoomsData.Get(dto.GameRoom), dto.GameRoom);
                 _gameRooms.Remove(dto.GameRoom);
             }
 
@@ -340,6 +346,49 @@ public class GameLogic : IGameLogic
     private IEnumerable<GameRoomHandler> GetAll()
     {
         return _gameRooms.Select(pair => pair.Value).ToList();
+    }
+
+    public async Task<AckTypes> OfferRematch(RequestRematchDto dto)
+    {
+        try
+        {
+            return await GetGameRoom(dto.GameRoom, _tempGameRoomsData).OfferRematch(dto);
+        }
+        catch (KeyNotFoundException)
+        {
+            return await Task.FromResult(AckTypes.GameNotFound);
+        }
+    }
+
+    public async Task<AckTypes> RematchOfferResponse(ResponseRematchDto dto)
+    {
+        try
+        {
+            var result = Task.FromResult(GetGameRoom(dto.GameRoom, _tempGameRoomsData).RematchOfferResponse(dto));
+            if (result.Result == AckTypes.Success && dto.Accept)
+            {
+                var gr = GetGameRoom(dto.GameRoom, _tempGameRoomsData);
+                var res = await StartGame(new RequestGameDto()
+                {
+                    DurationSeconds = gr.GetInitialTimeControlSeconds,
+                    IncrementSeconds = gr.GetInitialTimeControlIncrement,
+                    Side = gr.GameSide,
+                    Username = dto.Username,
+                    IsVisible = gr.IsVisible,
+                    OpponentType = OpponentTypes.Friend,
+                    OpponentName = gr.PlayerWhite!.Equals(dto.Username) ? gr.PlayerBlack : gr.PlayerWhite
+                }, true);
+
+                _tempGameRoomsData.Remove(dto.GameRoom);
+                gr.SendNewGameRoomIdToPlayers(res.GameRoom);
+            }
+
+            return await result;
+        }
+        catch (KeyNotFoundException)
+        {
+            return AckTypes.GameNotFound;
+        }
     }
 
     public IEnumerable<GameRoomDto> GetGameRooms(GameRoomSearchParameters parameters)
@@ -361,6 +410,6 @@ public class GameLogic : IGameLogic
 
     public CurrentGameStateDto GetCurrentGameState(ulong gameRoomId)
     {
-        return GetGameRoom(gameRoomId).GetCurrentGameState();
+        return GetGameRoom(gameRoomId, _gameRooms).GetCurrentGameState();
     }
 }
