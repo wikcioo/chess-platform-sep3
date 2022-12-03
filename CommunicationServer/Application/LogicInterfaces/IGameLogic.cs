@@ -1,8 +1,6 @@
 using Domain.DTOs;
-using Domain.DTOs.Chat;
 using Domain.DTOs.AuthorizedUserEvents;
 using Domain.DTOs.GameEvents;
-using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 
 namespace Application.LogicInterfaces;

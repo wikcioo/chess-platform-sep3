@@ -2,8 +2,6 @@ using Application.ClientInterfaces;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
-using Domain.DTOs.Chat;
-using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

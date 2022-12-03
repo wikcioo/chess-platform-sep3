@@ -1,6 +1,5 @@
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
-using Domain.DTOs.GameRoomData;
 using Domain.Enums;
 using Rudzoft.ChessLib;
 using Rudzoft.ChessLib.Enums;
@@ -132,6 +131,9 @@ public class GameRoom
     {
         if (!GameIsActive) return AckTypes.GameHasFinished;
 
+        if (!dto.Username.Equals(CurrentPlayer))
+            return AckTypes.NotUserTurn;
+        
         var move = ParseMove(dto);
 
         if (!IsValidMove(move))
@@ -142,9 +144,7 @@ public class GameRoom
             _chessTimer.StartTimers();
             _firstMovePlayed = true;
         }
-
-        if (!dto.Username.Equals(CurrentPlayer))
-            return AckTypes.NotUserTurn;
+        
 
         _game.Pos.MakeMove(move, _game.Pos.State);
         _chessTimer.UpdateTimers(_whitePlaying);
@@ -164,6 +164,8 @@ public class GameRoom
             gameEndType = GameEndTypes.Pat;
         }
 
+        _whitePlaying = _game.CurrentPlayer().IsWhite;
+        
         if (reachedTheEnd)
         {
             GameIsActive = false;
@@ -172,9 +174,9 @@ public class GameRoom
             {
                 Event = GameStreamEvents.ReachedEndOfTheGame,
                 FenString = _game.Pos.FenNotation,
-                GameEndType = (uint)gameEndType,
-                IsWhite = !_whitePlaying,
-                TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
+                GameEndType = (uint) gameEndType,
+                IsWhite = _whitePlaying,
+                TimeLeftMs = _whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             };
             GameEvent?.Invoke(new GameRoomEventDto
             {
@@ -185,14 +187,13 @@ public class GameRoom
             return AckTypes.Success;
         }
 
-        _whitePlaying = _game.CurrentPlayer().IsWhite;
 
         var responseJoinedGameDto = new GameEventDto()
         {
             Event = GameStreamEvents.NewFenPosition,
             FenString = _game.Pos.FenNotation,
-            TimeLeftMs = !_whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
-            GameEndType = (uint)_game.GameEndType,
+            TimeLeftMs = _whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
+            GameEndType = (uint) _game.GameEndType,
             IsWhite = _whitePlaying
         };
 
