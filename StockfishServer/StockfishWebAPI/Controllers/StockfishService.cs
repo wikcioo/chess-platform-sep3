@@ -51,8 +51,12 @@ public class StockfishService : StockfishGrpc.StockfishService.StockfishServiceB
         {
             Console.WriteLine("[StockfishService]: Failed to set options!");
         }
-        
-        var bestMove = await _stockfish.Go(depth: (int) levels.Depth, moveTime: (int) levels.Time);
+
+        var bestMove = await _stockfish.Go(new StockfishGoDto()
+        {
+            Depth = (int)levels.Depth,
+            MoveTime = (int)levels.Time
+        });
         return new BestMove
         {
             Fen = bestMove
