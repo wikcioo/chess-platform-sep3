@@ -43,13 +43,13 @@ public class StockfishController : StockfishService.StockfishServiceBase
                 Fen = fen.Fen.ToString()
             };
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException e)
         {
-            throw new RpcException(Status.DefaultCancelled, "Failed to set options.");
+            throw new RpcException(Status.DefaultCancelled, e.Message);
         }
-        catch (ArgumentException)
+        catch (ArgumentException e)
         {
-            throw new RpcException(Status.DefaultCancelled, "Invalid fen.");
+            throw new RpcException(Status.DefaultCancelled, e.Message);
         }
     }
 }
