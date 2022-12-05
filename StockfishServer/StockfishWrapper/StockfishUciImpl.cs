@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using Domain.DTOs.Stockfish;
+using Domain.Enums;
 
 namespace StockfishWrapper;
 

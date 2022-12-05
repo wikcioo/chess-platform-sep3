@@ -1,4 +1,5 @@
 using Domain.DTOs.Stockfish;
+using Domain.Enums;
 using Domain.Models;
 using Grpc.Core;
 using Rudzoft.ChessLib;

@@ -1,8 +1,7 @@
 using Domain.DTOs.Stockfish;
+using Domain.Enums;
 
 namespace StockfishWrapper;
-
-public enum PositionType { Fen, StartPos }
 
 public interface IStockfishUci
 {
