@@ -1,3 +1,5 @@
+using Application.Logic;
+using Application.LogicInterfaces;
 using Microsoft.AspNetCore.ResponseCompression;
 using StockfishWebAPI.Controllers;
 using StockfishWrapper;
@@ -18,6 +20,7 @@ builder.Services.AddCors(o => o.AddPolicy("AllowAll", builder =>
         .AllowAnyHeader()
         .WithExposedHeaders("Grpc-Status", "Grpc-Message", "Grpc-Encoding", "Grpc-Accept-Encoding");
 }));
+builder.Services.AddScoped<IStockfishLogic, StockfishLogic>();
 builder.Services.AddScoped<IStockfishUci, StockfishUciImpl>();
 
 var app = builder.Build();
@@ -28,5 +31,5 @@ app.UseRouting();
 
 app.UseCors();
 
-app.MapGrpcService<StockfishService>().RequireCors("AllowAll");
+app.MapGrpcService<StockfishController>().RequireCors("AllowAll");
 app.Run();
