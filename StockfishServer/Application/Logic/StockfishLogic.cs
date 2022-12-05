@@ -30,14 +30,14 @@ public class StockfishLogic : IStockfishLogic
             throw new ArgumentException("Invalid fen.");
         }
 
-        _stockfish.UciNewGame();
-        _stockfish.Position(dto.Fen, PositionType.Fen);
-
         if (!StockfishLevels.IsAi(dto.StockfishPlayer))
         {
             throw new ArgumentException("Invalid stockfish player.");
         }
         
+        _stockfish.UciNewGame();
+        _stockfish.Position(dto.Fen, PositionType.Fen);
+
         var levels = StockfishLevels.LevelOf[dto.StockfishPlayer];
 
         if (!await _stockfish.SetOptions(new StockfishSettingsDto() { SkillLevel = (int)levels.Skill }))
