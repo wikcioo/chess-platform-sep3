@@ -108,6 +108,36 @@ public class GameService : IGameService
             throw new HttpRequestException("Network error. Failed to join the game", e);
         }
     }
+    
+    
+    public async Task SpectateGameAsync(RequestJoinGameDto dto)
+    {
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!isLoggedIn)
+            throw new InvalidOperationException("User not logged in.");
+        _gameHub.StartListeningToGameEvents();
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+
+        try
+        {
+            var response = await _client.PostAsync($"/games/{dto.GameRoom}/spectators", null);
+            var ack = await ResponseParser.ParseAsync<AckTypes>(response);
+
+            if (ack != AckTypes.Success)
+                throw new HttpRequestException($"Ack code: {ack}");
+
+            GameRoomId = dto.GameRoom;
+            await _gameHub.JoinRoomAsync(GameRoomId);
+        }
+
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to spectate the game", e);
+        }
+    }
 
 
     private void ListenToGameEvents(GameEventDto response)
