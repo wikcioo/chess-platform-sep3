@@ -232,7 +232,7 @@ public class GameLogic : IGameLogic
     
     public AckTypes SpectateGame(RequestJoinGameDto dto)
     {
-        var gameRoom = _gameRoomsData.Get(dto.GameRoom);
+        var gameRoom = GetGameRoom(dto.GameRoom,_gameRooms);
         
         if (gameRoom.IsSpectateable)
         {
