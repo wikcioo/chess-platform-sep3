@@ -33,6 +33,11 @@ public class StockfishLogic : IStockfishLogic
         _stockfish.UciNewGame();
         _stockfish.Position(dto.Fen, PositionType.Fen);
 
+        if (!StockfishLevels.IsAi(dto.StockfishPlayer))
+        {
+            throw new ArgumentException("Invalid stockfish player.");
+        }
+        
         var levels = StockfishLevels.LevelOf[dto.StockfishPlayer];
 
         if (!await _stockfish.SetOptions(new StockfishSettingsDto() { SkillLevel = (int)levels.Skill }))
