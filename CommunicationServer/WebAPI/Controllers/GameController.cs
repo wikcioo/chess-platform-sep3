@@ -17,7 +17,7 @@ public class GameController : ControllerBase
     private readonly IGameLogic _gameLogic;
     private readonly IStockfishService _stockfishService;
 
-    public GameController(IGameLogic gameLogic,IStockfishService stockfishService, GroupHandler groupHandler)
+    public GameController(IGameLogic gameLogic, IStockfishService stockfishService, GroupHandler groupHandler)
     {
         _gameLogic = gameLogic;
         _stockfishService = stockfishService;
@@ -32,17 +32,17 @@ public class GameController : ControllerBase
             if (User.Identity?.Name == null)
             {
                 return StatusCode(401, "Identity not found.");
-            } 
-            
+            }
+
             request.Username = User.Identity.Name;
             if (request.OpponentType == OpponentTypes.Ai)
             {
                 var aiIsReady = await _stockfishService.GetStockfishIsReadyAsync();
                 if (!aiIsReady)
                 {
-                    return StatusCode(500, "Cannot create game. Ai is not ready."); 
+                    return StatusCode(500, "Cannot create game. Ai is not ready.");
                 }
-                
+
             }
 
             var response = await _gameLogic.StartGame(request);
@@ -61,7 +61,7 @@ public class GameController : ControllerBase
         if (User.Identity?.Name == null)
         {
             return StatusCode(401, "Identity not found.");
-        } 
+        }
 
         try
         {
@@ -80,8 +80,33 @@ public class GameController : ControllerBase
         }
     }
 
+    [HttpPost("/games/{id}/spectators")]
+    public ActionResult<AckTypes> SpectateGame(ulong id)
+    {
+        if (User.Identity?.Name == null)
+        {
+            return StatusCode(401, "Identity not found.");
+        }
 
-    [HttpGet("/games/{id}")]
+        try
+        {
+            var dto = new RequestJoinGameDto()
+        {
+            GameRoom = id,
+            Username = User.Identity.Name
+        }; 
+            var ack = _gameLogic.SpectateGame(dto); 
+            return Ok(ack);
+    }
+        catch (Exception e)
+    {
+        Console.WriteLine(e);
+        return StatusCode(500, e.Message);
+    }
+}
+
+
+[HttpGet("/games/{id}")]
     public ActionResult<CurrentGameStateDto> GetCurrentGameState(ulong id)
     {
         try

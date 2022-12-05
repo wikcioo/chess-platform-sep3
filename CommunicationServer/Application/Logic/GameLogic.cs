@@ -216,13 +216,21 @@ public class GameLogic : IGameLogic
             return AckTypes.Success;
         }
 
+        throw new ArgumentException("Cannot join the game!");
+    }
+    
+    public AckTypes SpectateGame(RequestJoinGameDto dto)
+    {
+        var gameRoom = _gameRoomsData.Get(dto.GameRoom);
+        
         if (gameRoom.IsSpectateable)
         {
             gameRoom.NumSpectatorsJoined++;
             return AckTypes.Success;
         }
 
-        throw new ArgumentException("Cannot join the game!");
+        throw new ArgumentException("Cannot spectate the game!");
+        
     }
 
     public async Task<AckTypes> MakeMove(MakeMoveDto dto)
