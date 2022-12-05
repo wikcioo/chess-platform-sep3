@@ -1,6 +1,5 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.Enums;
@@ -16,22 +15,25 @@ public class GameService : IGameService
 {
     private readonly IAuthService _authService;
     public bool IsDrawOfferPending { get; set; }
+    public bool IsRematchOfferRequestPending { get; set; }
+    public bool IsRematchOfferResponsePending { get; set; }
     public bool OnWhiteSide { get; set; } = true;
     public ulong? GameRoomId { get; set; }
-
     public string LastFen { get; set; } = Fen.StartPositionFen;
+    public RequestGameDto? RequestedGameDto { get; set; }
 
-
-    public delegate void StreamUpdate(GameEventDto dto);
-
-    public event StreamUpdate? TimeUpdated;
-    public event StreamUpdate? NewFenReceived;
-    public event StreamUpdate? ResignationReceived;
-    public event StreamUpdate? NewPlayerJoined;
-    public event StreamUpdate? DrawOffered;
-    public event StreamUpdate? DrawOfferTimedOut;
-    public event StreamUpdate? DrawOfferAccepted;
-    public event StreamUpdate? EndOfTheGameReached;
+    public event Action<GameEventDto>? TimeUpdated;
+    public event Action<GameEventDto>? NewFenReceived;
+    public event Action<GameEventDto>? ResignationReceived;
+    public event Action<GameEventDto>? NewPlayerJoined;
+    public event Action<GameEventDto>? DrawOffered;
+    public event Action<GameEventDto>? DrawOfferTimedOut;
+    public event Action<GameEventDto>? DrawOfferAccepted;
+    public event Action<GameEventDto>? RematchOffered;
+    public event Action<GameEventDto>? RematchOfferTimedOut;
+    public event Action<GameEventDto>? RematchOfferAccepted;
+    public event Action<GameEventDto>? EndOfTheGameReached;
+    public event Action<GameEventDto>? JoinRematchedGame;
     public event Action? GameFirstJoined;
 
     public event Action<CurrentGameStateDto>? StateReceived;
@@ -48,12 +50,16 @@ public class GameService : IGameService
         gameHub.GameEventReceived += ListenToGameEvents;
     }
 
-
     public Task<string> GetLastFenAsync()
     {
         return Task.FromResult(LastFen);
     }
 
+    public void PlayerJoined(GameEventDto dto)
+    {
+        GameFirstJoined?.Invoke();
+        NewPlayerJoined?.Invoke(dto);
+    }
 
     public async Task<ResponseGameDto> CreateGameAsync(RequestGameDto dto)
     {
@@ -99,6 +105,7 @@ public class GameService : IGameService
             if (ack != AckTypes.Success)
                 throw new HttpRequestException($"Ack code: {ack}");
 
+            LeaveRoomAsync();
             GameRoomId = dto.GameRoom;
             await _gameHub.JoinRoomAsync(GameRoomId);
         }
@@ -165,6 +172,18 @@ public class GameService : IGameService
             case GameStreamEvents.DrawOfferAcceptation:
                 DrawOfferAcceptation(response);
                 break;
+            case GameStreamEvents.RematchOffer:
+                RematchOffer(response);
+                break;
+            case GameStreamEvents.RematchOfferTimeout:
+                RematchOfferTimeout(response);
+                break;
+            case GameStreamEvents.RematchOfferAcceptation:
+                RematchOfferAcceptation(response);
+                break;
+            case GameStreamEvents.RematchInvitation:
+                JoinRematchGame(response);
+                break;
             case GameStreamEvents.PlayerJoined:
                 PlayerJoined(response);
                 break;
@@ -220,8 +239,8 @@ public class GameService : IGameService
                 OnWhiteSide = true;
             }
 
-            StateReceived?.Invoke(streamDto);
             GameFirstJoined?.Invoke();
+            StateReceived?.Invoke(streamDto);
         }
         catch (HttpRequestException e)
         {
@@ -253,6 +272,47 @@ public class GameService : IGameService
     {
         IsDrawOfferPending = false;
         DrawOfferAccepted?.Invoke(dto);
+    }
+
+    private async void RematchOffer(GameEventDto dto)
+    {
+        var user = await _authService.GetAuthAsync();
+
+        if (dto.UsernameWhite.Equals(user.Identity!.Name) && OnWhiteSide ||
+            dto.UsernameBlack.Equals(user.Identity!.Name) && !OnWhiteSide)
+        {
+            IsRematchOfferResponsePending = true;
+        }
+        else
+        {
+            IsRematchOfferRequestPending = true;
+        }
+
+        RematchOffered?.Invoke(dto);
+    }
+
+    private void RematchOfferTimeout(GameEventDto dto)
+    {
+        IsRematchOfferRequestPending = false;
+        IsRematchOfferResponsePending = false;
+        RematchOfferTimedOut?.Invoke(dto);
+    }
+
+    private void RematchOfferAcceptation(GameEventDto dto)
+    {
+        IsRematchOfferRequestPending = false;
+        IsRematchOfferResponsePending = false;
+        RematchOfferAccepted?.Invoke(dto);
+    }
+
+    private async void JoinRematchGame(GameEventDto dto)
+    {
+        await JoinGameAsync(new RequestJoinGameDto()
+        {
+            GameRoom = dto.GameRoomId
+        });
+
+        JoinRematchedGame?.Invoke(dto);
     }
 
     public async Task<AckTypes> MakeMoveAsync(Move move)
@@ -318,10 +378,97 @@ public class GameService : IGameService
         }
     }
 
-    public void PlayerJoined(GameEventDto dto)
+    public async Task<AckTypes> SendDrawResponseAsync(bool accepted)
     {
-        GameFirstJoined?.Invoke();
-        NewPlayerJoined?.Invoke(dto);
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!GameRoomId.HasValue)
+            throw new InvalidOperationException("You didn't join a game room!");
+
+        if (!isLoggedIn)
+            throw new InvalidOperationException("User not logged in.");
+
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+
+        var dto = new ResponseDrawDto
+        {
+            GameRoom = GameRoomId.Value,
+            Accept = accepted
+        };
+
+        try
+        {
+            var response = await _client.PostAsJsonAsync("/draw-responses", dto);
+            return await ResponseParser.ParseAsync<AckTypes>(response);
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to respond to a draw offer.", e);
+        }
+    }
+
+    public async Task<AckTypes> OfferRematchAsync()
+    {
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!GameRoomId.HasValue)
+            throw new InvalidOperationException("You didn't join a game room!");
+
+        if (!isLoggedIn)
+            throw new InvalidOperationException("User not logged in");
+
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+
+        var dto = new RequestRematchDto()
+        {
+            Username = user.Identity!.Name!,
+            GameRoom = GameRoomId.Value
+        };
+
+        try
+        {
+            var response = await _client.PostAsJsonAsync("/rematch-offers", dto);
+            return await ResponseParser.ParseAsync<AckTypes>(response);
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to offer a draw.", e);
+        }
+    }
+
+    public async Task<AckTypes> SendRematchResponseAsync(bool accepted)
+    {
+        var user = await _authService.GetAuthAsync();
+        var isLoggedIn = user.Identity != null;
+
+        if (!GameRoomId.HasValue)
+            throw new InvalidOperationException("You didn't join a game room!");
+
+        if (!isLoggedIn)
+            throw new InvalidOperationException("User not logged in.");
+
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
+
+        var dto = new ResponseRematchDto
+        {
+            GameRoom = GameRoomId.Value,
+            Accept = accepted
+        };
+
+        try
+        {
+            var response = await _client.PostAsJsonAsync("/rematch-responses", dto);
+            return await ResponseParser.ParseAsync<AckTypes>(response);
+        }
+        catch (HttpRequestException e)
+        {
+            throw new HttpRequestException("Network error. Failed to respond to a draw offer.", e);
+        }
     }
 
     public async Task<AckTypes> ResignAsync()
@@ -349,37 +496,6 @@ public class GameService : IGameService
         catch (HttpRequestException e)
         {
             throw new HttpRequestException("Network error. Failed to resign from the game.", e);
-        }
-    }
-
-    public async Task<AckTypes> SendDrawResponseAsync(bool accepted)
-    {
-        var user = await _authService.GetAuthAsync();
-        var isLoggedIn = user.Identity != null;
-
-        if (!GameRoomId.HasValue)
-            throw new InvalidOperationException("You didn't join a game room!");
-
-        if (!isLoggedIn)
-            throw new InvalidOperationException("User not logged in.");
-        _client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
-
-
-        var dto = new ResponseDrawDto
-        {
-            GameRoom = GameRoomId.Value,
-            Accept = accepted
-        };
-
-        try
-        {
-            var response = await _client.PostAsJsonAsync("/draw-responses", dto);
-            return await ResponseParser.ParseAsync<AckTypes>(response);
-        }
-        catch (HttpRequestException e)
-        {
-            throw new HttpRequestException("Network error. Failed to respond to a draw offer.", e);
         }
     }
 

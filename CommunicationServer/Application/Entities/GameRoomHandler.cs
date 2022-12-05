@@ -1,6 +1,7 @@
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.Enums;
+using Domain.Models;
 using Rudzoft.ChessLib;
 using Rudzoft.ChessLib.Enums;
 using Rudzoft.ChessLib.Factories;
@@ -8,10 +9,9 @@ using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.MoveGeneration;
 using Rudzoft.ChessLib.Types;
 
-
 namespace Application.Entities;
 
-public class GameRoom
+public class GameRoomHandler
 {
     private readonly IGame _game;
     private readonly ChessTimer _chessTimer;
@@ -26,38 +26,55 @@ public class GameRoom
     private bool _drawResponseWithinTimespan = false;
     private CancellationTokenSource? _drawCts;
 
+    // Offer rematch related fields
+    private string _rematchOfferOrigin = string.Empty;
+    private bool _isRematchOffered = false;
+    private bool _isRematchOfferAccepted = false;
+    private bool _rematchResponseWithinTimespan = false;
+    private CancellationTokenSource? _rematchCts;
+
     public event Action<GameRoomEventDto>? GameEvent;
 
     public ulong Id { get; set; }
 
-    public string Creator { get; }
-    public string? PlayerWhite { get; set; }
-    public string? PlayerBlack { get; set; }
+    private readonly GameRoom _gameRoom;
+
+    private string Creator => _gameRoom.Creator;
+
+    public string? PlayerWhite
+    {
+        get => _gameRoom.PlayerWhite;
+        set => _gameRoom.PlayerWhite = value;
+    }
+
+    public string? PlayerBlack
+    {
+        get => _gameRoom.PlayerBlack;
+        set => _gameRoom.PlayerBlack = value;
+    }
+
+    public GameSides GameSide => _gameRoom.GameSide;
+
+    private OpponentTypes GameType => _gameRoom.GameType;
     public bool IsVisible { get; set; }
     public bool IsJoinable { get; set; } = true;
     public bool IsSpectateable => IsVisible && !IsJoinable;
-    public OpponentTypes GameType { get; set; }
 
     public uint NumPlayersJoined { get; set; }
     public uint NumSpectatorsJoined { get; set; }
 
-    public string? CurrentPlayer => (_game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack);
-    public uint GetInitialTimeControlSeconds => (_chessTimer.TimeControlBaseMs / 1000);
-    public uint GetInitialTimeControlIncrement => (_chessTimer.TimeControlIncrementMs / 1000);
+    public string? CurrentPlayer => _game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack;
+    public uint GetInitialTimeControlSeconds => _gameRoom.TimeControlDurationSeconds;
+    public uint GetInitialTimeControlIncrement => _gameRoom.TimeControlIncrementSeconds;
 
-    public GameSides GameSide;
-
-
-    public GameRoom(string creator, uint timeControlSeconds, uint timeControlIncrement, bool isVisible,
-        OpponentTypes gameType,
-        string? fen = null)
+    public GameRoomHandler(string creator, uint timeControlDurationSeconds, uint timeControlIncrementSeconds,
+        bool isVisible, OpponentTypes gameType, GameSides gameSide, string? fen = null)
     {
-        Creator = creator;
+        _gameRoom = new GameRoom(creator, gameType, timeControlDurationSeconds, timeControlIncrementSeconds, gameSide);
         _game = GameFactory.Create();
         _game.NewGame(fen ?? Fen.StartPositionFen);
-        _chessTimer = new ChessTimer(_whitePlaying, timeControlSeconds, timeControlIncrement);
+        _chessTimer = new ChessTimer(_whitePlaying, timeControlDurationSeconds, timeControlIncrementSeconds);
         IsVisible = isVisible;
-        GameType = gameType;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
         if (gameType == OpponentTypes.Ai)
         {
@@ -100,7 +117,7 @@ public class GameRoom
         {
             FenString = _game.Pos.FenNotation,
             Event = GameStreamEvents.PlayerJoined,
-            TimeLeftMs = _chessTimer.TimeControlBaseMs,
+            TimeLeftMs = _chessTimer.TimeControlDurationMs,
             UsernameWhite = PlayerWhite ?? "",
             UsernameBlack = PlayerBlack ?? ""
         };
@@ -111,13 +128,26 @@ public class GameRoom
         });
     }
 
+    public void SendNewGameRoomIdToPlayers(ulong id)
+    {
+        GameEvent?.Invoke(new GameRoomEventDto()
+        {
+            GameRoomId = Id,
+            GameEventDto = new GameEventDto()
+            {
+                Event = GameStreamEvents.RematchInvitation,
+                GameRoomId = id
+            }
+        });
+    }
+
     public AckTypes MakeMove(MakeMoveDto dto)
     {
         if (!GameIsActive) return AckTypes.GameHasFinished;
 
         if (!dto.Username.Equals(CurrentPlayer))
             return AckTypes.NotUserTurn;
-        
+
         var move = ParseMove(dto);
 
         if (!IsValidMove(move))
@@ -128,7 +158,7 @@ public class GameRoom
             _chessTimer.StartTimers();
             _firstMovePlayed = true;
         }
-        
+
 
         _game.Pos.MakeMove(move, _game.Pos.State);
         _chessTimer.UpdateTimers(_whitePlaying);
@@ -149,7 +179,7 @@ public class GameRoom
         }
 
         _whitePlaying = _game.CurrentPlayer().IsWhite;
-        
+
         if (reachedTheEnd)
         {
             GameIsActive = false;
@@ -205,16 +235,19 @@ public class GameRoom
 
         _chessTimer.StopTimers();
         GameIsActive = false;
+
         var streamDto = new GameEventDto()
         {
             Event = GameStreamEvents.Resignation,
             IsWhite = PlayerWhite!.Equals(dto.Username)
         };
+
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
             GameEventDto = streamDto
         });
+
         return AckTypes.Success;
     }
 
@@ -237,11 +270,13 @@ public class GameRoom
             UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
             UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
         };
+
         GameEvent?.Invoke(new GameRoomEventDto
         {
             GameRoomId = Id,
             GameEventDto = streamDto
         });
+
         _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (true)
         {
@@ -305,6 +340,101 @@ public class GameRoom
         try
         {
             _drawCts?.Cancel();
+        }
+        catch (Exception)
+        {
+            // ignored
+        }
+
+        return AckTypes.Success;
+    }
+
+    public async Task<AckTypes> OfferRematch(RequestRematchDto dto)
+    {
+        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        {
+            return AckTypes.NotUserTurn;
+        }
+
+        _isRematchOffered = true;
+        _rematchOfferOrigin = dto.Username;
+        _isRematchOfferAccepted = false;
+        _rematchResponseWithinTimespan = false;
+
+        var streamDto = new GameEventDto
+        {
+            Event = GameStreamEvents.RematchOffer,
+            UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
+            UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
+        };
+
+        GameEvent?.Invoke(new GameRoomEventDto
+        {
+            GameRoomId = Id,
+            GameEventDto = streamDto
+        });
+
+        _rematchCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        while (true)
+        {
+            if (_rematchCts.Token.IsCancellationRequested)
+            {
+                break;
+            }
+
+            await Task.Delay(50);
+        }
+
+        if (!_rematchResponseWithinTimespan)
+        {
+            GameEvent?.Invoke(new GameRoomEventDto
+            {
+                GameRoomId = Id,
+                GameEventDto = new GameEventDto()
+                {
+                    Event = GameStreamEvents.RematchOfferTimeout,
+                    IsWhite = PlayerWhite!.Equals(dto.Username)
+                }
+            });
+            return AckTypes.RematchOfferExpired;
+        }
+
+        if (!_isRematchOfferAccepted && _rematchResponseWithinTimespan) return AckTypes.RematchOfferDeclined;
+        GameEvent?.Invoke(new GameRoomEventDto
+        {
+            GameRoomId = Id,
+            GameEventDto = new GameEventDto
+            {
+                Event = GameStreamEvents.RematchOfferAcceptation,
+                IsWhite = PlayerWhite!.Equals(dto.Username)
+            }
+        });
+
+        return AckTypes.Success;
+    }
+
+    public AckTypes RematchOfferResponse(ResponseRematchDto dto)
+    {
+        if (!_isRematchOffered) return AckTypes.RematchNotOffered;
+        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        {
+            return AckTypes.NotUserTurn;
+        }
+
+        if (dto.Username.Equals(_rematchOfferOrigin))
+        {
+            return AckTypes.NotUserTurn;
+        }
+
+        _rematchResponseWithinTimespan = true;
+        if (dto.Accept)
+        {
+            _isRematchOfferAccepted = dto.Accept;
+        }
+
+        try
+        {
+            _rematchCts?.Cancel();
         }
         catch (Exception)
         {
@@ -402,8 +532,8 @@ public class GameRoom
             Creator = Creator,
             UsernameWhite = PlayerWhite!,
             UsernameBlack = PlayerBlack!,
-            Seconds = GetInitialTimeControlSeconds,
-            Increment = GetInitialTimeControlIncrement
+            DurationSeconds = GetInitialTimeControlSeconds,
+            IncrementSeconds = GetInitialTimeControlIncrement
         };
     }
 

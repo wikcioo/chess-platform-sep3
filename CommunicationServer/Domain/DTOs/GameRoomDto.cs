@@ -6,6 +6,6 @@ public class GameRoomDto
     public string Creator { get; set; } = string.Empty;
     public string UsernameWhite { get; set; } = string.Empty;
     public string UsernameBlack { get; set; } = string.Empty;
-    public uint Seconds { get; set; }
-    public uint Increment { get; set; }
+    public uint DurationSeconds { get; set; }
+    public uint IncrementSeconds { get; set; }
 }

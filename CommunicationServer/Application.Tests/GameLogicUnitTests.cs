@@ -24,10 +24,10 @@
 //         {
 //             Username = "Jeff",
 //             OpponentType = OpponentTypes.Friend,
-//             Increment = 0,
+//             IncrementSeconds = 0,
 //             Side = GameSides.White,
 //             OpponentName = opponent,
-//             Seconds = 600
+//             DurationSeconds = 600
 //         });
 //
 //         var expectedResponse = new ResponseGameDto()

@@ -79,10 +79,10 @@
         var request = new RequestGameDto
         {
             OpponentType = _opponentType,
-            Increment = _timeControlIncrement,
+            IncrementSeconds = _timeControlIncrement,
             Side = _isWhiteSide,
             OpponentName = opponentName,
-            Seconds = _timeControlBase,
+            DurationSeconds = _timeControlBase,
             IsVisible = _isGamePublic
         };
 
@@ -94,11 +94,16 @@
             {
                 throw new InvalidOperationException(response.ErrorMessage);
             }
+            
             await GameService.JoinGameAsync(new RequestJoinGameDto
             {
                 GameRoom = response.GameRoom
             });
+
+            GameService.RequestedGameDto = request;
             NavMgr.NavigateTo("/ChessGame");
+            await GameService.GetCurrentGameStateAsync();
+
             Notify($"Game created successfully! Game id: {response.GameRoom}", Severity.Success);
         }
         catch (InvalidOperationException e)
@@ -110,9 +115,10 @@
             Notify(e.Message, Severity.Error);
         }
     }
-    
+
     private void Notify(string message, Severity severity)
     {
         Snackbar.Add(message, severity);
     }
+
 }

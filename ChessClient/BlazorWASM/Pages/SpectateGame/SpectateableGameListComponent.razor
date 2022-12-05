@@ -15,7 +15,7 @@
         <MudTd DataLabel="Id">@context.GameRoom</MudTd>
         <MudTd DataLabel="White Player">@context.UsernameWhite</MudTd>
         <MudTd DataLabel="Black Player">@context.UsernameBlack</MudTd>
-        <MudTd DataLabel="Time Control">@(context.Seconds + "+" + context.Increment)</MudTd>
+        <MudTd DataLabel="Time Control">@(context.DurationSeconds + "+" + context.IncrementSeconds)</MudTd>
         <MudTd DataLabel="Spectate">
             <MudButton @onclick="() => SpectateGame(context.GameRoom)">Spectate</MudButton>
         </MudTd>
