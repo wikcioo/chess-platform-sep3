@@ -35,6 +35,13 @@ public class GameLogic : IGameLogic
 
     private void FireGameRoomEvent(GameRoomEventDto dto)
     {
+        if (dto.GameEventDto?.Event == GameStreamEvents.ReachedEndOfTheGame ||
+            dto.GameEventDto is { Event: GameStreamEvents.TimeUpdate, GameEndType: (int)GameEndTypes.TimeIsUp })
+        {
+            _tempGameRoomsData.Add(dto.GameRoomId, GetGameRoom(dto.GameRoomId, _gameRooms));
+            _gameRooms.Remove(dto.GameRoomId);
+        }
+
         GameEvent?.Invoke(dto);
     }
 
@@ -63,7 +70,6 @@ public class GameLogic : IGameLogic
             new(dto.Username, dto.DurationSeconds, dto.IncrementSeconds, dto.IsVisible, dto.OpponentType, dto.Side);
 
         gameRoomHandler.GameEvent += FireGameRoomEvent;
-
 
         var requesterIsWhite = true;
         switch (dto.Side)
@@ -105,7 +111,6 @@ public class GameLogic : IGameLogic
         gameRoomHandler.Id = id;
         _gameRooms.Add(id, gameRoomHandler);
         gameRoomHandler.Initialize();
-        gameRoomHandler.GameEvent += OnGameRoomHandlerEvents;
 
         _chatLogic.StartChatRoom(id);
 
@@ -136,15 +141,6 @@ public class GameLogic : IGameLogic
         };
 
         return responseDto;
-    }
-
-    private void OnGameRoomHandlerEvents(GameRoomEventDto dto)
-    {
-        if (dto.GameEventDto?.Event != GameStreamEvents.ReachedEndOfTheGame &&
-            dto.GameEventDto is not
-                { Event: GameStreamEvents.TimeUpdate, GameEndType: (int)GameEndTypes.TimeIsUp }) return;
-        _tempGameRoomsData.Add(dto.GameRoomId, GetGameRoom(dto.GameRoomId, _gameRooms));
-        _gameRooms.Remove(dto.GameRoomId);
     }
 
     private async Task ValidateGameRequest(RequestGameDto dto)
