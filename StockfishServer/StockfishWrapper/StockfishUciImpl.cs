@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using Domain.DTOs.Stockfish;
+using Domain.Enums;
 
 namespace StockfishWrapper;
 
@@ -52,22 +53,20 @@ public class StockfishUciImpl : IStockfishUci
         RunCmd($"position {type.ToString().ToLower()} {position}");
     }
 
-    public async Task<string?> Go(string? searchMoves = null, bool? ponder = null, int? wTime = null, int? bTime = null, int? wInc = null,
-        int? bInc = null, int? movesToGo = null, int? depth = null, int? nodes = null, int? mate = null,
-        int? moveTime = null, bool infinite = false)
+    public async Task<string?> Go(StockfishGoDto dto)
     {
         var commands = new StringBuilder();
-        if (searchMoves != null) commands.Append($"moves {searchMoves} ");
-        if (ponder != null) commands.Append("ponder ");
-        if (wTime != null) commands.Append($"wtime {wTime} ");
-        if (bTime != null) commands.Append($"btime {bTime} ");
-        if (wInc != null) commands.Append($"winc {wInc} ");
-        if (bInc != null) commands.Append($"binc {bInc} ");
-        if (movesToGo != null) commands.Append($"movestogo {movesToGo} ");
-        if (depth != null) commands.Append($"depth {depth} ");
-        if (nodes != null) commands.Append($"nodes {nodes} ");
-        if (mate != null) commands.Append($"mate {mate} ");
-        if (moveTime != null) commands.Append($"movetime {moveTime} ");
+        if (dto.SearchMoves != null) commands.Append($"moves {dto.SearchMoves} ");
+        if (dto.Ponder != null) commands.Append("ponder ");
+        if (dto.WTime != null) commands.Append($"wtime {dto.WTime} ");
+        if (dto.BTime != null) commands.Append($"btime {dto.BTime} ");
+        if (dto.WInc != null) commands.Append($"winc {dto.WInc} ");
+        if (dto.BInc != null) commands.Append($"binc {dto.BInc} ");
+        if (dto.MovesToGo != null) commands.Append($"movestogo {dto.MovesToGo} ");
+        if (dto.Depth != null) commands.Append($"depth {dto.Depth} ");
+        if (dto.Nodes != null) commands.Append($"nodes {dto.Nodes} ");
+        if (dto.Mate != null) commands.Append($"mate {dto.Mate} ");
+        if (dto.MoveTime != null) commands.Append($"movetime {dto.MoveTime} ");
         
         RunCmd("go " + commands);
         return await WaitForBestMoveToken();

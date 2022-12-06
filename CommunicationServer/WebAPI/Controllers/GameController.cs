@@ -69,8 +69,33 @@ public class GameController : ControllerBase
                 GameRoom = id,
                 Username = User.Identity.Name
             };
-            
+
             var ack = _gameLogic.JoinGame(dto);
+            return Ok(ack);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
+    }
+
+    [HttpPost("/games/{id}/spectators")]
+    public ActionResult<AckTypes> SpectateGame(ulong id)
+    {
+        if (User.Identity?.Name == null)
+        {
+            return StatusCode(401, "Identity not found.");
+        }
+
+        try
+        {
+            var dto = new RequestJoinGameDto()
+            {
+                GameRoom = id,
+                Username = User.Identity.Name
+            };
+            var ack = _gameLogic.SpectateGame(dto);
             return Ok(ack);
         }
         catch (Exception e)
@@ -220,7 +245,7 @@ public class GameController : ControllerBase
 
             request.Username = User.Identity.Name;
             var ack = await _gameLogic.RematchOfferResponse(request);
-            
+
             return Ok(ack);
         }
         catch (Exception e)

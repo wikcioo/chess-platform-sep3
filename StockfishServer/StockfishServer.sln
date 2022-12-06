@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockfishWebAPI", "Stockfis
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "..\CommunicationServer\Domain\Domain.csproj", "{FF367562-6E9D-4D7D-AEC8-0F3817468387}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{5EB9B482-8275-41BB-AB33-2D9D35A0FC38}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{FF367562-6E9D-4D7D-AEC8-0F3817468387}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF367562-6E9D-4D7D-AEC8-0F3817468387}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FF367562-6E9D-4D7D-AEC8-0F3817468387}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5EB9B482-8275-41BB-AB33-2D9D35A0FC38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5EB9B482-8275-41BB-AB33-2D9D35A0FC38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5EB9B482-8275-41BB-AB33-2D9D35A0FC38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5EB9B482-8275-41BB-AB33-2D9D35A0FC38}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
