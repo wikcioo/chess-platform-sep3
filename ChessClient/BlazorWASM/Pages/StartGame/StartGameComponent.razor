@@ -27,7 +27,7 @@
             <TimeControlComponent @bind-TimeControlBase="_timeControlBase" @bind-TimeControlIncrement="_timeControlIncrement"/>
             <IsPublicGameComponent @bind-IsPublic="_isGamePublic"/>
         </MudElement>
-        <CreateGameButtonComponent OnCreateGame="CreateGame"/>
+        <CreateGameButtonComponent OnCreateGame="CreateGame" IsCreatingGame="_isCreatingGame"/>
     </MudStack>
 </MudContainer>
 
@@ -39,6 +39,7 @@
     private uint _timeControlBase = 120;
     private uint _timeControlIncrement;
     private bool _isGamePublic = false;
+    private bool _isCreatingGame;
 
     private void OnTabChange(int tabIndex)
     {
@@ -54,6 +55,7 @@
 
     private async Task CreateGame()
     {
+        _isCreatingGame = true;
         var opponentName = "";
 
         try
@@ -94,7 +96,7 @@
             {
                 throw new InvalidOperationException(response.ErrorMessage);
             }
-            
+
             await GameService.JoinGameAsync(new RequestJoinGameDto
             {
                 GameRoom = response.GameRoom
@@ -114,6 +116,7 @@
         {
             Notify(e.Message, Severity.Error);
         }
+        _isCreatingGame = false;
     }
 
     private void Notify(string message, Severity severity)

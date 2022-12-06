@@ -1,8 +1,11 @@
-
-<MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="OnCreateGame">Create game</MudButton>
+<MudButton Disabled="IsCreatingGame" Variant="Variant.Filled" Color="Color.Primary" @onclick="OnCreateGame">Create game</MudButton>
 
 @code {
-    
+
     [Parameter]
     public EventCallback OnCreateGame { get; set; }
+
+    [Parameter]
+    public bool IsCreatingGame { get; set; }
+
 }
