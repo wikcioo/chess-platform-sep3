@@ -33,6 +33,7 @@ public interface IGameService
 
     Task<ResponseGameDto> CreateGameAsync(RequestGameDto dto);
     Task JoinGameAsync(RequestJoinGameDto dto);
+    Task SpectateGameAsync(RequestJoinGameDto dto);
     Task<AckTypes> MakeMoveAsync(Move move);
     Task<AckTypes> OfferDrawAsync();
     Task<AckTypes> SendDrawResponseAsync(bool accepted);

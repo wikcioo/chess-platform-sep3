@@ -227,13 +227,20 @@ public class GameLogic : IGameLogic
             return AckTypes.Success;
         }
 
+        throw new ArgumentException("Cannot join the game!");
+    }
+
+    public AckTypes SpectateGame(RequestJoinGameDto dto)
+    {
+        var gameRoom = GetGameRoom(dto.GameRoom, _gameRooms);
+
         if (gameRoom.IsSpectateable)
         {
             gameRoom.NumSpectatorsJoined++;
             return AckTypes.Success;
         }
 
-        throw new ArgumentException("Cannot join the game!");
+        throw new ArgumentException("Cannot spectate the game!");
     }
 
     private GameRoomHandler GetGameRoom(ulong id, Dictionary<ulong, GameRoomHandler> gameRoomHandlers)
