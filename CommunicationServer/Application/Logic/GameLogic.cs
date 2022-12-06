@@ -7,6 +7,7 @@ using Domain.DTOs.GameEvents;
 using Domain.DTOs.Stockfish;
 using Domain.Enums;
 using Domain.Models;
+using Rudzoft.ChessLib.Enums;
 using Rudzoft.ChessLib.Fen;
 
 namespace Application.Logic;
@@ -34,6 +35,13 @@ public class GameLogic : IGameLogic
 
     private void FireGameRoomEvent(GameRoomEventDto dto)
     {
+        if (dto.GameEventDto?.Event == GameStreamEvents.ReachedEndOfTheGame ||
+            dto.GameEventDto is { Event: GameStreamEvents.TimeUpdate, GameEndType: (int)GameEndTypes.TimeIsUp })
+        {
+            _tempGameRoomsData.Add(dto.GameRoomId, GetGameRoom(dto.GameRoomId, _gameRooms));
+            _gameRooms.Remove(dto.GameRoomId);
+        }
+
         GameEvent?.Invoke(dto);
     }
 
@@ -62,7 +70,6 @@ public class GameLogic : IGameLogic
             new(dto.Username, dto.DurationSeconds, dto.IncrementSeconds, dto.IsVisible, dto.OpponentType, dto.Side);
 
         gameRoomHandler.GameEvent += FireGameRoomEvent;
-
 
         var requesterIsWhite = true;
         switch (dto.Side)
