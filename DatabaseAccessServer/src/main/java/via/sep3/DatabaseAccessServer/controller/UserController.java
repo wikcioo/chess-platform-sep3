@@ -26,10 +26,13 @@ public class UserController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public User Create(@RequestBody User user) {
         if (user.getUsername().toLowerCase().contains("stockfishai")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usernames starting with stockfish are not allowed");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usernames starting with stockfishai are not allowed");
         }
         if (repository.findByEmailIgnoreCase(user.getEmail()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This email is already in use");
+        }
+        if (repository.findByUsernameEquals(user.getUsername()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This username is already in use");
         }
         return repository.save(user);
     }

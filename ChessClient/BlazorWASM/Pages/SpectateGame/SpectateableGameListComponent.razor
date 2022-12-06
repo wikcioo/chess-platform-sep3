@@ -33,7 +33,7 @@
     
     private async void SpectateGame(ulong i)
     {
-        await GameService.JoinGameAsync(new RequestJoinGameDto
+        await GameService.SpectateGameAsync(new RequestJoinGameDto
         {
             GameRoom = i
         });

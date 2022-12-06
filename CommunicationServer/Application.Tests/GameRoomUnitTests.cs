@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Application.Entities;
+using Application.GameRoomHandlers;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.Enums;
@@ -23,12 +23,12 @@ public class GameRoomUnitTests
 
     private GameRoomHandler GetNewGameRoom()
     {
-        var gameRoom = new GameRoomHandler("", TimeControlDurationSeconds, TimeControlIncrementSeconds, false, OpponentTypes.Random, GameSides.White)
-        {
-            PlayerWhite = PlayerWhite,
-            PlayerBlack = PlayerBlack,
-            GameIsActive = true
-        };
+        var gameRoom = new GameRoomHandlerFactory().GetGameRoomHandler("", TimeControlDurationSeconds,
+            TimeControlIncrementSeconds, false, OpponentTypes.Random, GameSides.White);
+
+        gameRoom.PlayerWhite = PlayerWhite;
+        gameRoom.PlayerBlack = PlayerBlack;
+        gameRoom.GameIsActive = true;
         return gameRoom;
     }
 

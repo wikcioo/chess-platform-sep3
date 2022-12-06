@@ -1,5 +1,6 @@
 using System.Text;
 using Application.ClientInterfaces;
+using Application.GameRoomHandlers;
 using Application.Logic;
 using Application.LogicInterfaces;
 using DatabaseClient.Implementations;
@@ -52,6 +53,7 @@ builder.Services.AddSingleton<IStockfishService, StockfishHttpClient>();
 
 builder.Services.AddSingleton(_ => GrpcChannel.ForAddress("https://localhost:7007"));
 
+builder.Services.AddSingleton<IGameRoomHandlerFactory, GameRoomHandlerFactory>();
 builder.Services.AddSingleton<IChatLogic, ChatLogic>();
 builder.Services.AddSingleton<IGameLogic, GameLogic>();
 
