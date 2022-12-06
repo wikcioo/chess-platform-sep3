@@ -2,6 +2,7 @@ package via.sep3.DatabaseAccessServer.domain;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Entity
@@ -9,15 +10,20 @@ import javax.persistence.Table;
 public class Game {
     @Id
     private int gameId;
+@ManyToOne
     private User creator;
+    @ManyToOne
     private User playerWhite;
+    @ManyToOne
     private User playerBlack;
     private enum GameType{AI, FRIEND, RANDOM};
     private GameType gameType;
-    public enum GameSide{WHITE, BLACK, RANDOM};
+    private enum GameSide{WHITE, BLACK, RANDOM};
     private GameSide gameSide;
-    public final int timeControlDurationSeconds;
-    public final int timeControlIncrementSeconds;
+    private int timeControlDurationSeconds;
+    private int timeControlIncrementSeconds;
+
+    public Game(){};
 
 
     public Game(User creator,  GameType gameType, User playerWhite, User playerBlack, GameSide gameSide,  int timeControlDurationSeconds, int timeControlIncrementSeconds){
