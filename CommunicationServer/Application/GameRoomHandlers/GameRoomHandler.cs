@@ -71,10 +71,10 @@ public class GameRoomHandler
     public GameRoomHandler(IGame game, GameRoom gameRoom, IChessTimer chessTimer, string? fen = null)
     {
         _gameRoom = gameRoom;
-        
+
         _game = game;
         _game.NewGame(fen ?? Fen.StartPositionFen);
-        
+
         _chessTimer = chessTimer;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
         if (_gameRoom.GameType == OpponentTypes.Ai)
@@ -87,7 +87,7 @@ public class GameRoomHandler
     {
         _chessTimer.Elapsed += (_, _, dto) =>
         {
-            if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) GameIsActive = false;
+            if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp) FinishGame();
             GameEvent?.Invoke(new GameRoomEventDto
             {
                 GameRoomId = Id,
@@ -164,32 +164,17 @@ public class GameRoomHandler
         _game.Pos.MakeMove(move, _game.Pos.State);
         _chessTimer.UpdateTimers(_whitePlaying);
 
-        // Check game logic: Checkmate, Draw, Insufficient Material
-        // TODO(Wiktor): Implement the rest of end game scenarios
-        var reachedTheEnd = false;
-        var gameEndType = GameEndTypes.None;
-        if (_game.Pos.IsMate)
-        {
-            reachedTheEnd = true;
-            gameEndType = GameEndTypes.CheckMate;
-        }
-        else if (_game.Pos.GenerateMoves().Length == 0 && !_game.Pos.InCheck)
-        {
-            reachedTheEnd = true;
-            gameEndType = GameEndTypes.Pat;
-        }
-
+        var gameEndType = IsEndGame();
         _whitePlaying = _game.CurrentPlayer().IsWhite;
 
-        if (reachedTheEnd)
+        if (gameEndType != GameEndTypes.None)
         {
-            GameIsActive = false;
-            _chessTimer.StopTimers();
+            FinishGame();
             var streamDto = new GameEventDto()
             {
                 Event = GameStreamEvents.ReachedEndOfTheGame,
                 FenString = _game.Pos.FenNotation,
-                GameEndType = (uint) gameEndType,
+                GameEndType = (uint)gameEndType,
                 IsWhite = _whitePlaying,
                 TimeLeftMs = _whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             };
@@ -198,7 +183,7 @@ public class GameRoomHandler
                 GameRoomId = Id,
                 GameEventDto = streamDto
             });
-
+            
             return AckTypes.Success;
         }
 
@@ -208,7 +193,7 @@ public class GameRoomHandler
             Event = GameStreamEvents.NewFenPosition,
             FenString = _game.Pos.FenNotation,
             TimeLeftMs = _whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
-            GameEndType = (uint) _game.GameEndType,
+            GameEndType = (uint)_game.GameEndType,
             IsWhite = _whitePlaying
         };
 
@@ -219,6 +204,30 @@ public class GameRoomHandler
         });
 
         return AckTypes.Success;
+    }
+
+    private GameEndTypes IsEndGame()
+    {
+        // Check game logic: Checkmate, Draw, Insufficient Material
+        // TODO(Wiktor): Implement the rest of end game scenarios
+        var gameEndType = GameEndTypes.None;
+        if (_game.Pos.IsMate)
+        {
+            gameEndType = GameEndTypes.CheckMate;
+        }
+        else if (_game.Pos.GenerateMoves().Length == 0 && !_game.Pos.InCheck)
+        {
+            gameEndType = GameEndTypes.Pat;
+        }
+
+        return gameEndType;
+    }
+
+    private void FinishGame()
+    {
+        GameIsActive = false;
+        _chessTimer.StopTimers();
+        
     }
 
     public FenData GetFen()
@@ -234,8 +243,7 @@ public class GameRoomHandler
             return AckTypes.NotUserTurn;
         }
 
-        _chessTimer.StopTimers();
-        GameIsActive = false;
+        FinishGame();
 
         var streamDto = new GameEventDto()
         {
@@ -334,8 +342,7 @@ public class GameRoomHandler
         if (dto.Accept)
         {
             _isDrawOfferAccepted = dto.Accept;
-            _chessTimer.StopTimers();
-            GameIsActive = false;
+            FinishGame();
         }
 
         try
@@ -512,8 +519,8 @@ public class GameRoomHandler
     {
         var fromSquare = UciToSquare(dto.FromSquare);
         var toSquare = UciToSquare(dto.ToSquare);
-        var moveType = (MoveTypes) (dto.MoveType ?? 0);
-        var promotionPiece = (PieceTypes?) dto.Promotion;
+        var moveType = (MoveTypes)(dto.MoveType ?? 0);
+        var promotionPiece = (PieceTypes?)dto.Promotion;
 
         return moveType switch
         {
