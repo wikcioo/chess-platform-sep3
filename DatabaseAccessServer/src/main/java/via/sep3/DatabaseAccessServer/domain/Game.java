@@ -1,39 +1,40 @@
 package via.sep3.DatabaseAccessServer.domain;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import via.sep3.DatabaseAccessServer.domain.enums.GameType;
+
+import javax.persistence.*;
 
 @Entity
 @Table(name = "games")
 public class Game {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int gameId;
-@ManyToOne
+    @ManyToOne
+    @JoinColumn(name="creator", referencedColumnName = "email")
     private User creator;
     @ManyToOne
+    @JoinColumn(name="playerWhite", referencedColumnName = "email")
     private User playerWhite;
     @ManyToOne
+    @JoinColumn(name="playerBlack", referencedColumnName = "email")
     private User playerBlack;
-    private enum GameType{AI, FRIEND, RANDOM};
+    @Enumerated
     private GameType gameType;
-    private enum GameSide{WHITE, BLACK, RANDOM};
-    private GameSide gameSide;
     private int timeControlDurationSeconds;
     private int timeControlIncrementSeconds;
+
 
     public Game(){};
 
 
-    public Game(User creator,  GameType gameType, User playerWhite, User playerBlack, GameSide gameSide,  int timeControlDurationSeconds, int timeControlIncrementSeconds){
+    public Game(User creator,  GameType gameType, User playerWhite, User playerBlack, int timeControlDurationSeconds, int timeControlIncrementSeconds){
         this.creator = creator;
         this.gameType = gameType;
         this.playerWhite = playerWhite;
         this.playerBlack = playerBlack;
         this.timeControlDurationSeconds = timeControlDurationSeconds;
         this.timeControlIncrementSeconds = timeControlIncrementSeconds;
-        this.gameSide = gameSide;
     }
 
     public int getGameId() {
@@ -74,14 +75,6 @@ public class Game {
 
     public void setGameType(GameType gameType) {
         this.gameType = gameType;
-    }
-
-    public GameSide getGameSide() {
-        return gameSide;
-    }
-
-    public void setGameSide(GameSide gameSide) {
-        this.gameSide = gameSide;
     }
 
     public int getTimeControlDurationSeconds() {
