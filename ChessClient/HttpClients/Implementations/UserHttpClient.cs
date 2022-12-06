@@ -30,14 +30,15 @@ public class UserHttpClient : IUserService
         }
         catch (HttpRequestException e)
         {
+            var values = JsonSerializer.Deserialize<Dictionary<string, object>>(e.Message);
+            if (values?["message"] != null)
+                throw new HttpRequestException(values["message"].ToString(), e);
             throw new HttpRequestException("Network error. Failed to create a user.", e);
         }
-       
     }
-    
+
     public async Task<IEnumerable<UserSearchResultDto>> GetAsync(UserSearchParamsDto paramsDto)
     {
-        
         var query = ConstructQuery(paramsDto.Username);
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _authService.GetJwtToken());
@@ -52,7 +53,7 @@ public class UserHttpClient : IUserService
             throw new HttpRequestException("Network error. Failed to get users.", e);
         }
     }
-    
+
     private static string ConstructQuery(string? userName)
     {
         string query = "";
@@ -60,7 +61,7 @@ public class UserHttpClient : IUserService
         {
             query += $"?username={userName}";
         }
-        
+
         return query;
     }
 }
