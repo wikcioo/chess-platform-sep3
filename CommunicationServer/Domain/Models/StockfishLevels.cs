@@ -35,7 +35,7 @@ public class StockfishLevels
 
 
     public static bool IsAi(string? playerName) =>
-        playerName != null && Regex.IsMatch(playerName, @"(StockfishAi)[0-9]{1}");
+        playerName != null && Regex.IsMatch(playerName, @"(StockfishAi)[1-8]{1}");
     
     
     
