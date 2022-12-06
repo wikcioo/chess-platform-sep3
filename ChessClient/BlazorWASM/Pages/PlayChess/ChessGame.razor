@@ -45,7 +45,7 @@
             <MudGrid>
                 @if (!_spectating)
                 {
-                    <DrawResignComponent IsDrawOfferPending="GameService.IsDrawOfferPending" OnResign="Resign" OnOfferDraw="OfferDraw" OnSendDrawResponse="SendDrawResponse"/>
+                    <DrawResignRematchComponent IsDrawOfferPending="GameService.IsDrawOfferPending" DisplayRematchBtn="_displayRematchButton" OnRematch="OfferRematch" OnResign="Resign" OnOfferDraw="OfferDraw" OnSendDrawResponse="SendDrawResponse"/>
                 }
                 else
                 {
@@ -77,8 +77,10 @@
     private bool _whiteTimerActive = true;
     private string _opponentName = "PlaceholderJoe";
     private bool _spectating;
+    private bool _displayRematchButton = false;
 
-    private IDialogReference? _gameFinishedOptionsDialogRef;
+    private IDialogReference? _isGameFinishedOptionsDialogRef;
+    private string _isGameFinishedReason = string.Empty;
 
     //Form input bindings
     private GameSides _isWhiteSide = GameSides.White;
@@ -102,6 +104,7 @@
         GameService.GameFirstJoined -= OnGameFirstJoined;
         GameService.StateReceived -= OnGameStateReceived;
         GameService.JoinRematchedGame -= OnJoinRematchGame;
+        GameService.RematchOffered -= OnRematchOffered;
         GameService.LeaveRoomAsync();
         GameService.GameRoomId = null;
     }
@@ -135,6 +138,7 @@
         GameService.GameFirstJoined += OnGameFirstJoined;
         GameService.StateReceived += OnGameStateReceived;
         GameService.JoinRematchedGame += OnJoinRematchGame;
+        GameService.RematchOffered += OnRematchOffered;
     }
 
     private void OnGameStateReceived(CurrentGameStateDto dto)
@@ -142,7 +146,6 @@
         SetFenPosition(dto.FenString);
         _whiteSeconds = dto.WhiteTimeLeftMs / 1000;
         _blackSeconds = dto.BlackTimeLeftMs / 1000;
-
 
         if (_currentUser != dto.UsernameWhite && _currentUser != dto.UsernameBlack)
         {
@@ -162,21 +165,46 @@
         StateHasChanged();
     }
 
+    private void OnRematchOffered(GameEventDto dto)
+    {
+        if (_isGameFinishedOptionsDialogRef == null)
+        {
+            DisplayGameFinishedOptions(_isGameFinishedReason);
+        }
+    }
+
     private async void OnJoinRematchGame(GameEventDto dto)
     {
-        _gameFinishedOptionsDialogRef?.Close();
+        _displayRematchButton = false;
+        _isGameFinishedOptionsDialogRef?.Close();
         await GameService.GetCurrentGameStateAsync();
     }
 
-    private void DisplayGameFinishedOptions(string title)
+    private async void DisplayGameFinishedOptions(string title)
     {
         var options = new DialogOptions
         {
             MaxWidth = MaxWidth.Medium,
-            DisableBackdropClick = true
+            CloseOnEscapeKey = true
         };
 
-        _gameFinishedOptionsDialogRef = DialogService.Show<GameFinishedOptionsComponent>(title, options);
+        var parameters = new DialogParameters
+        {
+            { "OfferRematch", new Action(OfferRematch) },
+            { "SendRematchResponse", new Action<bool>(SendRematchResponse) }
+        };
+
+        _isGameFinishedReason = title;
+        _isGameFinishedOptionsDialogRef = DialogService.Show<GameFinishedOptionsComponent>(title, parameters, options);
+        
+        var result = await _isGameFinishedOptionsDialogRef.Result;
+        if (result.Cancelled)
+        {
+            _isGameFinishedOptionsDialogRef = null;
+            if (!_opponentName.Contains("stockfishai", StringComparison.OrdinalIgnoreCase) && !_spectating)
+                _displayRematchButton = true;
+            StateHasChanged();
+        }
     }
 
     private async Task MakeMove(Move move)
@@ -226,11 +254,9 @@
 
     private async void OfferDraw()
     {
-        AckTypes ack;
-
         try
         {
-            ack = await GameService.OfferDrawAsync();
+            var ack = await GameService.OfferDrawAsync();
 
             switch (ack)
             {
@@ -255,11 +281,11 @@
 
     private async void SendDrawResponse(bool accepted)
     {
-        AckTypes ack;
         try
         {
-            ack = await GameService.SendDrawResponseAsync(accepted);
+            var ack = await GameService.SendDrawResponseAsync(accepted);
             GameService.IsDrawOfferPending = false;
+            
             if (ack == AckTypes.Success)
             {
                 StateHasChanged();
@@ -267,6 +293,64 @@
             else
             {
                 Notify($"Failed to send draw response! AckType = {ack}", Severity.Error);
+            }
+        }
+        catch (InvalidOperationException e)
+        {
+            Notify(e.Message, Severity.Warning);
+        }
+        catch (HttpRequestException e)
+        {
+            Notify(e.Message, Severity.Error);
+        }
+    }
+
+    private async void OfferRematch()
+    {
+        try
+        {
+            var ack = await GameService.OfferRematchAsync();
+
+            switch (ack)
+            {
+                case AckTypes.Success:
+                    Notify("Rematch Offer Successful!", Severity.Info);
+                    return;
+                case AckTypes.RematchOfferDeclined:
+                    Notify("Rematch Offer Declined!", Severity.Info);
+                    GameService.IsRematchOfferRequestPending = false;
+                    _isGameFinishedOptionsDialogRef?.Close();
+                    _displayRematchButton = false;
+                    StateHasChanged();
+                    break;
+            }
+        }
+        catch (InvalidOperationException e)
+        {
+            Notify(e.Message, Severity.Warning);
+            return;
+        }
+        catch (HttpRequestException e)
+        {
+            Notify(e.Message, Severity.Error);
+        }
+    }
+
+    private async void SendRematchResponse(bool accepted)
+    {
+        try
+        {
+            var ack = await GameService.SendRematchResponseAsync(accepted);
+            GameService.IsRematchOfferResponsePending = false;
+            _isGameFinishedOptionsDialogRef?.Close();
+
+            if (ack == AckTypes.Success)
+            {
+                StateHasChanged();
+            }
+            else
+            {
+                Notify($"Failed to send rematch response! AckType = {ack}", Severity.Error);
             }
         }
         catch (InvalidOperationException e)
