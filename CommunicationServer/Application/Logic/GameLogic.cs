@@ -44,7 +44,7 @@ public class GameLogic : IGameLogic
         AuthUserEvent?.Invoke(dto);
     }
 
-    public async Task<ResponseGameDto> StartGame(RequestGameDto dto, bool isRematch)
+    public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
     {
         try
         {
@@ -115,7 +115,7 @@ public class GameLogic : IGameLogic
         if (gameRoomHandler.CurrentPlayer != null && IsAi(gameRoomHandler.CurrentPlayer))
             await RequestAiMove(id);
 
-        if (dto.OpponentType == OpponentTypes.Friend && !isRematch)
+        if (dto.OpponentType == OpponentTypes.Friend && !dto.IsRematch)
         {
             FireAuthUserEvent(new AuthorizedUserEventDto()
             {
@@ -387,8 +387,9 @@ public class GameLogic : IGameLogic
                     OpponentType = OpponentTypes.Friend,
                     OpponentName = gameRoom.PlayerWhite!.Equals(dto.Username)
                         ? gameRoom.PlayerBlack
-                        : gameRoom.PlayerWhite
-                }, true);
+                        : gameRoom.PlayerWhite,
+                    IsRematch = true
+                });
 
                 _tempGameRoomsData.Remove(dto.GameRoom);
                 gameRoom.SendNewGameRoomIdToPlayers(res.GameRoom);

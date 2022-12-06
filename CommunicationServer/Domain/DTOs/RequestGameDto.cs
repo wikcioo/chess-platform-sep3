@@ -11,4 +11,5 @@ public class RequestGameDto
     public uint IncrementSeconds { get; set; }
     public GameSides Side { get; set; }
     public bool IsVisible { get; set; } = true;
+    public bool IsRematch { get; set; } = true;
 }
