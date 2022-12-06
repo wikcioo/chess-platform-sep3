@@ -9,18 +9,20 @@ public class GameRoom
     public string? PlayerBlack { get; set; }
     public OpponentTypes GameType { get; }
 
-    public GameSides GameSide;
+    public GameSides GameSide { get; }
+    public bool IsVisible { get; set; }
 
-    public readonly uint TimeControlDurationSeconds;
-    public readonly uint TimeControlIncrementSeconds;
+    public uint TimeControlDurationSeconds { get; }
+    public uint TimeControlIncrementSeconds { get; }
 
     public GameRoom(string creator, OpponentTypes gameType, uint timeControlDurationSeconds,
-        uint timeControlIncrementSeconds, GameSides gameSide)
+        uint timeControlIncrementSeconds, GameSides gameSide, bool isVisible)
     {
         Creator = creator;
         GameType = gameType;
         TimeControlDurationSeconds = timeControlDurationSeconds;
         TimeControlIncrementSeconds = timeControlIncrementSeconds;
         GameSide = gameSide;
+        IsVisible = isVisible;
     }
 }
