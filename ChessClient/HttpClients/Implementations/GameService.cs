@@ -39,8 +39,7 @@ public class GameService : IGameService
     public event Action<CurrentGameStateDto>? StateReceived;
 
     private readonly IGameHub _gameHub;
-    private HttpClient _client;
-
+    private readonly HttpClient _client;
 
     public GameService(IAuthService authService, IGameHub gameHub, HttpClient client)
     {
@@ -55,7 +54,7 @@ public class GameService : IGameService
         return Task.FromResult(LastFen);
     }
 
-    public void PlayerJoined(GameEventDto dto)
+    private void PlayerJoined(GameEventDto dto)
     {
         GameFirstJoined?.Invoke();
         NewPlayerJoined?.Invoke(dto);
@@ -115,7 +114,6 @@ public class GameService : IGameService
             throw new HttpRequestException("Network error. Failed to join the game", e);
         }
     }
-
 
     private void ListenToGameEvents(GameEventDto response)
     {
@@ -248,6 +246,12 @@ public class GameService : IGameService
     {
         var user = await _authService.GetAuthAsync();
 
+        if (IsRematchOfferRequestPending)
+        {
+            await SendRematchResponseAsync(true);
+            return;
+        }
+
         if (dto.UsernameWhite.Equals(user.Identity!.Name) && OnWhiteSide ||
             dto.UsernameBlack.Equals(user.Identity!.Name) && !OnWhiteSide)
         {
@@ -303,8 +307,8 @@ public class GameService : IGameService
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
             GameRoom = GameRoomId.Value,
-            MoveType = (uint) move.MoveType(),
-            Promotion = (uint) move.PromotedPieceType().AsInt(),
+            MoveType = (uint)move.MoveType(),
+            Promotion = (uint)move.PromotedPieceType().AsInt(),
             Username = user.Identity!.Name!
         };
 
