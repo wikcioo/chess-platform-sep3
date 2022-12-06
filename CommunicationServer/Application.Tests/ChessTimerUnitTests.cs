@@ -1,6 +1,5 @@
 using System.Threading;
 using Application.ChessTimers;
-using Application.Entities;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Rudzoft.ChessLib.Enums;

@@ -10,7 +10,7 @@ using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.MoveGeneration;
 using Rudzoft.ChessLib.Types;
 
-namespace Application.Entities;
+namespace Application.GameRoomHandlers;
 
 public class GameRoomHandler
 {

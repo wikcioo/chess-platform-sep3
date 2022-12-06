@@ -1,5 +1,5 @@
 using Application.ClientInterfaces;
-using Application.Entities;
+using Application.GameRoomHandlers;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.AuthorizedUserEvents;

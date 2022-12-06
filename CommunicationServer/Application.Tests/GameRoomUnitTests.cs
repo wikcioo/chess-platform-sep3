@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Application.Entities;
+using Application.GameRoomHandlers;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.Enums;
