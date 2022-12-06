@@ -1,4 +1,5 @@
 using System.Threading;
+using Application.ChessTimers;
 using Application.Entities;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
@@ -20,7 +21,7 @@ public class ChessTimerUnitTests
         var counter = 0;
         
         var timer = new ChessTimer(true, (uint)baseTime, 0);
-        timer.ThrowEvent += (_, _, _) => counter++;
+        timer.Elapsed += (_, _, _) => counter++;
         timer.StartTimers(false, true);
         
         Thread.Sleep(baseTime * 1000 + 500);
@@ -36,7 +37,7 @@ public class ChessTimerUnitTests
         var counter = 0;
         
         var timer = new ChessTimer(true, (uint)baseTime, (uint)increment);
-        timer.ThrowEvent += (_, _, _) => counter++;
+        timer.Elapsed += (_, _, _) => counter++;
         timer.StartTimers(false, true);
         
         for (var i = 0; i < moves; i++)
@@ -75,7 +76,7 @@ public class ChessTimerUnitTests
         var timeEvent = new GameEventDto();
         
         var timer = new ChessTimer(true, (uint)baseTime, 0);
-        timer.ThrowEvent += (_, _, dto) => timeEvent = dto;
+        timer.Elapsed += (_, _, dto) => timeEvent = dto;
         timer.StartTimers(false, true);
 
         Thread.Sleep(baseTime * 1000 + 500);
@@ -96,7 +97,7 @@ public class ChessTimerUnitTests
     //     var blackTotalWaitTimeMs = 0;
     //     
     //     var timer = new ChessTimer(whiteSidePlaying, (uint)baseTime, 0);
-    //     timer.ThrowEvent += (_, _, dto) => timeEvent = dto;
+    //     timer.Elapsed += (_, _, dto) => timeEvent = dto;
     //     timer.StartTimers();
     //
     //     while (timeEvent.GameEndType != (uint)GameEndTypes.TimeIsUp && whiteTotalWaitTimeMs < baseTime * 1000 && blackTotalWaitTimeMs < baseTime * 1000)

@@ -1,3 +1,4 @@
+using Application.ChessTimers;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.Enums;
@@ -14,7 +15,7 @@ namespace Application.Entities;
 public class GameRoomHandler
 {
     private readonly IGame _game;
-    private readonly ChessTimer _chessTimer;
+    private readonly IChessTimer _chessTimer;
     private bool _whitePlaying;
     private bool _firstMovePlayed;
     public bool GameIsActive = false;
@@ -84,7 +85,7 @@ public class GameRoomHandler
 
     public void Initialize()
     {
-        _chessTimer.ThrowEvent += (_, _, dto) =>
+        _chessTimer.Elapsed += (_, _, dto) =>
         {
             if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) GameIsActive = false;
             GameEvent?.Invoke(new GameRoomEventDto

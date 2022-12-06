@@ -1,22 +1,22 @@
-using Domain.DTOs;
+using System.Timers;
 using Domain.DTOs.GameEvents;
 using Domain.Enums;
 using Rudzoft.ChessLib.Enums;
 
-namespace Application.Entities;
+namespace Application.ChessTimers;
 
-public class ChessTimer
+public class ChessTimer : IChessTimer
 {
-    private readonly PausableTimer _whiteTimer = new(1000.0);
-    private readonly PausableTimer _blackTimer = new(1000.0);
-    public readonly uint TimeControlDurationMs;
-    public readonly uint TimeControlIncrementMs;
-    private bool _whitePlaying;
+    
+    public uint TimeControlDurationMs { get; }
+    public uint TimeControlIncrementMs { get; }
     public double WhiteRemainingTimeMs { get; private set; }
     public double BlackRemainingTimeMs { get; private set; }
-    
-    public delegate void EventHandler(object sender, EventArgs args, GameEventDto dto);
-    public event EventHandler ThrowEvent = delegate{};
+
+    private bool _whitePlaying;
+    private readonly PausableTimer _whiteTimer = new(1000.0);
+    private readonly PausableTimer _blackTimer = new(1000.0);
+    public event GameEventHandler Elapsed = delegate{};
 
     public ChessTimer(bool whitePlaying, uint timeControlDurationSeconds, uint timeControlIncrementSeconds)
     {
@@ -77,7 +77,7 @@ public class ChessTimer
         }
     }
 
-    private void OnOneSecElapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    private void OnOneSecElapsed(object? sender, ElapsedEventArgs e)
     {
         if (_whitePlaying)
             WhiteRemainingTimeMs -= 1000;
@@ -87,7 +87,7 @@ public class ChessTimer
         if (WhiteRemainingTimeMs <= 0 || BlackRemainingTimeMs <= 0)
         {
             StopTimers();
-            ThrowEvent(this, EventArgs.Empty, new GameEventDto()
+            Elapsed(this, EventArgs.Empty, new GameEventDto()
             {
                 Event = GameStreamEvents.TimeUpdate,
                 IsWhite = _whitePlaying,
@@ -97,7 +97,7 @@ public class ChessTimer
         }
         else
         {
-            ThrowEvent(this, EventArgs.Empty, new GameEventDto()
+            Elapsed(this, EventArgs.Empty, new GameEventDto()
             {
                 Event = GameStreamEvents.TimeUpdate,
                 IsWhite = _whitePlaying,
