@@ -1,5 +1,5 @@
 using System.Threading;
-using Application.Entities;
+using Application.ChessTimers;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Rudzoft.ChessLib.Enums;
@@ -19,8 +19,8 @@ public class ChessTimerUnitTests
     {
         var counter = 0;
         
-        var timer = new ChessTimer(true, (uint)baseTime, 0);
-        timer.ThrowEvent += (_, _, _) => counter++;
+        var timer = new ChessTimer( (uint)baseTime, 0);
+        timer.Elapsed += (_) => counter++;
         timer.StartTimers(false, true);
         
         Thread.Sleep(baseTime * 1000 + 500);
@@ -35,8 +35,8 @@ public class ChessTimerUnitTests
     {
         var counter = 0;
         
-        var timer = new ChessTimer(true, (uint)baseTime, (uint)increment);
-        timer.ThrowEvent += (_, _, _) => counter++;
+        var timer = new ChessTimer( (uint)baseTime, (uint)increment);
+        timer.Elapsed += ( _) => counter++;
         timer.StartTimers(false, true);
         
         for (var i = 0; i < moves; i++)
@@ -55,7 +55,7 @@ public class ChessTimerUnitTests
     [InlineData(4564, 15, 31)]
     public void RemainingTimeIncrementsAfterMakingMovesWithIncrement(int baseTime, int increment, int moves)
     {
-        var timer = new ChessTimer(true, (uint)baseTime, (uint)increment);
+        var timer = new ChessTimer( (uint)baseTime, (uint)increment);
         
         for (var i = 0; i < moves; i++)
         {
@@ -74,8 +74,8 @@ public class ChessTimerUnitTests
     {
         var timeEvent = new GameEventDto();
         
-        var timer = new ChessTimer(true, (uint)baseTime, 0);
-        timer.ThrowEvent += (_, _, dto) => timeEvent = dto;
+        var timer = new ChessTimer( (uint)baseTime, 0);
+        timer.Elapsed += (dto) => timeEvent = dto;
         timer.StartTimers(false, true);
 
         Thread.Sleep(baseTime * 1000 + 500);
@@ -96,7 +96,7 @@ public class ChessTimerUnitTests
     //     var blackTotalWaitTimeMs = 0;
     //     
     //     var timer = new ChessTimer(whiteSidePlaying, (uint)baseTime, 0);
-    //     timer.ThrowEvent += (_, _, dto) => timeEvent = dto;
+    //     timer.Elapsed += (_, _, dto) => timeEvent = dto;
     //     timer.StartTimers();
     //
     //     while (timeEvent.GameEndType != (uint)GameEndTypes.TimeIsUp && whiteTotalWaitTimeMs < baseTime * 1000 && blackTotalWaitTimeMs < baseTime * 1000)

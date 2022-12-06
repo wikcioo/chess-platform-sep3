@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Application.Entities;
+namespace Application.ChessTimers;
 
 public class PausableTimer : System.Timers.Timer
 {
