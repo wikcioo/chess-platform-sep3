@@ -20,7 +20,7 @@ public class ChessTimerUnitTests
         var counter = 0;
         
         var timer = new ChessTimer( (uint)baseTime, 0);
-        timer.Elapsed += (_, _, _) => counter++;
+        timer.Elapsed += (_) => counter++;
         timer.StartTimers(false, true);
         
         Thread.Sleep(baseTime * 1000 + 500);
@@ -36,7 +36,7 @@ public class ChessTimerUnitTests
         var counter = 0;
         
         var timer = new ChessTimer( (uint)baseTime, (uint)increment);
-        timer.Elapsed += (_, _, _) => counter++;
+        timer.Elapsed += ( _) => counter++;
         timer.StartTimers(false, true);
         
         for (var i = 0; i < moves; i++)
@@ -75,7 +75,7 @@ public class ChessTimerUnitTests
         var timeEvent = new GameEventDto();
         
         var timer = new ChessTimer( (uint)baseTime, 0);
-        timer.Elapsed += (_, _, dto) => timeEvent = dto;
+        timer.Elapsed += (dto) => timeEvent = dto;
         timer.StartTimers(false, true);
 
         Thread.Sleep(baseTime * 1000 + 500);

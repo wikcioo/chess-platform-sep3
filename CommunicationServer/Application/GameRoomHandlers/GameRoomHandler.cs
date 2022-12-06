@@ -85,7 +85,7 @@ public class GameRoomHandler
 
     public void Initialize()
     {
-        _chessTimer.Elapsed += (_, _, dto) =>
+        _chessTimer.Elapsed += (dto) =>
         {
             if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp) FinishGame();
             GameEvent?.Invoke(new GameRoomEventDto

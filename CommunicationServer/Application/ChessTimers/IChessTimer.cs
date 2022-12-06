@@ -9,7 +9,7 @@ public interface IChessTimer
     double WhiteRemainingTimeMs { get; }
     double BlackRemainingTimeMs { get; }
 
-    event GameEventHandler Elapsed;
+    event Action<GameEventDto> Elapsed;
     void StartTimers(bool both = true, bool white = true);
     void StopTimers(bool both = true, bool white = true);
     void UpdateTimers(bool whitePlaying);

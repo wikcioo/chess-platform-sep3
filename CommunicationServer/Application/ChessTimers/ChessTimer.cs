@@ -16,7 +16,7 @@ public class ChessTimer : IChessTimer
     private bool _whitePlaying = true;
     private readonly PausableTimer _whiteTimer = new(1000.0);
     private readonly PausableTimer _blackTimer = new(1000.0);
-    public event GameEventHandler Elapsed = delegate{};
+    public event Action<GameEventDto> Elapsed = delegate{};
 
     public ChessTimer(uint timeControlDurationSeconds, uint timeControlIncrementSeconds)
     {
@@ -86,7 +86,7 @@ public class ChessTimer : IChessTimer
         if (WhiteRemainingTimeMs <= 0 || BlackRemainingTimeMs <= 0)
         {
             StopTimers();
-            Elapsed(this, EventArgs.Empty, new GameEventDto()
+            Elapsed(new GameEventDto()
             {
                 Event = GameStreamEvents.TimeUpdate,
                 IsWhite = _whitePlaying,
@@ -96,7 +96,7 @@ public class ChessTimer : IChessTimer
         }
         else
         {
-            Elapsed(this, EventArgs.Empty, new GameEventDto()
+            Elapsed( new GameEventDto()
             {
                 Event = GameStreamEvents.TimeUpdate,
                 IsWhite = _whitePlaying,
