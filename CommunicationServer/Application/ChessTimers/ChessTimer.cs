@@ -13,14 +13,13 @@ public class ChessTimer : IChessTimer
     public double WhiteRemainingTimeMs { get; private set; }
     public double BlackRemainingTimeMs { get; private set; }
 
-    private bool _whitePlaying;
+    private bool _whitePlaying = true;
     private readonly PausableTimer _whiteTimer = new(1000.0);
     private readonly PausableTimer _blackTimer = new(1000.0);
     public event GameEventHandler Elapsed = delegate{};
 
-    public ChessTimer(bool whitePlaying, uint timeControlDurationSeconds, uint timeControlIncrementSeconds)
+    public ChessTimer(uint timeControlDurationSeconds, uint timeControlIncrementSeconds)
     {
-        _whitePlaying = whitePlaying;
         TimeControlDurationMs = timeControlDurationSeconds * 1000;
         TimeControlIncrementMs = timeControlIncrementSeconds * 1000;
 

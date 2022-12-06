@@ -13,7 +13,7 @@ public class GameRoomHandlerFactory : IGameRoomHandlerFactory
         var gameRoom = new GameRoom(creator, gameType, timeControlDurationSeconds, timeControlIncrementSeconds,
             gameSide, isVisible);
         var game = GameFactory.Create();
-        var chessTimer = new ChessTimer(true,timeControlDurationSeconds, timeControlIncrementSeconds);
+        var chessTimer = new ChessTimer(timeControlDurationSeconds, timeControlIncrementSeconds);
         
         return new GameRoomHandler(game, gameRoom, chessTimer, fen);
     }
