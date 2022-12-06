@@ -57,7 +57,7 @@ public class GameRoomHandler
     public GameSides GameSide => _gameRoom.GameSide;
 
     private OpponentTypes GameType => _gameRoom.GameType;
-    public bool IsVisible { get; set; }
+    public bool IsVisible => _gameRoom.IsVisible;
     public bool IsJoinable { get; set; } = true;
     public bool IsSpectateable => IsVisible && !IsJoinable;
 
@@ -68,16 +68,16 @@ public class GameRoomHandler
     public uint GetInitialTimeControlSeconds => _gameRoom.TimeControlDurationSeconds;
     public uint GetInitialTimeControlIncrement => _gameRoom.TimeControlIncrementSeconds;
 
-    public GameRoomHandler(string creator, uint timeControlDurationSeconds, uint timeControlIncrementSeconds,
-        bool isVisible, OpponentTypes gameType, GameSides gameSide, string? fen = null)
+    public GameRoomHandler(IGame game, GameRoom gameRoom, IChessTimer chessTimer, string? fen = null)
     {
-        _gameRoom = new GameRoom(creator, gameType, timeControlDurationSeconds, timeControlIncrementSeconds, gameSide);
-        _game = GameFactory.Create();
+        _gameRoom = gameRoom;
+        
+        _game = game;
         _game.NewGame(fen ?? Fen.StartPositionFen);
-        _chessTimer = new ChessTimer(_whitePlaying, timeControlDurationSeconds, timeControlIncrementSeconds);
-        IsVisible = isVisible;
+        
+        _chessTimer = chessTimer;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
-        if (gameType == OpponentTypes.Ai)
+        if (_gameRoom.GameType == OpponentTypes.Ai)
         {
             GameIsActive = true;
         }

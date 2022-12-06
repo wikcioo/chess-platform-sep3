@@ -22,14 +22,16 @@ public class GameLogic : IGameLogic
     private readonly IStockfishService _stockfishService;
     private readonly IChatLogic _chatLogic;
     private readonly IUserService _userService;
+    private readonly IGameRoomHandlerFactory _gameRoomHandlerFactory;
     public event Action<GameRoomEventDto>? GameEvent;
     public event Action<AuthorizedUserEventDto>? AuthUserEvent;
 
-    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService)
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService, IGameRoomHandlerFactory gameRoomHandlerFactory)
     {
         _stockfishService = stockfishService;
         _chatLogic = chatLogic;
         _userService = userService;
+        _gameRoomHandlerFactory = gameRoomHandlerFactory;
     }
 
     private void FireGameRoomEvent(GameRoomEventDto dto)
@@ -58,8 +60,8 @@ public class GameLogic : IGameLogic
             return responseFail;
         }
 
-        GameRoomHandler gameRoomHandler =
-            new(dto.Username, dto.DurationSeconds, dto.IncrementSeconds, dto.IsVisible, dto.OpponentType, dto.Side);
+        var gameRoomHandler = _gameRoomHandlerFactory.GetGameRoomHandler(dto.Username,
+            dto.DurationSeconds, dto.IncrementSeconds, dto.IsVisible, dto.OpponentType, dto.Side);
 
         gameRoomHandler.GameEvent += FireGameRoomEvent;
 
@@ -202,7 +204,7 @@ public class GameLogic : IGameLogic
 
         return existing != null;
     }
-
+//TODO Allow rejoining, 
     public AckTypes JoinGame(RequestJoinGameDto dto)
     {
         var gameRoom = GetGameRoom(dto.GameRoom, _gameRooms);
