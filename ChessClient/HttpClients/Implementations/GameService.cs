@@ -115,8 +115,8 @@ public class GameService : IGameService
             throw new HttpRequestException("Network error. Failed to join the game", e);
         }
     }
-    
-    
+
+
     public async Task SpectateGameAsync(RequestJoinGameDto dto)
     {
         var user = await _authService.GetAuthAsync();

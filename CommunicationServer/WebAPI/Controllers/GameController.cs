@@ -69,7 +69,7 @@ public class GameController : ControllerBase
                 GameRoom = id,
                 Username = User.Identity.Name
             };
-            
+
             var ack = _gameLogic.JoinGame(dto);
             return Ok(ack);
         }
@@ -91,22 +91,22 @@ public class GameController : ControllerBase
         try
         {
             var dto = new RequestJoinGameDto()
-        {
-            GameRoom = id,
-            Username = User.Identity.Name
-        }; 
-            var ack = _gameLogic.SpectateGame(dto); 
+            {
+                GameRoom = id,
+                Username = User.Identity.Name
+            };
+            var ack = _gameLogic.SpectateGame(dto);
             return Ok(ack);
-    }
+        }
         catch (Exception e)
-    {
-        Console.WriteLine(e);
-        return StatusCode(500, e.Message);
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
     }
-}
 
 
-[HttpGet("/games/{id}")]
+    [HttpGet("/games/{id}")]
     public ActionResult<CurrentGameStateDto> GetCurrentGameState(ulong id)
     {
         try
@@ -245,7 +245,7 @@ public class GameController : ControllerBase
 
             request.Username = User.Identity.Name;
             var ack = await _gameLogic.RematchOfferResponse(request);
-            
+
             return Ok(ack);
         }
         catch (Exception e)
