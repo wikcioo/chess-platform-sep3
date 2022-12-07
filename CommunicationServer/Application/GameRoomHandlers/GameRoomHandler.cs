@@ -35,6 +35,7 @@ public class GameRoomHandler
     private CancellationTokenSource? _rematchCts;
 
     public event Action<GameRoomEventDto>? GameEvent;
+    public event Action<GameCreationDto>? GameFinished;
 
     public ulong Id { get; set; }
 
@@ -53,6 +54,10 @@ public class GameRoomHandler
         get => _gameRoom.PlayerBlack;
         set => _gameRoom.PlayerBlack = value;
     }
+
+    public GameOutcome GameOutcome;
+
+
 
     public GameSides GameSide => _gameRoom.GameSide;
 
@@ -165,10 +170,19 @@ public class GameRoomHandler
         _chessTimer.UpdateTimers(_whitePlaying);
 
         var gameEndType = IsEndGame();
+       
         _whitePlaying = _game.CurrentPlayer().IsWhite;
 
         if (gameEndType != GameEndTypes.None)
         {
+            if (gameEndType == GameEndTypes.Pat)
+            {
+                GameOutcome = GameOutcome.Draw;
+            }
+            else if (gameEndType == GameEndTypes.CheckMate)
+            {
+                GameOutcome = PlayerWhite!.Equals(dto.Username) ? GameOutcome.White : GameOutcome.Black;
+            }
             FinishGame();
             var streamDto = new GameEventDto()
             {
@@ -227,6 +241,17 @@ public class GameRoomHandler
     {
         GameIsActive = false;
         _chessTimer.StopTimers();
+        GameFinished?.Invoke(new GameCreationDto
+        {
+            Creator = Creator,
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack,
+            GameType = GameType,
+            IsVisible = IsVisible,
+            TimeControlDurationSeconds = GetInitialTimeControlSeconds,
+            TimeControlIncrementSeconds = GetInitialTimeControlIncrement,
+            GameOutcome = GameOutcome
+        });
         
     }
 
@@ -243,6 +268,7 @@ public class GameRoomHandler
             return AckTypes.NotUserTurn;
         }
 
+        GameOutcome = PlayerWhite!.Equals(dto.Username) ? GameOutcome.Black : GameOutcome.White;
         FinishGame();
 
         var streamDto = new GameEventDto()
@@ -342,6 +368,7 @@ public class GameRoomHandler
         if (dto.Accept)
         {
             _isDrawOfferAccepted = dto.Accept;
+            GameOutcome = GameOutcome.Draw;
             FinishGame();
         }
 
