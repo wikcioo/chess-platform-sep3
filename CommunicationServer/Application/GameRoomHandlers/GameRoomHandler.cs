@@ -18,21 +18,22 @@ public class GameRoomHandler
     private readonly IChessTimer _chessTimer;
     private bool _whitePlaying;
     private bool _firstMovePlayed;
-    public bool GameIsActive = false;
+    public bool GameIsActive { get; set; } = false;
 
     // Offer draw related fields
     private string _drawOfferOrigin = string.Empty;
     private bool _isDrawOffered = false;
     private bool _isDrawOfferAccepted = false;
     private bool _drawResponseWithinTimespan = false;
-    private CancellationTokenSource? _drawCts;
+    private readonly CountDownTimer _drawOfferCountDownTimer = new();
 
     // Offer rematch related fields
     private string _rematchOfferOrigin = string.Empty;
     private bool _isRematchOffered = false;
     private bool _isRematchOfferAccepted = false;
     private bool _rematchResponseWithinTimespan = false;
-    private CancellationTokenSource? _rematchCts;
+    private readonly CountDownTimer _rematchCountDownTimer = new();
+
 
     public event Action<GameRoomEventDto>? GameEvent;
 
@@ -271,7 +272,6 @@ public class GameRoomHandler
         _isDrawOffered = true;
         _drawOfferOrigin = dto.Username;
         _isDrawOfferAccepted = false;
-        _drawResponseWithinTimespan = false;
 
         var streamDto = new GameEventDto
         {
@@ -286,16 +286,7 @@ public class GameRoomHandler
             GameEventDto = streamDto
         });
 
-        _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        while (true)
-        {
-            if (_drawCts.Token.IsCancellationRequested)
-            {
-                break;
-            }
-
-            await Task.Delay(50);
-        }
+        _drawResponseWithinTimespan = await _drawOfferCountDownTimer.StartTimer(10);
 
         if (!_drawResponseWithinTimespan)
         {
@@ -347,7 +338,7 @@ public class GameRoomHandler
 
         try
         {
-            _drawCts?.Cancel();
+            _drawOfferCountDownTimer.StopTimer();
         }
         catch (Exception)
         {
@@ -382,17 +373,8 @@ public class GameRoomHandler
             GameEventDto = streamDto
         });
 
-        _rematchCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-        while (true)
-        {
-            if (_rematchCts.Token.IsCancellationRequested)
-            {
-                break;
-            }
-
-            await Task.Delay(50);
-        }
-
+        _rematchResponseWithinTimespan = await _rematchCountDownTimer.StartTimer(15);
+        
         if (!_rematchResponseWithinTimespan)
         {
             GameEvent?.Invoke(new GameRoomEventDto
@@ -442,7 +424,7 @@ public class GameRoomHandler
 
         try
         {
-            _rematchCts?.Cancel();
+            _rematchCountDownTimer.StopTimer();
         }
         catch (Exception)
         {
