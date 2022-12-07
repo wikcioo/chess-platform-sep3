@@ -14,7 +14,7 @@
                 <MudText Typo="Typo.h5" Align="Align.Center">Please login</MudText>
                 <MudTextField InputType="InputType.Email" Label="Email" Variant="Variant.Filled" @bind-Value="_email"/>
                 <MudTextField InputType="InputType.Password" Label="Password" Variant="Variant.Filled" @bind-Value="_password"/>
-                <MudButton Class="mt-4" OnClick="LoginAsync" Variant="Variant.Filled" Color="Color.Success">Login</MudButton>
+                <MudButton Disabled="_isLoggingIn" Class="mt-4" OnClick="LoginAsync" Variant="Variant.Filled" Color="Color.Success">Login</MudButton>
             </MudPaper>
         </MudContainer>
     </NotAuthorized>
@@ -23,9 +23,11 @@
 @code {
     private string _email = "";
     private string _password = string.Empty;
+    private bool _isLoggingIn;
 
     private async Task LoginAsync()
     {
+        _isLoggingIn = true;
         if (string.IsNullOrEmpty(_email))
         {
             Notify("You need to specify your email!", Severity.Error);
@@ -49,6 +51,7 @@
                 Notify(e.Message, Severity.Error);
             }
         }
+        _isLoggingIn = false;
     }
 
     private void Notify(string message, Severity severity)
