@@ -32,7 +32,8 @@ public class GameRoomHandler
     private bool _isRematchOffered = false;
     private bool _isRematchOfferAccepted = false;
     private bool _rematchResponseWithinTimespan = false;
-    private CancellationTokenSource? _rematchCts;
+    private readonly CountDownTimer _rematchCountDownTimer = new();
+
 
     public event Action<GameRoomEventDto>? GameEvent;
 
@@ -372,17 +373,8 @@ public class GameRoomHandler
             GameEventDto = streamDto
         });
 
-        _rematchCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-        while (true)
-        {
-            if (_rematchCts.Token.IsCancellationRequested)
-            {
-                break;
-            }
-
-            await Task.Delay(50);
-        }
-
+        _rematchResponseWithinTimespan = await _rematchCountDownTimer.StartTimer(15);
+        
         if (!_rematchResponseWithinTimespan)
         {
             GameEvent?.Invoke(new GameRoomEventDto
@@ -432,7 +424,7 @@ public class GameRoomHandler
 
         try
         {
-            _rematchCts?.Cancel();
+            _rematchCountDownTimer.StopTimer();
         }
         catch (Exception)
         {
