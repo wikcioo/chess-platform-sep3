@@ -24,16 +24,20 @@ public class GameLogic : IGameLogic
     private readonly IChatLogic _chatLogic;
     private readonly IUserService _userService;
     private readonly IGameRoomHandlerFactory _gameRoomHandlerFactory;
+    private readonly IGameService _gameService;
     public event Action<GameRoomEventDto>? GameEvent;
     public event Action<AuthorizedUserEventDto>? AuthUserEvent;
 
-    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService, IGameRoomHandlerFactory gameRoomHandlerFactory)
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService, IGameService gameService,
+        IGameRoomHandlerFactory gameRoomHandlerFactory)
     {
         _stockfishService = stockfishService;
         _chatLogic = chatLogic;
         _userService = userService;
         _gameRoomHandlerFactory = gameRoomHandlerFactory;
+        _gameService = gameService;
     }
+    
 
     private void FireGameRoomEvent(GameRoomEventDto dto)
     {
@@ -52,6 +56,10 @@ public class GameLogic : IGameLogic
         AuthUserEvent?.Invoke(dto);
     }
 
+    private async void SaveGame(GameCreationDto dto)
+    {
+        await _gameService.CreateAsync(dto);
+    }
     public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
     {
         try
@@ -72,6 +80,7 @@ public class GameLogic : IGameLogic
             dto.DurationSeconds, dto.IncrementSeconds, dto.IsVisible, dto.OpponentType, dto.Side);
 
         gameRoomHandler.GameEvent += FireGameRoomEvent;
+        gameRoomHandler.GameFinished += SaveGame;
 
         var requesterIsWhite = true;
         switch (dto.Side)

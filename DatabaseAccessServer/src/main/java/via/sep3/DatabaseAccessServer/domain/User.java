@@ -1,5 +1,6 @@
 package via.sep3.DatabaseAccessServer.domain;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -8,6 +9,7 @@ import javax.persistence.Table;
 @Table(name = "users")
 public class User {
     @Id
+    @Column(name = "email")
     private String email;
     private String username;
     private String password;
