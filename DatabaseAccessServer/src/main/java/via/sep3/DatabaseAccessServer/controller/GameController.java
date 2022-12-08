@@ -34,10 +34,10 @@ public class GameController {
     @PostMapping(path = "/games",
             produces = MediaType.APPLICATION_JSON_VALUE)
     public Game Create(@RequestBody GameCreationDto dto) {
-        User creator = userRepository.findByEmailIgnoreCase(dto.getCreator()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Creator does not exist."));
-        User playerBlack = userRepository.findByEmailIgnoreCase(dto.getPlayerBlack()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Player Black does not exist."));
-        User playerWhite = userRepository.findByEmailIgnoreCase(dto.getPlayerWhite()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Player White does not exist."));
-        Game game = new Game(creator, dto.getGameType(), playerWhite, playerBlack, dto.getTimeControlDurationSeconds(), dto.getTimeControlIncrementSeconds());
+        User creator = userRepository.findByUsernameEquals(dto.getCreator()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Creator does not exist."));
+        User playerBlack = userRepository.findByUsernameEquals(dto.getPlayerBlack()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Player Black does not exist."));
+        User playerWhite = userRepository.findByUsernameEquals(dto.getPlayerWhite()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Player White does not exist."));
+        Game game = new Game(creator, dto.getGameType(), playerWhite, playerBlack, dto.getTimeControlDurationSeconds(), dto.getTimeControlIncrementSeconds(), dto.getGameOutcome());
         return gameRepository.save(game);
     }
 

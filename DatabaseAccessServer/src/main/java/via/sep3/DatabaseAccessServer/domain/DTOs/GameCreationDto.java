@@ -1,6 +1,7 @@
 package via.sep3.DatabaseAccessServer.domain.DTOs;
 
 import via.sep3.DatabaseAccessServer.domain.User;
+import via.sep3.DatabaseAccessServer.domain.enums.GameOutcome;
 import via.sep3.DatabaseAccessServer.domain.enums.GameType;
 
 import javax.persistence.Enumerated;
@@ -20,15 +21,25 @@ public class GameCreationDto {
     private int timeControlDurationSeconds;
     private int timeControlIncrementSeconds;
 
-    public GameCreationDto(String creator, String playerWhite, String playerBlack, GameType gameType, int timeControlDurationSeconds, int timeControlIncrementSeconds) {
+    private GameOutcome gameOutcome;
+
+    public GameCreationDto(String creator, String playerWhite, String playerBlack, GameType gameType, int timeControlDurationSeconds, int timeControlIncrementSeconds, GameOutcome gameOutcome) {
         this.creator = creator;
         this.playerWhite = playerWhite;
         this.playerBlack = playerBlack;
         this.gameType = gameType;
         this.timeControlDurationSeconds = timeControlDurationSeconds;
         this.timeControlIncrementSeconds = timeControlIncrementSeconds;
+        this.gameOutcome = gameOutcome;
     }
 
+    public GameOutcome getGameOutcome() {
+        return gameOutcome;
+    }
+
+    public void setGameOutcome(GameOutcome gameOutcome) {
+        this.gameOutcome = gameOutcome;
+    }
 
     public String getCreator() {
         return creator;
