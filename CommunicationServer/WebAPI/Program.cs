@@ -46,6 +46,9 @@ builder.Services.AddScoped<IUserLogic, UserLogic>();
 builder.Services.AddHttpClient<IUserService, UserHttpClient>(client =>
     client.BaseAddress = new Uri("http://localhost:8080"));
 
+builder.Services.AddHttpClient<IGameService, GameHttpClient>(client =>
+    client.BaseAddress = new Uri("http://localhost:8080"));
+
 builder.Services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
 
 builder.Services.AddSingleton<IStockfishLogic, StockfishLogic>();
