@@ -4,7 +4,7 @@ namespace Domain.DTOs;
 
 public class GameCreationDto
 {
-    public string Creator { get; set; }
+    public string Creator { get; set; } = string.Empty;
     public string? PlayerWhite { get; set; }
     public string? PlayerBlack { get; set; }
     public OpponentTypes GameType { get; set; }
