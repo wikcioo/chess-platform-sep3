@@ -28,18 +28,16 @@ public class GameLogic : IGameLogic
     public event Action<GameRoomEventDto>? GameEvent;
     public event Action<AuthorizedUserEventDto>? AuthUserEvent;
 
-    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService, IGameRoomHandlerFactory gameRoomHandlerFactory)
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService, IGameService gameService,
+        IGameRoomHandlerFactory gameRoomHandlerFactory)
     {
         _stockfishService = stockfishService;
         _chatLogic = chatLogic;
         _userService = userService;
         _gameRoomHandlerFactory = gameRoomHandlerFactory;
+        _gameService = gameService;
     }
     
-    public async Task FinishGameAsync(GameCreationDto dto)
-    {
-         await _gameService.CreateAsync(dto);
-    }
 
     private void FireGameRoomEvent(GameRoomEventDto dto)
     {
@@ -58,9 +56,9 @@ public class GameLogic : IGameLogic
         AuthUserEvent?.Invoke(dto);
     }
 
-    public void SaveGame(GameCreationDto dto)
+    private async void SaveGame(GameCreationDto dto)
     {
-        
+        await _gameService.CreateAsync(dto);
     }
     public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
     {
