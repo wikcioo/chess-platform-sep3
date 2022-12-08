@@ -1,5 +1,6 @@
 package via.sep3.DatabaseAccessServer.domain;
 
+import via.sep3.DatabaseAccessServer.domain.enums.GameOutcome;
 import via.sep3.DatabaseAccessServer.domain.enums.GameType;
 
 import javax.persistence.*;
@@ -24,17 +25,37 @@ public class Game {
     private int timeControlDurationSeconds;
     private int timeControlIncrementSeconds;
 
+    private GameOutcome gameOutcome;
+
 
     public Game(){};
 
 
-    public Game(User creator,  GameType gameType, User playerWhite, User playerBlack, int timeControlDurationSeconds, int timeControlIncrementSeconds){
+    public Game(User creator,  GameType gameType, User playerWhite, User playerBlack, int timeControlDurationSeconds, int timeControlIncrementSeconds, GameOutcome gameOutcome){
         this.creator = creator;
         this.gameType = gameType;
         this.playerWhite = playerWhite;
         this.playerBlack = playerBlack;
         this.timeControlDurationSeconds = timeControlDurationSeconds;
         this.timeControlIncrementSeconds = timeControlIncrementSeconds;
+        this.gameOutcome = gameOutcome;
+
+    }
+
+    public void setTimeControlDurationSeconds(int timeControlDurationSeconds) {
+        this.timeControlDurationSeconds = timeControlDurationSeconds;
+    }
+
+    public void setTimeControlIncrementSeconds(int timeControlIncrementSeconds) {
+        this.timeControlIncrementSeconds = timeControlIncrementSeconds;
+    }
+
+    public GameOutcome getGameOutcome() {
+        return gameOutcome;
+    }
+
+    public void setGameOutcome(GameOutcome gameOutcome) {
+        this.gameOutcome = gameOutcome;
     }
 
     public int getGameId() {
