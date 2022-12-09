@@ -36,9 +36,11 @@ public class GameRoomHandler : IGameRoomHandler
     private readonly CountDownTimer _rematchCountDownTimer = new();
     
     public event Action<GameRoomEventDto>? GameEvent;
+    public event Action<GameCreationDto>? GameFinished;
 
     public ulong Id { get; set; }
 
+    public GameOutcome GameOutcome { get; set; }
     public GameRoom GameRoom { get; }
     public bool IsJoinable { get; set; } = true;
     public bool IsSpectateable => GameRoom.IsVisible && !IsJoinable;
@@ -147,10 +149,19 @@ public class GameRoomHandler : IGameRoomHandler
         _chessTimer.UpdateTimers(_whitePlaying);
 
         var gameEndType = IsEndGame();
+       
         _whitePlaying = _game.CurrentPlayer().IsWhite;
 
         if (gameEndType != GameEndTypes.None)
         {
+            if (gameEndType == GameEndTypes.Pat)
+            {
+                GameOutcome = GameOutcome.Draw;
+            }
+            else if (gameEndType == GameEndTypes.CheckMate)
+            {
+                GameOutcome = GameRoom.PlayerWhite!.Equals(dto.Username) ? GameOutcome.White : GameOutcome.Black;
+            }
             FinishGame();
             var streamDto = new GameEventDto()
             {
@@ -209,6 +220,17 @@ public class GameRoomHandler : IGameRoomHandler
     {
         GameIsActive = false;
         _chessTimer.StopTimers();
+        GameFinished?.Invoke(new GameCreationDto
+        {
+            Creator = GameRoom.Creator,
+            PlayerWhite = GameRoom.PlayerWhite,
+            PlayerBlack = GameRoom.PlayerBlack,
+            GameType = GameRoom.GameType,
+            IsVisible = GameRoom.IsVisible,
+            TimeControlDurationSeconds = GetInitialTimeControlSeconds,
+            TimeControlIncrementSeconds = GetInitialTimeControlIncrement,
+            GameOutcome = GameOutcome
+        });
         
     }
 
@@ -225,6 +247,7 @@ public class GameRoomHandler : IGameRoomHandler
             return AckTypes.NotUserTurn;
         }
 
+        GameOutcome = GameRoom.PlayerWhite!.Equals(dto.Username) ? GameOutcome.Black : GameOutcome.White;
         FinishGame();
 
         var streamDto = new GameEventDto()
@@ -314,6 +337,7 @@ public class GameRoomHandler : IGameRoomHandler
         if (dto.Accept)
         {
             _isDrawOfferAccepted = dto.Accept;
+            GameOutcome = GameOutcome.Draw;
             FinishGame();
         }
 

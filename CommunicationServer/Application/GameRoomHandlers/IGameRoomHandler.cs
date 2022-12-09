@@ -11,6 +11,7 @@ public interface IGameRoomHandler
 {
     bool GameIsActive { get; set; }
     ulong Id { get; set; }
+    public GameOutcome GameOutcome { get; set; }
     GameRoom GameRoom { get; }
     bool IsJoinable { get; set; }
     bool IsSpectateable { get; }
@@ -20,6 +21,7 @@ public interface IGameRoomHandler
     uint GetInitialTimeControlSeconds { get; }
     uint GetInitialTimeControlIncrement { get; }
     event Action<GameRoomEventDto>? GameEvent;
+    event Action<GameCreationDto>? GameFinished;
     void Initialize();
     CurrentGameStateDto GetCurrentGameState();
     void PlayerJoined();
