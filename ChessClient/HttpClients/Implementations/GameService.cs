@@ -18,6 +18,7 @@ public class GameService : IGameService
     public bool IsRematchOfferRequestPending { get; set; }
     public bool IsRematchOfferResponsePending { get; set; }
     public bool OnWhiteSide { get; set; } = true;
+    public bool Spectating { get; set; }
     public ulong? GameRoomId { get; set; }
     public string LastFen { get; set; } = Fen.StartPositionFen;
     public RequestGameDto? RequestedGameDto { get; set; }
@@ -310,6 +311,7 @@ public class GameService : IGameService
 
     private async void JoinRematchGame(GameEventDto dto)
     {
+        if (Spectating) return;
         await JoinGameAsync(new RequestJoinGameDto()
         {
             GameRoom = dto.GameRoomId
