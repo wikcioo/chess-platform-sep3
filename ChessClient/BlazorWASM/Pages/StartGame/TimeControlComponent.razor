@@ -1,25 +1,42 @@
 <MudGrid Justify="Justify.SpaceEvenly" Spacing="1">
-    <MudItem xs="6">
-        <MudNumericField T="uint" @bind-Value="TimeControlBase" Label="Base time" Variant="Variant.Filled" Min="30"/>
+    <MudItem xs="4">
+        <MudNumericField T="uint" @bind-Value="TimeControlBaseMinutes" Label="Minutes" Variant="Variant.Filled"
+                         Min="@(TimeControlBaseSeconds == 0 ? (uint)1 : (uint)0)"/>
     </MudItem>
-    <MudItem xs="6">
-        <MudNumericField T="uint" @bind-Value="TimeControlIncrement" Label="Increment time" Variant="Variant.Filled" Min="0"/>
+    <MudItem xs="4">
+        <MudNumericField T="uint" @bind-Value="TimeControlBaseSeconds" Label="Seconds" Variant="Variant.Filled" Max="60"/>
+    </MudItem>
+    <MudItem xs="4">
+        <MudNumericField T="uint" @bind-Value="TimeControlIncrement" Label="Increment" Variant="Variant.Filled" Min="0"/>
     </MudItem>
 </MudGrid>
 
 @code {
-    private uint _timeControlBase = 120;
+    private uint _timeControlBaseSeconds = 0;
+    private uint _timeControlBaseMinutes = 5;
     private uint _timeControlIncrement = 0;
 
     [Parameter]
-    public uint TimeControlBase
+    public uint TimeControlBaseSeconds
     {
-        get => _timeControlBase;
+        get => _timeControlBaseSeconds;
         set
         {
-            if (_timeControlBase == value) return;
-            _timeControlBase = value;
-            TimeControlBaseChanged.InvokeAsync(value);
+            if (_timeControlBaseSeconds == value) return;
+            _timeControlBaseSeconds = value;
+            TimeControlBaseSecondsChanged.InvokeAsync(value);
+        }
+    }
+
+    [Parameter]
+    public uint TimeControlBaseMinutes
+    {
+        get => _timeControlBaseMinutes;
+        set
+        {
+            if (_timeControlBaseMinutes == value) return;
+            _timeControlBaseMinutes = value;
+            TimeControlBaseMinutesChanged.InvokeAsync(value);
         }
     }
 
@@ -36,7 +53,10 @@
     }
 
     [Parameter]
-    public EventCallback<uint> TimeControlBaseChanged { get; set; }
+    public EventCallback<uint> TimeControlBaseSecondsChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<uint> TimeControlBaseMinutesChanged { get; set; }
 
     [Parameter]
     public EventCallback<uint> TimeControlIncrementChanged { get; set; }
