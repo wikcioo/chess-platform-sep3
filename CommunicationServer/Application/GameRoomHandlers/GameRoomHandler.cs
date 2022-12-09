@@ -5,80 +5,61 @@ using Domain.Enums;
 using Domain.Models;
 using Rudzoft.ChessLib;
 using Rudzoft.ChessLib.Enums;
-using Rudzoft.ChessLib.Factories;
 using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.MoveGeneration;
 using Rudzoft.ChessLib.Types;
 
 namespace Application.GameRoomHandlers;
 
-public class GameRoomHandler
+
+
+public class GameRoomHandler : IGameRoomHandler
 {
     private readonly IGame _game;
     private readonly IChessTimer _chessTimer;
     private bool _whitePlaying;
     private bool _firstMovePlayed;
-    public bool GameIsActive { get; set; } = false;
+    public bool GameIsActive { get; set; }
 
     // Offer draw related fields
     private string _drawOfferOrigin = string.Empty;
-    private bool _isDrawOffered = false;
-    private bool _isDrawOfferAccepted = false;
-    private bool _drawResponseWithinTimespan = false;
+    private bool _isDrawOffered;
+    private bool _isDrawOfferAccepted;
+    private bool _drawResponseWithinTimespan;
     private readonly CountDownTimer _drawOfferCountDownTimer = new();
 
     // Offer rematch related fields
     private string _rematchOfferOrigin = string.Empty;
-    private bool _isRematchOffered = false;
-    private bool _isRematchOfferAccepted = false;
-    private bool _rematchResponseWithinTimespan = false;
+    private bool _isRematchOffered;
+    private bool _isRematchOfferAccepted;
+    private bool _rematchResponseWithinTimespan ;
     private readonly CountDownTimer _rematchCountDownTimer = new();
-
-
+    
     public event Action<GameRoomEventDto>? GameEvent;
 
     public ulong Id { get; set; }
 
-    private readonly GameRoom _gameRoom;
-
-    private string Creator => _gameRoom.Creator;
-
-    public string? PlayerWhite
-    {
-        get => _gameRoom.PlayerWhite;
-        set => _gameRoom.PlayerWhite = value;
-    }
-
-    public string? PlayerBlack
-    {
-        get => _gameRoom.PlayerBlack;
-        set => _gameRoom.PlayerBlack = value;
-    }
-
-    public GameSides GameSide => _gameRoom.GameSide;
-
-    private OpponentTypes GameType => _gameRoom.GameType;
-    public bool IsVisible => _gameRoom.IsVisible;
+    public GameRoom GameRoom { get; }
     public bool IsJoinable { get; set; } = true;
-    public bool IsSpectateable => IsVisible && !IsJoinable;
+    public bool IsSpectateable => GameRoom.IsVisible && !IsJoinable;
 
     public uint NumPlayersJoined { get; set; }
     public uint NumSpectatorsJoined { get; set; }
 
-    public string? CurrentPlayer => _game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack;
-    public uint GetInitialTimeControlSeconds => _gameRoom.TimeControlDurationSeconds;
-    public uint GetInitialTimeControlIncrement => _gameRoom.TimeControlIncrementSeconds;
+    public string? CurrentPlayer => _game.CurrentPlayer() == Player.White ? GameRoom.PlayerWhite : GameRoom.PlayerBlack;
+    public uint GetInitialTimeControlSeconds => GameRoom.TimeControlDurationSeconds;
+    public uint GetInitialTimeControlIncrement => GameRoom.TimeControlIncrementSeconds;
 
     public GameRoomHandler(IGame game, GameRoom gameRoom, IChessTimer chessTimer, string? fen = null)
     {
-        _gameRoom = gameRoom;
+        GameRoom = gameRoom;
 
         _game = game;
         _game.NewGame(fen ?? Fen.StartPositionFen);
 
         _chessTimer = chessTimer;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
-        if (_gameRoom.GameType == OpponentTypes.Ai)
+        if (GameRoom.GameType == OpponentTypes.Ai)
         {
             GameIsActive = true;
         }
@@ -104,8 +85,8 @@ public class GameRoomHandler
             FenString = _game.Pos.FenNotation,
             WhiteTimeLeftMs = _chessTimer.WhiteRemainingTimeMs,
             BlackTimeLeftMs = _chessTimer.BlackRemainingTimeMs,
-            UsernameWhite = PlayerWhite ?? "",
-            UsernameBlack = PlayerBlack ?? "",
+            UsernameWhite = GameRoom.PlayerWhite ?? "",
+            UsernameBlack = GameRoom.PlayerBlack ?? "",
             IsWhite = _whitePlaying
         };
 
@@ -120,8 +101,8 @@ public class GameRoomHandler
             FenString = _game.Pos.FenNotation,
             Event = GameStreamEvents.PlayerJoined,
             TimeLeftMs = _chessTimer.TimeControlDurationMs,
-            UsernameWhite = PlayerWhite ?? "",
-            UsernameBlack = PlayerBlack ?? ""
+            UsernameWhite = GameRoom.PlayerWhite ?? "",
+            UsernameBlack = GameRoom.PlayerBlack ?? ""
         };
         GameEvent?.Invoke(new GameRoomEventDto
         {
@@ -239,7 +220,7 @@ public class GameRoomHandler
     public AckTypes Resign(RequestResignDto dto)
     {
         if (!GameIsActive) return AckTypes.GameHasFinished;
-        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        if (!dto.Username.Equals(GameRoom.PlayerWhite) && !dto.Username.Equals(GameRoom.PlayerBlack))
         {
             return AckTypes.NotUserTurn;
         }
@@ -249,7 +230,7 @@ public class GameRoomHandler
         var streamDto = new GameEventDto()
         {
             Event = GameStreamEvents.Resignation,
-            IsWhite = PlayerWhite!.Equals(dto.Username)
+            IsWhite = GameRoom.PlayerWhite!.Equals(dto.Username)
         };
 
         GameEvent?.Invoke(new GameRoomEventDto
@@ -264,7 +245,7 @@ public class GameRoomHandler
     public async Task<AckTypes> OfferDraw(RequestDrawDto dto)
     {
         if (!GameIsActive) return AckTypes.GameHasFinished;
-        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        if (!dto.Username.Equals(GameRoom.PlayerWhite) && !dto.Username.Equals(GameRoom.PlayerBlack))
         {
             return AckTypes.NotUserTurn;
         }
@@ -276,8 +257,8 @@ public class GameRoomHandler
         var streamDto = new GameEventDto
         {
             Event = GameStreamEvents.DrawOffer,
-            UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
-            UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
+            UsernameWhite = GameRoom.PlayerBlack!.Equals(dto.Username) ? GameRoom.PlayerWhite! : "",
+            UsernameBlack = GameRoom.PlayerWhite!.Equals(dto.Username) ? GameRoom.PlayerBlack! : ""
         };
 
         GameEvent?.Invoke(new GameRoomEventDto
@@ -296,7 +277,7 @@ public class GameRoomHandler
                 GameEventDto = new GameEventDto()
                 {
                     Event = GameStreamEvents.DrawOfferTimeout,
-                    IsWhite = PlayerWhite!.Equals(dto.Username)
+                    IsWhite = GameRoom.PlayerWhite!.Equals(dto.Username)
                 }
             });
             return AckTypes.DrawOfferExpired;
@@ -309,7 +290,7 @@ public class GameRoomHandler
             GameEventDto = new GameEventDto
             {
                 Event = GameStreamEvents.DrawOfferAcceptation,
-                IsWhite = PlayerWhite!.Equals(dto.Username)
+                IsWhite = GameRoom.PlayerWhite!.Equals(dto.Username)
             }
         });
         return AckTypes.Success;
@@ -319,7 +300,7 @@ public class GameRoomHandler
     {
         if (!GameIsActive) return AckTypes.GameHasFinished;
         if (!_isDrawOffered) return AckTypes.DrawNotOffered;
-        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        if (!dto.Username.Equals(GameRoom.PlayerWhite) && !dto.Username.Equals(GameRoom.PlayerBlack))
         {
             return AckTypes.NotUserTurn;
         }
@@ -350,7 +331,7 @@ public class GameRoomHandler
 
     public async Task<AckTypes> OfferRematch(RequestRematchDto dto)
     {
-        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        if (!dto.Username.Equals(GameRoom.PlayerWhite) && !dto.Username.Equals(GameRoom.PlayerBlack))
         {
             return AckTypes.NotUserTurn;
         }
@@ -363,8 +344,8 @@ public class GameRoomHandler
         var streamDto = new GameEventDto
         {
             Event = GameStreamEvents.RematchOffer,
-            UsernameWhite = PlayerBlack!.Equals(dto.Username) ? PlayerWhite! : "",
-            UsernameBlack = PlayerWhite!.Equals(dto.Username) ? PlayerBlack! : ""
+            UsernameWhite = GameRoom.PlayerBlack!.Equals(dto.Username) ? GameRoom.PlayerWhite! : "",
+            UsernameBlack = GameRoom.PlayerWhite!.Equals(dto.Username) ? GameRoom.PlayerBlack! : ""
         };
 
         GameEvent?.Invoke(new GameRoomEventDto
@@ -383,7 +364,7 @@ public class GameRoomHandler
                 GameEventDto = new GameEventDto()
                 {
                     Event = GameStreamEvents.RematchOfferTimeout,
-                    IsWhite = PlayerWhite!.Equals(dto.Username)
+                    IsWhite = GameRoom.PlayerWhite!.Equals(dto.Username)
                 }
             });
             return AckTypes.RematchOfferExpired;
@@ -396,7 +377,7 @@ public class GameRoomHandler
             GameEventDto = new GameEventDto
             {
                 Event = GameStreamEvents.RematchOfferAcceptation,
-                IsWhite = PlayerWhite!.Equals(dto.Username)
+                IsWhite = GameRoom.PlayerWhite!.Equals(dto.Username)
             }
         });
 
@@ -406,7 +387,7 @@ public class GameRoomHandler
     public AckTypes RematchOfferResponse(ResponseRematchDto dto)
     {
         if (!_isRematchOffered) return AckTypes.RematchNotOffered;
-        if (!dto.Username.Equals(PlayerWhite) && !dto.Username.Equals(PlayerBlack))
+        if (!dto.Username.Equals(GameRoom.PlayerWhite) && !dto.Username.Equals(GameRoom.PlayerBlack))
         {
             return AckTypes.NotUserTurn;
         }
@@ -519,9 +500,9 @@ public class GameRoomHandler
         return new GameRoomDto()
         {
             GameRoom = Id,
-            Creator = Creator,
-            UsernameWhite = PlayerWhite!,
-            UsernameBlack = PlayerBlack!,
+            Creator = GameRoom.Creator,
+            UsernameWhite = GameRoom.PlayerWhite!,
+            UsernameBlack = GameRoom.PlayerBlack!,
             DurationSeconds = GetInitialTimeControlSeconds,
             IncrementSeconds = GetInitialTimeControlIncrement
         };
@@ -529,9 +510,9 @@ public class GameRoomHandler
 
     public bool CanUsernameJoin(string username)
     {
-        if (GameType is OpponentTypes.Random or OpponentTypes.Ai)
+        if (GameRoom.GameType is OpponentTypes.Random or OpponentTypes.Ai)
             return true;
 
-        return PlayerWhite!.Equals(username) || PlayerBlack!.Equals(username);
+        return GameRoom.PlayerWhite!.Equals(username) || GameRoom.PlayerBlack!.Equals(username);
     }
 }

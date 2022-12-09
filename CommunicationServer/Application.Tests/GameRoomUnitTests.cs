@@ -15,19 +15,19 @@ namespace Application.Tests;
 
 public class GameRoomUnitTests
 {
-    private GameRoomHandler? _gameRoom;
+    private IGameRoomHandler? _gameRoom;
     private const string PlayerWhite = "Bob";
     private const string PlayerBlack = "Jim";
     private const uint TimeControlDurationSeconds = 60;
     private const uint TimeControlIncrementSeconds = 5;
 
-    private GameRoomHandler GetNewGameRoom()
+    private IGameRoomHandler GetNewGameRoom()
     {
         var gameRoom = new GameRoomHandlerFactory().GetGameRoomHandler("", TimeControlDurationSeconds,
             TimeControlIncrementSeconds, false, OpponentTypes.Random, GameSides.White);
 
-        gameRoom.PlayerWhite = PlayerWhite;
-        gameRoom.PlayerBlack = PlayerBlack;
+        gameRoom.GameRoom.PlayerWhite = PlayerWhite;
+        gameRoom.GameRoom.PlayerBlack = PlayerBlack;
         gameRoom.GameIsActive = true;
         return gameRoom;
     }
@@ -253,7 +253,7 @@ public class GameRoomUnitTests
         Assert.Equal(2, newFenPositionEventsCount);
     }
 
-    private static void PlayBasicMoves(GameRoomHandler gameRoomHandler, List<Tuple<string, string>> moves)
+    private static void PlayBasicMoves(IGameRoomHandler gameRoomHandler, List<Tuple<string, string>> moves)
     {
         var currentUsername = PlayerWhite;
         foreach (var move in moves)

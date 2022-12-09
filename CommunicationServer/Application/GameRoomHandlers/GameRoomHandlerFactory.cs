@@ -7,7 +7,7 @@ namespace Application.GameRoomHandlers;
 
 public class GameRoomHandlerFactory : IGameRoomHandlerFactory
 {
-    public GameRoomHandler GetGameRoomHandler(string creator, uint timeControlDurationSeconds, uint timeControlIncrementSeconds,
+    public IGameRoomHandler GetGameRoomHandler(string creator, uint timeControlDurationSeconds, uint timeControlIncrementSeconds,
         bool isVisible, OpponentTypes gameType, GameSides gameSide, string? fen = null)
     {
         var gameRoom = new GameRoom(creator, gameType, timeControlDurationSeconds, timeControlIncrementSeconds,
