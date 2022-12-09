@@ -1,5 +1,5 @@
 using Application.ClientInterfaces;
-using Application.Entities;
+using Application.GameRoomHandlers;
 using Application.LogicInterfaces;
 using Domain.DTOs;
 using Domain.DTOs.AuthorizedUserEvents;
@@ -7,6 +7,7 @@ using Domain.DTOs.GameEvents;
 using Domain.DTOs.Stockfish;
 using Domain.Enums;
 using Domain.Models;
+using Rudzoft.ChessLib.Enums;
 using Rudzoft.ChessLib.Fen;
 
 namespace Application.Logic;
@@ -22,18 +23,31 @@ public class GameLogic : IGameLogic
     private readonly IStockfishService _stockfishService;
     private readonly IChatLogic _chatLogic;
     private readonly IUserService _userService;
+    private readonly IGameRoomHandlerFactory _gameRoomHandlerFactory;
+    private readonly IGameService _gameService;
     public event Action<GameRoomEventDto>? GameEvent;
     public event Action<AuthorizedUserEventDto>? AuthUserEvent;
 
-    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService)
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService, IGameService gameService,
+        IGameRoomHandlerFactory gameRoomHandlerFactory)
     {
         _stockfishService = stockfishService;
         _chatLogic = chatLogic;
         _userService = userService;
+        _gameRoomHandlerFactory = gameRoomHandlerFactory;
+        _gameService = gameService;
     }
+    
 
     private void FireGameRoomEvent(GameRoomEventDto dto)
     {
+        if (dto.GameEventDto?.Event == GameStreamEvents.ReachedEndOfTheGame ||
+            dto.GameEventDto is { Event: GameStreamEvents.TimeUpdate, GameEndType: (int)GameEndTypes.TimeIsUp })
+        {
+            _tempGameRoomsData.Add(dto.GameRoomId, GetGameRoom(dto.GameRoomId, _gameRooms));
+            _gameRooms.Remove(dto.GameRoomId);
+        }
+
         GameEvent?.Invoke(dto);
     }
 
@@ -42,7 +56,11 @@ public class GameLogic : IGameLogic
         AuthUserEvent?.Invoke(dto);
     }
 
-    public async Task<ResponseGameDto> StartGame(RequestGameDto dto, bool isRematch)
+    private async void SaveGame(GameCreationDto dto)
+    {
+        await _gameService.CreateAsync(dto);
+    }
+    public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
     {
         try
         {
@@ -58,11 +76,11 @@ public class GameLogic : IGameLogic
             return responseFail;
         }
 
-        GameRoomHandler gameRoomHandler =
-            new(dto.Username, dto.DurationSeconds, dto.IncrementSeconds, dto.IsVisible, dto.OpponentType, dto.Side);
+        var gameRoomHandler = _gameRoomHandlerFactory.GetGameRoomHandler(dto.Username,
+            dto.DurationSeconds, dto.IncrementSeconds, dto.IsVisible, dto.OpponentType, dto.Side);
 
         gameRoomHandler.GameEvent += FireGameRoomEvent;
-
+        gameRoomHandler.GameFinished += SaveGame;
 
         var requesterIsWhite = true;
         switch (dto.Side)
@@ -113,7 +131,7 @@ public class GameLogic : IGameLogic
         if (gameRoomHandler.CurrentPlayer != null && IsAi(gameRoomHandler.CurrentPlayer))
             await RequestAiMove(id);
 
-        if (dto.OpponentType == OpponentTypes.Friend && !isRematch)
+        if (dto.OpponentType == OpponentTypes.Friend && !dto.IsRematch)
         {
             FireAuthUserEvent(new AuthorizedUserEventDto()
             {
@@ -202,7 +220,7 @@ public class GameLogic : IGameLogic
 
         return existing != null;
     }
-
+//TODO Allow rejoining, 
     public AckTypes JoinGame(RequestJoinGameDto dto)
     {
         var gameRoom = GetGameRoom(dto.GameRoom, _gameRooms);
@@ -385,8 +403,9 @@ public class GameLogic : IGameLogic
                     OpponentType = OpponentTypes.Friend,
                     OpponentName = gameRoom.PlayerWhite!.Equals(dto.Username)
                         ? gameRoom.PlayerBlack
-                        : gameRoom.PlayerWhite
-                }, true);
+                        : gameRoom.PlayerWhite,
+                    IsRematch = true
+                });
 
                 _tempGameRoomsData.Remove(dto.GameRoom);
                 gameRoom.SendNewGameRoomIdToPlayers(res.GameRoom);

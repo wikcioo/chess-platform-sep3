@@ -1,5 +1,6 @@
 using System.Text;
 using Application.ClientInterfaces;
+using Application.GameRoomHandlers;
 using Application.Logic;
 using Application.LogicInterfaces;
 using DatabaseClient.Implementations;
@@ -45,6 +46,9 @@ builder.Services.AddScoped<IUserLogic, UserLogic>();
 builder.Services.AddHttpClient<IUserService, UserHttpClient>(client =>
     client.BaseAddress = new Uri("http://localhost:8080"));
 
+builder.Services.AddHttpClient<IGameService, GameHttpClient>(client =>
+    client.BaseAddress = new Uri("http://localhost:8080"));
+
 builder.Services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
 
 builder.Services.AddSingleton<IStockfishLogic, StockfishLogic>();
@@ -52,6 +56,7 @@ builder.Services.AddSingleton<IStockfishService, StockfishHttpClient>();
 
 builder.Services.AddSingleton(_ => GrpcChannel.ForAddress("https://localhost:7007"));
 
+builder.Services.AddSingleton<IGameRoomHandlerFactory, GameRoomHandlerFactory>();
 builder.Services.AddSingleton<IChatLogic, ChatLogic>();
 builder.Services.AddSingleton<IGameLogic, GameLogic>();
 

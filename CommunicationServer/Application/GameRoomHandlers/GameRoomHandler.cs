@@ -1,3 +1,4 @@
+using Application.ChessTimers;
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Domain.Enums;
@@ -9,31 +10,33 @@ using Rudzoft.ChessLib.Fen;
 using Rudzoft.ChessLib.MoveGeneration;
 using Rudzoft.ChessLib.Types;
 
-namespace Application.Entities;
+namespace Application.GameRoomHandlers;
 
 public class GameRoomHandler
 {
     private readonly IGame _game;
-    private readonly ChessTimer _chessTimer;
+    private readonly IChessTimer _chessTimer;
     private bool _whitePlaying;
     private bool _firstMovePlayed;
-    public bool GameIsActive = false;
+    public bool GameIsActive { get; set; } = false;
 
     // Offer draw related fields
     private string _drawOfferOrigin = string.Empty;
     private bool _isDrawOffered = false;
     private bool _isDrawOfferAccepted = false;
     private bool _drawResponseWithinTimespan = false;
-    private CancellationTokenSource? _drawCts;
+    private readonly CountDownTimer _drawOfferCountDownTimer = new();
 
     // Offer rematch related fields
     private string _rematchOfferOrigin = string.Empty;
     private bool _isRematchOffered = false;
     private bool _isRematchOfferAccepted = false;
     private bool _rematchResponseWithinTimespan = false;
-    private CancellationTokenSource? _rematchCts;
+    private readonly CountDownTimer _rematchCountDownTimer = new();
+
 
     public event Action<GameRoomEventDto>? GameEvent;
+    public event Action<GameCreationDto>? GameFinished;
 
     public ulong Id { get; set; }
 
@@ -53,10 +56,14 @@ public class GameRoomHandler
         set => _gameRoom.PlayerBlack = value;
     }
 
+    public GameOutcome GameOutcome;
+
+
+
     public GameSides GameSide => _gameRoom.GameSide;
 
     private OpponentTypes GameType => _gameRoom.GameType;
-    public bool IsVisible { get; set; }
+    public bool IsVisible => _gameRoom.IsVisible;
     public bool IsJoinable { get; set; } = true;
     public bool IsSpectateable => IsVisible && !IsJoinable;
 
@@ -67,16 +74,16 @@ public class GameRoomHandler
     public uint GetInitialTimeControlSeconds => _gameRoom.TimeControlDurationSeconds;
     public uint GetInitialTimeControlIncrement => _gameRoom.TimeControlIncrementSeconds;
 
-    public GameRoomHandler(string creator, uint timeControlDurationSeconds, uint timeControlIncrementSeconds,
-        bool isVisible, OpponentTypes gameType, GameSides gameSide, string? fen = null)
+    public GameRoomHandler(IGame game, GameRoom gameRoom, IChessTimer chessTimer, string? fen = null)
     {
-        _gameRoom = new GameRoom(creator, gameType, timeControlDurationSeconds, timeControlIncrementSeconds, gameSide);
-        _game = GameFactory.Create();
+        _gameRoom = gameRoom;
+
+        _game = game;
         _game.NewGame(fen ?? Fen.StartPositionFen);
-        _chessTimer = new ChessTimer(_whitePlaying, timeControlDurationSeconds, timeControlIncrementSeconds);
-        IsVisible = isVisible;
+
+        _chessTimer = chessTimer;
         _whitePlaying = _game.CurrentPlayer().IsWhite;
-        if (gameType == OpponentTypes.Ai)
+        if (_gameRoom.GameType == OpponentTypes.Ai)
         {
             GameIsActive = true;
         }
@@ -84,9 +91,9 @@ public class GameRoomHandler
 
     public void Initialize()
     {
-        _chessTimer.ThrowEvent += (_, _, dto) =>
+        _chessTimer.Elapsed += (dto) =>
         {
-            if (dto.GameEndType == (uint) GameEndTypes.TimeIsUp) GameIsActive = false;
+            if (dto.GameEndType == (uint)GameEndTypes.TimeIsUp) FinishGame();
             GameEvent?.Invoke(new GameRoomEventDto
             {
                 GameRoomId = Id,
@@ -163,32 +170,26 @@ public class GameRoomHandler
         _game.Pos.MakeMove(move, _game.Pos.State);
         _chessTimer.UpdateTimers(_whitePlaying);
 
-        // Check game logic: Checkmate, Draw, Insufficient Material
-        // TODO(Wiktor): Implement the rest of end game scenarios
-        var reachedTheEnd = false;
-        var gameEndType = GameEndTypes.None;
-        if (_game.Pos.IsMate)
-        {
-            reachedTheEnd = true;
-            gameEndType = GameEndTypes.CheckMate;
-        }
-        else if (_game.Pos.GenerateMoves().Length == 0 && !_game.Pos.InCheck)
-        {
-            reachedTheEnd = true;
-            gameEndType = GameEndTypes.Pat;
-        }
-
+        var gameEndType = IsEndGame();
+       
         _whitePlaying = _game.CurrentPlayer().IsWhite;
 
-        if (reachedTheEnd)
+        if (gameEndType != GameEndTypes.None)
         {
-            GameIsActive = false;
-            _chessTimer.StopTimers();
+            if (gameEndType == GameEndTypes.Pat)
+            {
+                GameOutcome = GameOutcome.Draw;
+            }
+            else if (gameEndType == GameEndTypes.CheckMate)
+            {
+                GameOutcome = PlayerWhite!.Equals(dto.Username) ? GameOutcome.White : GameOutcome.Black;
+            }
+            FinishGame();
             var streamDto = new GameEventDto()
             {
                 Event = GameStreamEvents.ReachedEndOfTheGame,
                 FenString = _game.Pos.FenNotation,
-                GameEndType = (uint) gameEndType,
+                GameEndType = (uint)gameEndType,
                 IsWhite = _whitePlaying,
                 TimeLeftMs = _whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
             };
@@ -197,7 +198,7 @@ public class GameRoomHandler
                 GameRoomId = Id,
                 GameEventDto = streamDto
             });
-
+            
             return AckTypes.Success;
         }
 
@@ -207,7 +208,7 @@ public class GameRoomHandler
             Event = GameStreamEvents.NewFenPosition,
             FenString = _game.Pos.FenNotation,
             TimeLeftMs = _whitePlaying ? _chessTimer.WhiteRemainingTimeMs : _chessTimer.BlackRemainingTimeMs,
-            GameEndType = (uint) _game.GameEndType,
+            GameEndType = (uint)_game.GameEndType,
             IsWhite = _whitePlaying
         };
 
@@ -218,6 +219,41 @@ public class GameRoomHandler
         });
 
         return AckTypes.Success;
+    }
+
+    private GameEndTypes IsEndGame()
+    {
+        // Check game logic: Checkmate, Draw, Insufficient Material
+        // TODO(Wiktor): Implement the rest of end game scenarios
+        var gameEndType = GameEndTypes.None;
+        if (_game.Pos.IsMate)
+        {
+            gameEndType = GameEndTypes.CheckMate;
+        }
+        else if (_game.Pos.GenerateMoves().Length == 0 && !_game.Pos.InCheck)
+        {
+            gameEndType = GameEndTypes.Pat;
+        }
+
+        return gameEndType;
+    }
+
+    private void FinishGame()
+    {
+        GameIsActive = false;
+        _chessTimer.StopTimers();
+        GameFinished?.Invoke(new GameCreationDto
+        {
+            Creator = Creator,
+            PlayerWhite = PlayerWhite,
+            PlayerBlack = PlayerBlack,
+            GameType = GameType,
+            IsVisible = IsVisible,
+            TimeControlDurationSeconds = GetInitialTimeControlSeconds,
+            TimeControlIncrementSeconds = GetInitialTimeControlIncrement,
+            GameOutcome = GameOutcome
+        });
+        
     }
 
     public FenData GetFen()
@@ -233,8 +269,8 @@ public class GameRoomHandler
             return AckTypes.NotUserTurn;
         }
 
-        _chessTimer.StopTimers();
-        GameIsActive = false;
+        GameOutcome = PlayerWhite!.Equals(dto.Username) ? GameOutcome.Black : GameOutcome.White;
+        FinishGame();
 
         var streamDto = new GameEventDto()
         {
@@ -262,7 +298,6 @@ public class GameRoomHandler
         _isDrawOffered = true;
         _drawOfferOrigin = dto.Username;
         _isDrawOfferAccepted = false;
-        _drawResponseWithinTimespan = false;
 
         var streamDto = new GameEventDto
         {
@@ -277,16 +312,7 @@ public class GameRoomHandler
             GameEventDto = streamDto
         });
 
-        _drawCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        while (true)
-        {
-            if (_drawCts.Token.IsCancellationRequested)
-            {
-                break;
-            }
-
-            await Task.Delay(50);
-        }
+        _drawResponseWithinTimespan = await _drawOfferCountDownTimer.StartTimer(10);
 
         if (!_drawResponseWithinTimespan)
         {
@@ -333,13 +359,13 @@ public class GameRoomHandler
         if (dto.Accept)
         {
             _isDrawOfferAccepted = dto.Accept;
-            _chessTimer.StopTimers();
-            GameIsActive = false;
+            GameOutcome = GameOutcome.Draw;
+            FinishGame();
         }
 
         try
         {
-            _drawCts?.Cancel();
+            _drawOfferCountDownTimer.StopTimer();
         }
         catch (Exception)
         {
@@ -374,17 +400,8 @@ public class GameRoomHandler
             GameEventDto = streamDto
         });
 
-        _rematchCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-        while (true)
-        {
-            if (_rematchCts.Token.IsCancellationRequested)
-            {
-                break;
-            }
-
-            await Task.Delay(50);
-        }
-
+        _rematchResponseWithinTimespan = await _rematchCountDownTimer.StartTimer(15);
+        
         if (!_rematchResponseWithinTimespan)
         {
             GameEvent?.Invoke(new GameRoomEventDto
@@ -434,7 +451,7 @@ public class GameRoomHandler
 
         try
         {
-            _rematchCts?.Cancel();
+            _rematchCountDownTimer.StopTimer();
         }
         catch (Exception)
         {
@@ -511,8 +528,8 @@ public class GameRoomHandler
     {
         var fromSquare = UciToSquare(dto.FromSquare);
         var toSquare = UciToSquare(dto.ToSquare);
-        var moveType = (MoveTypes) (dto.MoveType ?? 0);
-        var promotionPiece = (PieceTypes?) dto.Promotion;
+        var moveType = (MoveTypes)(dto.MoveType ?? 0);
+        var promotionPiece = (PieceTypes?)dto.Promotion;
 
         return moveType switch
         {

@@ -7,7 +7,7 @@ namespace Application.LogicInterfaces;
 
 public interface IGameLogic
 {
-    Task<ResponseGameDto> StartGame(RequestGameDto dto, bool isRematch = false);
+    Task<ResponseGameDto> StartGame(RequestGameDto dto);
     AckTypes JoinGame(RequestJoinGameDto dto);
     AckTypes SpectateGame(RequestJoinGameDto dto);
     Task<AckTypes> MakeMove(MakeMoveDto dto);
