@@ -45,7 +45,7 @@
             <MudGrid>
                 @if (!_spectating)
                 {
-                    <DrawResignRematchComponent IsDrawOfferPending="GameService.IsDrawOfferPending" DisplayRematchBtn="_displayRematchButton" OnRematch="OfferRematch" OnResign="Resign" OnOfferDraw="OfferDraw" OnSendDrawResponse="SendDrawResponse"/>
+                    <DrawResignRematchComponent IsDrawOfferPending="GameService.IsDrawOfferPending" DisplayRematchBtn="_rematchBtnVisible" OnRematch="OfferRematch" OnResign="Resign" OnOfferDraw="OfferDraw" OnSendDrawResponse="SendDrawResponse"/>
                 }
                 else
                 {
@@ -77,7 +77,18 @@
     private bool _whiteTimerActive = true;
     private string _opponentName = "PlaceholderJoe";
     private bool _spectating;
-    private bool _displayRematchButton = false;
+    private bool _rematchBtnVisible = false;
+    private bool _gameFinished = false;
+
+    private bool DisplayRematchButton
+    {
+        get => _rematchBtnVisible;
+        set
+        {
+            if (!value) _rematchBtnVisible = false;
+            _rematchBtnVisible = _gameFinished;
+        }
+    }
 
     private IDialogReference? _isGameFinishedOptionsDialogRef;
     private string _isGameFinishedReason = string.Empty;
@@ -162,6 +173,8 @@
             Notify("Game joined. Have fun!", Severity.Success);
         }
         PlaySound("notify");
+        _gameFinished = false;
+        DisplayRematchButton = false;
         StateHasChanged();
     }
 
@@ -175,7 +188,7 @@
 
     private async void OnJoinRematchGame(GameEventDto dto)
     {
-        _displayRematchButton = false;
+        DisplayRematchButton = false;
         _isGameFinishedOptionsDialogRef?.Close();
         await GameService.GetCurrentGameStateAsync();
     }
@@ -202,7 +215,7 @@
         {
             _isGameFinishedOptionsDialogRef = null;
             if (!_opponentName.Contains("stockfishai", StringComparison.OrdinalIgnoreCase) && !_spectating)
-                _displayRematchButton = true;
+                DisplayRematchButton = true;
             StateHasChanged();
         }
     }
@@ -320,7 +333,7 @@
                     Notify("Rematch Offer Declined!", Severity.Info);
                     GameService.IsRematchOfferRequestPending = false;
                     _isGameFinishedOptionsDialogRef?.Close();
-                    _displayRematchButton = false;
+                    DisplayRematchButton = false;
                     StateHasChanged();
                     break;
             }
@@ -372,7 +385,7 @@
     private void OnEndOfTheGameReached(GameEventDto dto)
     {
         PlaySound("notify");
-
+        _gameFinished = true;
         var endOfGameReachedReason = string.Empty;
         switch (dto.GameEndType)
         {
@@ -447,6 +460,7 @@
     private void OnResignationReceived(GameEventDto dto)
     {
         PlaySound("notify");
+        _gameFinished = true;
         if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
         {
             DisplayGameFinishedOptions("You resigned the game!");
@@ -480,6 +494,7 @@
     private void OnDrawOfferAccepted(GameEventDto dto)
     {
         PlaySound("notify");
+        _gameFinished = true;
         DisplayGameFinishedOptions("The game finished in a draw!");
         StateHasChanged();
     }
