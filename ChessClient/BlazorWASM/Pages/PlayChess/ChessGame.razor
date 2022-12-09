@@ -198,6 +198,12 @@
 
     private async void DisplayGameFinishedOptions(string title)
     {
+        if (GameService.Spectating)
+        {
+            DisplayDefaultDialog("The game finished!");
+            return;
+        }
+        
         var options = new DialogOptions
         {
             MaxWidth = MaxWidth.Medium,
