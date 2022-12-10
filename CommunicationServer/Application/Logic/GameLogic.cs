@@ -158,8 +158,8 @@ public class GameLogic : IGameLogic
             await Task.Delay(3 * 60000);
 
             if (!GetGameRoom(id, _gameRooms).FirstMovePlayed ||
-                string.IsNullOrEmpty(GetGameRoom(id, _gameRooms).PlayerBlack) ||
-                string.IsNullOrEmpty(GetGameRoom(id, _gameRooms).PlayerWhite))
+                string.IsNullOrEmpty(GetGameRoom(id, _gameRooms).GameRoom.PlayerWhite) ||
+                string.IsNullOrEmpty(GetGameRoom(id, _gameRooms).GameRoom.PlayerWhite))
             {
                 _gameRooms.Remove(id);
                 FireGameRoomEvent(new GameRoomEventDto()

@@ -19,7 +19,7 @@ public class GameRoomHandler : IGameRoomHandler
     private readonly IChessTimer _chessTimer;
     private bool _whitePlaying;
     
-    public bool FirstMovePlayed { get; private set; }
+    public bool FirstMovePlayed { get; set; }
     public bool GameIsActive { get; set; } = false;
 
     // Offer draw related fields

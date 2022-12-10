@@ -10,6 +10,7 @@ namespace Application.GameRoomHandlers;
 public interface IGameRoomHandler
 {
     bool GameIsActive { get; set; }
+    bool FirstMovePlayed { get; set; }
     ulong Id { get; set; }
     public GameOutcome GameOutcome { get; set; }
     GameRoom GameRoom { get; }
