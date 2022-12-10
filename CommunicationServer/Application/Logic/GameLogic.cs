@@ -247,6 +247,16 @@ public class GameLogic : IGameLogic
     {
         var gameRoom = GetGameRoom(dto.GameRoom, _gameRooms);
 
+        // Allow rejoining
+        if (!string.IsNullOrEmpty(gameRoom.PlayerWhite) && gameRoom.PlayerWhite.Equals(dto.Username) ||
+            !string.IsNullOrEmpty(gameRoom.PlayerBlack) && gameRoom.PlayerBlack.Equals(dto.Username))
+        {
+            if (gameRoom.NumPlayersJoined != 0)
+            {
+                return AckTypes.Success;
+            }
+        }
+
         if (gameRoom.IsJoinable && gameRoom.CanUsernameJoin(dto.Username))
         {
             if (string.IsNullOrEmpty(gameRoom.PlayerWhite) && !dto.Username.Equals(gameRoom.PlayerBlack))
@@ -266,11 +276,6 @@ public class GameLogic : IGameLogic
 
             return AckTypes.Success;
         }
-
-        // Allow rejoining
-        if (gameRoom.PlayerWhite != null && gameRoom.PlayerWhite.Equals(dto.Username) ||
-            gameRoom.PlayerBlack != null && gameRoom.PlayerBlack.Equals(dto.Username))
-            return AckTypes.Success;
 
         throw new ArgumentException("Cannot join the game!");
     }
