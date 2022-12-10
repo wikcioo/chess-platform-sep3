@@ -1,7 +1,6 @@
 @page "/"
 @using BlazorWASM.Pages.StartGame
 @using Domain.DTOs
-@using Domain.DTOs.Chat
 @using HttpClients.ClientInterfaces
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -27,7 +26,6 @@
     </AuthorizeView>
 </MudContainer>
 
-
 @code {
     private IList<GameRoomDto>? _joinableGames = new List<GameRoomDto>();
 
@@ -50,6 +48,10 @@
             {
                 Joinable = true
             });
+
+            var authState = await AuthState;
+            var username = authState.User.Identity!.Name;
+            _joinableGames = _joinableGames.OrderByDescending(game => game.UsernameWhite.Equals(username) || game.UsernameBlack.Equals(username)).ToList();
         }
         catch (HttpRequestException e)
         {

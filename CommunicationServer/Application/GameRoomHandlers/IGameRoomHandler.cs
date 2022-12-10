@@ -37,4 +37,6 @@ public interface IGameRoomHandler
     Move UciMoveToRudzoftMove(string uci);
     GameRoomDto GetGameRoomData();
     bool CanUsernameJoin(string username);
+    bool PlayerWhiteJoined { get; set; }
+    bool PlayerBlackJoined { get; set; }
 }

@@ -11,14 +11,12 @@ using Rudzoft.ChessLib.Types;
 
 namespace Application.GameRoomHandlers;
 
-
-
 public class GameRoomHandler : IGameRoomHandler
 {
     private readonly IGame _game;
     private readonly IChessTimer _chessTimer;
     private bool _whitePlaying;
-    
+
     public bool FirstMovePlayed { get; set; }
     public bool GameIsActive { get; set; } = false;
 
@@ -33,14 +31,13 @@ public class GameRoomHandler : IGameRoomHandler
     private string _rematchOfferOrigin = string.Empty;
     private bool _isRematchOffered;
     private bool _isRematchOfferAccepted;
-    private bool _rematchResponseWithinTimespan ;
+    private bool _rematchResponseWithinTimespan;
     private readonly CountDownTimer _rematchCountDownTimer = new();
-    
+
     public event Action<GameRoomEventDto>? GameEvent;
     public event Action<GameCreationDto>? GameFinished;
 
     public ulong Id { get; set; }
-
     public GameOutcome GameOutcome { get; set; }
     public GameRoom GameRoom { get; }
     public bool IsJoinable { get; set; } = true;
@@ -52,6 +49,9 @@ public class GameRoomHandler : IGameRoomHandler
     public string? CurrentPlayer => _game.CurrentPlayer() == Player.White ? GameRoom.PlayerWhite : GameRoom.PlayerBlack;
     public uint GetInitialTimeControlSeconds => GameRoom.TimeControlDurationSeconds;
     public uint GetInitialTimeControlIncrement => GameRoom.TimeControlIncrementSeconds;
+
+    public bool PlayerWhiteJoined { get; set; }
+    public bool PlayerBlackJoined { get; set; }
 
     public GameRoomHandler(IGame game, GameRoom gameRoom, IChessTimer chessTimer, string? fen = null)
     {
@@ -150,7 +150,7 @@ public class GameRoomHandler : IGameRoomHandler
         _chessTimer.UpdateTimers(_whitePlaying);
 
         var gameEndType = IsEndGame();
-       
+
         _whitePlaying = _game.CurrentPlayer().IsWhite;
 
         if (gameEndType != GameEndTypes.None)
@@ -163,6 +163,7 @@ public class GameRoomHandler : IGameRoomHandler
             {
                 GameOutcome = GameRoom.PlayerWhite!.Equals(dto.Username) ? GameOutcome.White : GameOutcome.Black;
             }
+
             FinishGame();
             var streamDto = new GameEventDto()
             {
@@ -177,7 +178,7 @@ public class GameRoomHandler : IGameRoomHandler
                 GameRoomId = Id,
                 GameEventDto = streamDto
             });
-            
+
             return AckTypes.Success;
         }
 
@@ -232,7 +233,6 @@ public class GameRoomHandler : IGameRoomHandler
             TimeControlIncrementSeconds = GetInitialTimeControlIncrement,
             GameOutcome = GameOutcome
         });
-        
     }
 
     public FenData GetFen()
@@ -380,7 +380,7 @@ public class GameRoomHandler : IGameRoomHandler
         });
 
         _rematchResponseWithinTimespan = await _rematchCountDownTimer.StartTimer(15);
-        
+
         if (!_rematchResponseWithinTimespan)
         {
             GameEvent?.Invoke(new GameRoomEventDto

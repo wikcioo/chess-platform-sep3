@@ -43,7 +43,7 @@ public class GameLogic : IGameLogic
     private void FireGameRoomEvent(GameRoomEventDto dto)
     {
         if (dto.GameEventDto?.Event == GameStreamEvents.ReachedEndOfTheGame ||
-            dto.GameEventDto is { Event: GameStreamEvents.TimeUpdate, GameEndType: (int)GameEndTypes.TimeIsUp })
+            dto.GameEventDto is {Event: GameStreamEvents.TimeUpdate, GameEndType: (int)GameEndTypes.TimeIsUp})
         {
             _gameRoomsForRematch.Add(dto.GameRoomId, GetGameRoom(dto.GameRoomId, _gameRooms));
             _gameRooms.Remove(dto.GameRoomId);
@@ -242,32 +242,66 @@ public class GameLogic : IGameLogic
 
         return existing != null;
     }
-    
+
     public AckTypes JoinGame(RequestJoinGameDto dto)
     {
-        var gameRoom = GetGameRoom(dto.GameRoom, _gameRooms);
+        var gameRoomHandler = GetGameRoom(dto.GameRoom, _gameRooms);
 
-        if (gameRoom.IsJoinable && gameRoom.CanUsernameJoin(dto.Username))
+        // Allow rejoining
+        if (gameRoomHandler.GameRoom.PlayerWhite != null && gameRoomHandler.PlayerWhiteJoined &&
+            gameRoomHandler.GameRoom.PlayerWhite.Equals(dto.Username) ||
+            gameRoomHandler.GameRoom.PlayerBlack != null && gameRoomHandler.PlayerBlackJoined &&
+            gameRoomHandler.GameRoom.PlayerBlack.Equals(dto.Username))
         {
-            if (string.IsNullOrEmpty(gameRoom.GameRoom.PlayerWhite) && !dto.Username.Equals(gameRoom.GameRoom.PlayerBlack))
-            {
-                gameRoom.GameRoom.PlayerWhite = dto.Username;
-            }
-            else if (string.IsNullOrEmpty(gameRoom.GameRoom.PlayerBlack) && !dto.Username.Equals(gameRoom.GameRoom.PlayerWhite))
-            {
-                gameRoom.GameRoom.PlayerBlack = dto.Username;
-            }
-
-            if (++gameRoom.NumPlayersJoined == 2)
-            {
-                gameRoom.IsJoinable = false;
-                gameRoom.PlayerJoined();
-            }
-
             return AckTypes.Success;
         }
 
-        throw new ArgumentException("Cannot join the game!");
+        if (string.IsNullOrEmpty(gameRoomHandler.GameRoom.PlayerWhite) &&
+            !dto.Username.Equals(gameRoomHandler.GameRoom.PlayerBlack))
+        {
+            gameRoomHandler.GameRoom.PlayerWhite = dto.Username;
+        }
+        else if (string.IsNullOrEmpty(gameRoomHandler.GameRoom.PlayerBlack) &&
+                 !dto.Username.Equals(gameRoomHandler.GameRoom.PlayerWhite))
+        {
+            gameRoomHandler.GameRoom.PlayerBlack = dto.Username;
+        }
+
+        if (!gameRoomHandler.IsJoinable || !gameRoomHandler.CanUsernameJoin(dto.Username))
+            throw new ArgumentException("Cannot join the game!");
+
+
+        if (string.IsNullOrEmpty(gameRoomHandler.GameRoom.PlayerWhite) &&
+            !dto.Username.Equals(gameRoomHandler.GameRoom.PlayerBlack))
+        {
+            gameRoomHandler.GameRoom.PlayerWhite = dto.Username;
+        }
+        else if (string.IsNullOrEmpty(gameRoomHandler.GameRoom.PlayerBlack) &&
+                 !dto.Username.Equals(gameRoomHandler.GameRoom.PlayerWhite))
+        {
+            gameRoomHandler.GameRoom.PlayerBlack = dto.Username;
+        }
+
+        if (gameRoomHandler.GameRoom.PlayerWhite != null && gameRoomHandler.GameRoom.PlayerWhite.Equals(dto.Username) &&
+            gameRoomHandler.PlayerWhiteJoined == false)
+        {
+            gameRoomHandler.NumPlayersJoined++;
+            gameRoomHandler.PlayerWhiteJoined = true;
+        }
+
+        if (gameRoomHandler.GameRoom.PlayerBlack != null && gameRoomHandler.GameRoom.PlayerBlack.Equals(dto.Username) &&
+            gameRoomHandler.PlayerBlackJoined == false)
+        {
+            gameRoomHandler.NumPlayersJoined++;
+            gameRoomHandler.PlayerBlackJoined = true;
+        }
+
+        if (gameRoomHandler.NumPlayersJoined != 2) return AckTypes.Success;
+
+        gameRoomHandler.IsJoinable = false;
+        gameRoomHandler.PlayerJoined();
+
+        return AckTypes.Success;
     }
 
     public AckTypes SpectateGame(RequestJoinGameDto dto)
@@ -443,19 +477,28 @@ public class GameLogic : IGameLogic
 
     public IEnumerable<GameRoomDto> GetGameRooms(GameRoomSearchParameters parameters)
     {
-        var rooms = GetAll();
+        var roomsHandlers = GetAll();
 
         if (parameters.Spectateable)
         {
-            rooms = rooms.Where(room => room.IsSpectateable);
+            roomsHandlers = roomsHandlers.Where(roomHandler =>
+                roomHandler.IsSpectateable &&
+                (roomHandler.GameRoom.PlayerWhite != null &&
+                 !roomHandler.GameRoom.PlayerWhite.Equals(parameters.RequesterName)) &&
+                (roomHandler.GameRoom.PlayerBlack != null &&
+                 !roomHandler.GameRoom.PlayerBlack.Equals(parameters.RequesterName)));
         }
-
-        if (parameters.Joinable)
+        else if (parameters.Joinable)
         {
-            rooms = rooms.Where(room => room.IsJoinable && room.CanUsernameJoin(parameters.RequesterName));
+            roomsHandlers = roomsHandlers.Where(roomHandler =>
+                (roomHandler.IsJoinable && roomHandler.CanUsernameJoin(parameters.RequesterName)) ||
+                (roomHandler.GameRoom.PlayerWhite != null &&
+                 roomHandler.GameRoom.PlayerWhite.Equals(parameters.RequesterName) ||
+                 (roomHandler.GameRoom.PlayerBlack != null &&
+                  roomHandler.GameRoom.PlayerBlack.Equals(parameters.RequesterName))));
         }
 
-        return rooms.Select(room => room.GetGameRoomData());
+        return roomsHandlers.Select(roomHandler => roomHandler.GetGameRoomData());
     }
 
     public CurrentGameStateDto GetCurrentGameState(ulong gameRoomId)
