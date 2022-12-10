@@ -17,7 +17,7 @@ public class GameRoomHandler
     private readonly IGame _game;
     private readonly IChessTimer _chessTimer;
     private bool _whitePlaying;
-    private bool _firstMovePlayed;
+    public bool FirstMovePlayed { get; private set; }
     public bool GameIsActive { get; set; } = false;
 
     // Offer draw related fields
@@ -160,10 +160,10 @@ public class GameRoomHandler
         if (!IsValidMove(move))
             return AckTypes.InvalidMove;
 
-        if (!_firstMovePlayed)
+        if (!FirstMovePlayed)
         {
             _chessTimer.StartTimers();
-            _firstMovePlayed = true;
+            FirstMovePlayed = true;
         }
 
 
