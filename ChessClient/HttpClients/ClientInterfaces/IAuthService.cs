@@ -1,5 +1,4 @@
 ﻿using System.Security.Claims;
-using Domain.Models;
 
 namespace HttpClients.ClientInterfaces;
 

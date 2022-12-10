@@ -1,8 +1,6 @@
 using Domain.DTOs;
 using Domain.DTOs.GameEvents;
-using Domain.DTOs.Chat;
 using Domain.Enums;
-using HttpClients.Implementations;
 using Rudzoft.ChessLib.Types;
 
 namespace HttpClients.ClientInterfaces;
@@ -31,7 +29,6 @@ public interface IGameService
     event Action<GameEventDto>? JoinRematchedGame;
     event Action<GameEventDto>? GameAborted;
     event Action? GameFirstJoined;
-
 
     Task<ResponseGameDto> CreateGameAsync(RequestGameDto dto);
     Task JoinGameAsync(RequestJoinGameDto dto);

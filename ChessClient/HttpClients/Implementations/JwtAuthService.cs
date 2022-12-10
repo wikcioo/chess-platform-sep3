@@ -63,7 +63,7 @@ public class JwtAuthService : IAuthService
         ClaimsPrincipal principal = new(identity);
         return principal;
     }
-    
+
     public async Task LoginAsync(string email, string password)
     {
         UserLoginDto userLoginDto = new()
@@ -84,7 +84,7 @@ public class JwtAuthService : IAuthService
 
         var responseContent = await response.Content.ReadAsStringAsync();
 
-        
+
         if (!response.IsSuccessStatusCode)
         {
             var values = JsonSerializer.Deserialize<Dictionary<string, Object>>(responseContent);
@@ -97,7 +97,6 @@ public class JwtAuthService : IAuthService
         var principal = CreateClaimsPrincipal();
 
         OnAuthStateChanged.Invoke(principal);
-        
     }
 
     public Task LogoutAsync()
@@ -112,5 +111,4 @@ public class JwtAuthService : IAuthService
     {
         return Jwt;
     }
-
 }
