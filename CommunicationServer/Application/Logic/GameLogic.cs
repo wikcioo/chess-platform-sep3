@@ -452,12 +452,16 @@ public class GameLogic : IGameLogic
 
         if (parameters.Spectateable)
         {
-            rooms = rooms.Where(room => room.IsSpectateable);
+            rooms = rooms.Where(room => room.IsSpectateable &&
+                               (room.PlayerWhite != null && !room.PlayerWhite.Equals(parameters.RequesterName)) &&
+                               (room.PlayerBlack != null && !room.PlayerBlack.Equals(parameters.RequesterName)));
         }
-
-        if (parameters.Joinable)
+        else if (parameters.Joinable)
         {
-            rooms = rooms.Where(room => room.IsJoinable && room.CanUsernameJoin(parameters.RequesterName));
+            rooms = rooms.Where(room =>
+                ((room.IsJoinable && room.CanUsernameJoin(parameters.RequesterName)) ||
+                 (room.PlayerWhite != null && room.PlayerWhite.Equals(parameters.RequesterName) ||
+                  (room.PlayerBlack != null && room.PlayerBlack.Equals(parameters.RequesterName)))));
         }
 
         return rooms.Select(room => room.GetGameRoomData());
