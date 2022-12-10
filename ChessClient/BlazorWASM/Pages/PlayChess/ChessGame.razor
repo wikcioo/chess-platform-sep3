@@ -158,7 +158,9 @@
         SetFenPosition(dto.FenString);
         _whiteSeconds = dto.WhiteTimeLeftMs / 1000;
         _blackSeconds = dto.BlackTimeLeftMs / 1000;
-
+        GameService.IsRematchOfferRequestPending = false;
+        GameService.IsRematchOfferResponsePending = false;
+        
         if (_currentUser != dto.UsernameWhite && _currentUser != dto.UsernameBlack)
         {
             GameService.Spectating = true;
