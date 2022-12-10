@@ -11,6 +11,7 @@ public interface IGameService
 {
     event Action<CurrentGameStateDto>? StateReceived;
     bool OnWhiteSide { get; set; }
+    bool Spectating { get; set; }
     ulong? GameRoomId { get; set; }
     bool IsDrawOfferPending { get; set; }
     bool IsRematchOfferRequestPending { get; set; }
@@ -28,6 +29,7 @@ public interface IGameService
     event Action<GameEventDto>? RematchOfferAccepted;
     event Action<GameEventDto>? EndOfTheGameReached;
     event Action<GameEventDto>? JoinRematchedGame;
+    event Action<GameEventDto>? GameAborted;
     event Action? GameFirstJoined;
 
 

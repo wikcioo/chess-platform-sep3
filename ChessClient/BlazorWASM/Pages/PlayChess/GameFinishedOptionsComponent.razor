@@ -3,7 +3,6 @@
 @using BlazorWASM.Pages.StartGame
 @using Domain.DTOs
 @using Domain.DTOs.GameEvents
-@using Domain.Enums
 @inject NavigationManager NavMgr
 @inject IDialogService DialogService
 @inject IGameService GameService
@@ -21,8 +20,8 @@
             else if (GameService.IsRematchOfferResponsePending)
             {
                 <MudText Class="flex-1" Typo="Typo.subtitle1" Align="Align.Center">You have a rematch offer!</MudText>
-                <MudButton @onclick="() => SendRematchResponse(true)" Variant="Variant.Filled" Color="Color.Tertiary">Accept</MudButton>
-                <MudButton @onclick="() => SendRematchResponse(false)" Variant="Variant.Filled" Color="Color.Dark">Decline</MudButton>
+                <MudButton @onclick="() => RespondToRematchOffer(true)" Variant="Variant.Filled" Color="Color.Tertiary">Accept</MudButton>
+                <MudButton @onclick="() => RespondToRematchOffer(false)" Variant="Variant.Filled" Color="Color.Dark">Decline</MudButton>
             }
             else
             {
@@ -33,7 +32,7 @@
                 }
                 else
                 {
-                    <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="OfferRematch">Send rematch offer</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="SendRematchOffer">Send rematch offer</MudButton>
                 }
                 <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="CreateNewGame">Create a new game</MudButton>
                 <MudButton Variant="Variant.Filled" Color="Color.Default" @onclick="RedirectHome">Home</MudButton>
@@ -43,6 +42,12 @@
 </MudDialog>
 
 @code {
+    
+    [Parameter]
+    public Action? OfferRematch { get; set; }
+    
+    [Parameter]
+    public Action<bool>? SendRematchResponse { get; set; }
 
     protected override void OnInitialized()
     {
@@ -63,6 +68,16 @@
         GameService.RematchOfferAccepted -= OnRematchOfferAccepted;
     }
 
+    private void SendRematchOffer()
+    {
+        OfferRematch?.Invoke();
+    }
+
+    private void RespondToRematchOffer(bool accepted)
+    {
+        SendRematchResponse?.Invoke(accepted);
+    }
+
     private async void PlayAgain()
     {
         if (GameService.RequestedGameDto == null) return;
@@ -73,61 +88,6 @@
         });
         await GameService.GetCurrentGameStateAsync();
         NavMgr.NavigateTo("/ChessGame");
-    }
-
-    private async void OfferRematch()
-    {
-        try
-        {
-            var ack = await GameService.OfferRematchAsync();
-
-            switch (ack)
-            {
-                case AckTypes.Success:
-                    Notify("Rematch Offer Successful!", Severity.Info);
-                    return;
-                case AckTypes.RematchOfferDeclined:
-                    Notify("Rematch Offer Declined!", Severity.Info);
-                    GameService.IsRematchOfferRequestPending = false;
-                    StateHasChanged();
-                    break;
-            }
-        }
-        catch (InvalidOperationException e)
-        {
-            Notify(e.Message, Severity.Warning);
-            return;
-        }
-        catch (HttpRequestException e)
-        {
-            Notify(e.Message, Severity.Error);
-        }
-    }
-
-    private async void SendRematchResponse(bool accepted)
-    {
-        try
-        {
-            var ack = await GameService.SendRematchResponseAsync(accepted);
-            GameService.IsRematchOfferResponsePending = false;
-
-            if (ack == AckTypes.Success)
-            {
-                StateHasChanged();
-            }
-            else
-            {
-                Notify($"Failed to send rematch response! AckType = {ack}", Severity.Error);
-            }
-        }
-        catch (InvalidOperationException e)
-        {
-            Notify(e.Message, Severity.Warning);
-        }
-        catch (HttpRequestException e)
-        {
-            Notify(e.Message, Severity.Error);
-        }
     }
 
     private void CreateNewGame()
