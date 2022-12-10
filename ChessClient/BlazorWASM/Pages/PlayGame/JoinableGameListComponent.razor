@@ -19,7 +19,7 @@
         <MudTd DataLabel="Player Black">@context.UsernameBlack</MudTd>
         <MudTd DataLabel="Time Control">@(context.DurationSeconds + "+" + context.IncrementSeconds)</MudTd>
         <MudTd DataLabel="Join">
-            <MudButton @onclick="() => JoinGame(context.GameRoom)">Join</MudButton>
+            <MudButton @onclick="() => JoinGameAsync(context.GameRoom)">Join</MudButton>
         </MudTd>
     </RowTemplate>
     <PagerContent>
@@ -30,11 +30,11 @@
 @code {
     [Parameter]
     public IList<GameRoomDto>? JoinableGames { get; set; }
-    
+
     [CascadingParameter]
     public Task<AuthenticationState> AuthState { get; set; } = null!;
 
-    private async void JoinGame(ulong i)
+    private async void JoinGameAsync(ulong i)
     {
         await GameService.JoinGameAsync(new RequestJoinGameDto
         {
@@ -47,13 +47,12 @@
     {
         var authState = AuthState.Result;
         var username = authState.User.Identity!.Name;
-        
+
         if (arg1.UsernameWhite.Equals(username) || arg1.UsernameBlack.Equals(username))
         {
             return "background-color: #d8bfa6";
         }
-        
+
         return string.Empty;
     }
-
 }

@@ -10,9 +10,6 @@
 </div>
 
 @code {
-
-    private MarkupString _pieceRender;
-
     [Parameter]
     public Squares SquareId { get; set; }
 
@@ -24,8 +21,6 @@
 
     [Parameter]
     public bool HasMoveTo { get; set; }
-
-    private Piece? _piece = Pieces.NoPiece;
 
     [Parameter]
     public Piece? Piece
@@ -45,6 +40,9 @@
     [Parameter]
     public bool IsWhiteSide { get; set; }
 
+    private MarkupString _pieceRender;
+    private Piece? _piece = Pieces.NoPiece;
+
     private void OnClicked()
     {
         OnClick.InvokeAsync(new ChessClickDto(Piece?.Value, SquareId, HasMoveTo));
@@ -54,13 +52,13 @@
     {
         if (!piece.HasValue || piece.Value.Value == Pieces.NoPiece)
         {
-            _pieceRender = new MarkupString(String.Empty);
+            _pieceRender = new MarkupString(string.Empty);
             return;
         }
 
         var pieceId = piece.Value.Value;
-        
-        string result = "<img style=\"width: 100%\" src=\"icons\\Chess";
+        var result = "<img style=\"width: 100%\" src=\"icons\\Chess";
+
         //TODO: Add contribution to the creator
         result += pieceId switch
         {
@@ -78,7 +76,8 @@
             Pieces.BlackKing => "_kdt45.png\"/>",
             Pieces.PieceNb => "",
             _ => throw new ArgumentOutOfRangeException()
-            };
+        };
+        
         _pieceRender = new MarkupString(result);
     }
 
@@ -105,5 +104,4 @@
         }
         return classes;
     }
-
 }

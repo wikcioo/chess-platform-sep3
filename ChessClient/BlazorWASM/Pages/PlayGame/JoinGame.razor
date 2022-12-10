@@ -6,17 +6,18 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 @inject IGameService GameService
+
 <MudContainer MaxWidth="MaxWidth.Large">
     <AuthorizeView>
         <Authorized>
             <div class="mt-10 d-flex flex-row gap-10">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="DisplayCreateGameDialog">Create a Game</MudButton>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinRandomGame">Play Random</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="JoinRandomGameAsync">Play Random</MudButton>
             </div>
             <MudSpacer/>
             <div class="d-flex justify-end">
                 <MudIconButton Icon="@Icons.Filled.Refresh"
-                               @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshJoinableGames(); })"/>
+                               @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshJoinableGamesAsync(); })"/>
             </div>
             <JoinableGameListComponent JoinableGames="@_joinableGames"/>
         </Authorized>
@@ -27,20 +28,20 @@
 </MudContainer>
 
 @code {
-    private IList<GameRoomDto>? _joinableGames = new List<GameRoomDto>();
-
     [CascadingParameter]
     public Task<AuthenticationState> AuthState { get; set; } = null!;
+    
+    private IList<GameRoomDto>? _joinableGames = new List<GameRoomDto>();
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthState;
         var user = authState.User;
         if (user.Identity == null) return;
-        await RefreshJoinableGames();
+        await RefreshJoinableGamesAsync();
     }
 
-    private async Task RefreshJoinableGames()
+    private async Task RefreshJoinableGamesAsync()
     {
         try
         {
@@ -70,9 +71,9 @@
         DialogService.Show<StartGameComponent>("", options);
     }
 
-    private async void JoinRandomGame()
+    private async void JoinRandomGameAsync()
     {
-        await RefreshJoinableGames();
+        await RefreshJoinableGamesAsync();
 
         if (_joinableGames?.Count > 0)
         {
@@ -104,5 +105,4 @@
             });
         }
     }
-
 }

@@ -1,6 +1,7 @@
 @using Microsoft.AspNetCore.Components
 @using Domain.Enums
 @using Domain.Models
+
 <MudSelect @bind-Value="@SelectedLevel" T="string" Label="Select a level:" Variant="Variant.Filled">
     <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi1.Value)">Level 1</MudSelectItem>
     <MudSelectItem T="string" Value="@(StockfishLevels.StockfishAi2.Value)">Level 2</MudSelectItem>
@@ -13,9 +14,6 @@
 </MudSelect>
 
 @code {
-
-    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
-
     [Parameter]
     public string SelectedLevel
     {
@@ -31,4 +29,5 @@
     [Parameter]
     public EventCallback<string> SelectedLevelChanged { get; set; }
 
+    private string _selectedLevel = StockfishLevels.StockfishAi1.Value;
 }

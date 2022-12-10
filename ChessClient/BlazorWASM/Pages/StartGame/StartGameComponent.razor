@@ -27,7 +27,7 @@
             <TimeControlComponent @bind-TimeControlBaseSeconds="_timeControlBaseSeconds" @bind-TimeControlBaseMinutes="_timeControlBaseMinutes" @bind-TimeControlIncrement="_timeControlIncrement"/>
             <IsPublicGameComponent @bind-IsPublic="_isGamePublic"/>
         </MudElement>
-        <CreateGameButtonComponent OnCreateGame="CreateGame" IsCreatingGame="_isCreatingGame"/>
+        <CreateGameButtonComponent OnCreateGame="CreateGameAsync" IsCreatingGame="_isCreatingGame"/>
     </MudStack>
 </MudContainer>
 
@@ -54,7 +54,7 @@
         StateHasChanged();
     }
 
-    private async Task CreateGame()
+    private async Task CreateGameAsync()
     {
         _isCreatingGame = true;
         var opponentName = "";
@@ -124,5 +124,4 @@
     {
         Snackbar.Add(message, severity);
     }
-
 }

@@ -30,7 +30,7 @@
                                     Seconds="@(_isWhiteSide == GameSides.White ? _blackSeconds : _whiteSeconds)"/>
                 </MudItem>
                 <MudItem xs="12" Class="d-flex justify-center align-center">
-                    <ChessBoardComponent OnMoveMade="MakeMove" Position="@_position" IsWhiteSide="@(_isWhiteSide == GameSides.White)"/>
+                    <ChessBoardComponent OnMoveMade="MakeMoveAsync" Position="@_position" IsWhiteSide="@(_isWhiteSide == GameSides.White)"/>
                 </MudItem>
                 <MudItem xs="8">
                     <NicknameComponent Nickname="@_protagonistName"/>
@@ -45,7 +45,7 @@
             <MudGrid>
                 @if (!GameService.Spectating)
                 {
-                    <DrawResignRematchComponent IsDrawOfferPending="GameService.IsDrawOfferPending" DisplayRematchBtn="_rematchBtnVisible" OnRematch="OfferRematch" OnResign="Resign" OnOfferDraw="OfferDraw" OnSendDrawResponse="SendDrawResponse"/>
+                    <DrawResignRematchComponent IsDrawOfferPending="GameService.IsDrawOfferPending" DisplayRematchBtn="_rematchBtnVisible" OnRematch="OfferRematchAsync" OnResign="ResignAsync" OnOfferDraw="OfferDrawAsync" OnSendDrawResponse="SendDrawResponseAsync"/>
                 }
                 else
                 {
@@ -53,7 +53,7 @@
                         <MudPaper Class="my-2 pa-2 mud-theme-secondary">
                             <MudText Align="Align.Center" Typo="Typo.h5">Spectating</MudText>
                         </MudPaper>
-                    </MudItem> 
+                    </MudItem>
                 }
                 <MudItem xs="12">
                     <ChatWindow GameRoom="@GameService.GameRoomId"></ChatWindow>
@@ -115,7 +115,7 @@
         GameService.EndOfTheGameReached -= OnEndOfTheGameReached;
         GameService.GameFirstJoined -= OnGameFirstJoined;
         GameService.StateReceived -= OnGameStateReceived;
-        GameService.JoinRematchedGame -= OnJoinRematchGame;
+        GameService.JoinRematchedGame -= OnJoinRematchGameAsync;
         GameService.RematchOffered -= OnRematchOffered;
         GameService.GameAborted -= OnGameAborted;
         GameService.LeaveRoomAsync();
@@ -150,7 +150,7 @@
         GameService.EndOfTheGameReached += OnEndOfTheGameReached;
         GameService.GameFirstJoined += OnGameFirstJoined;
         GameService.StateReceived += OnGameStateReceived;
-        GameService.JoinRematchedGame += OnJoinRematchGame;
+        GameService.JoinRematchedGame += OnJoinRematchGameAsync;
         GameService.RematchOffered += OnRematchOffered;
         GameService.GameAborted += OnGameAborted;
     }
@@ -162,7 +162,7 @@
         _blackSeconds = dto.BlackTimeLeftMs / 1000;
         GameService.IsRematchOfferRequestPending = false;
         GameService.IsRematchOfferResponsePending = false;
-        
+
         if (_currentUser != dto.UsernameWhite && _currentUser != dto.UsernameBlack)
         {
             GameService.Spectating = true;
@@ -189,11 +189,11 @@
         if (GameService.Spectating) return;
         if (_isGameFinishedOptionsDialogRef == null)
         {
-            DisplayGameFinishedOptions(_isGameFinishedReason);
+            DisplayGameFinishedOptionsAsync(_isGameFinishedReason);
         }
     }
 
-    private async void OnJoinRematchGame(GameEventDto dto)
+    private async void OnJoinRematchGameAsync(GameEventDto dto)
     {
         DisplayRematchButton = false;
         _isGameFinishedOptionsDialogRef?.Close();
@@ -205,14 +205,14 @@
         DisplayDefaultDialog("The game was aborted!");
     }
 
-    private async void DisplayGameFinishedOptions(string title)
+    private async void DisplayGameFinishedOptionsAsync(string title)
     {
         if (GameService.Spectating)
         {
             DisplayDefaultDialog("The game finished!");
             return;
         }
-        
+
         var options = new DialogOptions
         {
             MaxWidth = MaxWidth.Medium,
@@ -221,13 +221,13 @@
 
         var parameters = new DialogParameters
         {
-            { "OfferRematch", new Action(OfferRematch) },
-            { "SendRematchResponse", new Action<bool>(SendRematchResponse) }
+            { "OfferRematch", new Action(OfferRematchAsync) },
+            { "SendRematchResponse", new Action<bool>(SendRematchResponseAsync) }
         };
 
         _isGameFinishedReason = title;
         _isGameFinishedOptionsDialogRef = DialogService.Show<GameFinishedOptionsComponent>(title, parameters, options);
-        
+
         var result = await _isGameFinishedOptionsDialogRef.Result;
         if (result.Cancelled)
         {
@@ -238,34 +238,34 @@
         }
     }
 
-    private async Task MakeMove(Move move)
+    private async Task MakeMoveAsync(Move move)
     {
         try
         {
             _whiteTimerActive = !_whiteTimerActive;
             var ack = await GameService.MakeMoveAsync(move);
             if (ack != AckTypes.Success)
-                RevertToLastFen();
+                RevertToLastFenAsync();
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            RevertToLastFen();
+            RevertToLastFenAsync();
         }
         catch (HttpRequestException e)
         {
             Notify(e.Message, Severity.Error);
-            RevertToLastFen();
+            RevertToLastFenAsync();
         }
     }
 
-    private async void RevertToLastFen()
+    private async void RevertToLastFenAsync()
     {
         SetFenPosition(await GameService.GetLastFenAsync());
         StateHasChanged();
     }
 
-    private async void Resign()
+    private async void ResignAsync()
     {
         try
         {
@@ -283,7 +283,7 @@
         }
     }
 
-    private async void OfferDraw()
+    private async void OfferDrawAsync()
     {
         try
         {
@@ -310,13 +310,13 @@
         }
     }
 
-    private async void SendDrawResponse(bool accepted)
+    private async void SendDrawResponseAsync(bool accepted)
     {
         try
         {
             var ack = await GameService.SendDrawResponseAsync(accepted);
             GameService.IsDrawOfferPending = false;
-            
+
             if (ack == AckTypes.Success)
             {
                 StateHasChanged();
@@ -336,7 +336,7 @@
         }
     }
 
-    private async void OfferRematch()
+    private async void OfferRematchAsync()
     {
         try
         {
@@ -368,7 +368,7 @@
         }
     }
 
-    private async void SendRematchResponse(bool accepted)
+    private async void SendRematchResponseAsync(bool accepted)
     {
         try
         {
@@ -428,7 +428,7 @@
                 break;
         }
 
-        DisplayGameFinishedOptions(endOfGameReachedReason);
+        DisplayGameFinishedOptionsAsync(endOfGameReachedReason);
     }
 
     private void OnTimeUpdated(GameEventDto dto)
@@ -437,11 +437,11 @@
         {
             if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
             {
-                DisplayGameFinishedOptions("You ran out of time! You lose!");
+                DisplayGameFinishedOptionsAsync("You ran out of time! You lose!");
             }
             else
             {
-                DisplayGameFinishedOptions("Your opponent ran out of time! You win!");
+                DisplayGameFinishedOptionsAsync("Your opponent ran out of time! You win!");
             }
         }
         else
@@ -469,10 +469,9 @@
 
     private void SetFenPosition(string fen)
     {
-        FenData fenData = new FenData(fen);
-        State state = new State();
+        var fenData = new FenData(fen);
+        var state = new State();
         _position.Set(in fenData, ChessMode.Normal, state);
-
         StateHasChanged();
     }
 
@@ -482,11 +481,11 @@
         _gameFinished = true;
         if ((dto.IsWhite && GameService.OnWhiteSide) || (!dto.IsWhite && !GameService.OnWhiteSide))
         {
-            DisplayGameFinishedOptions("You resigned the game!");
+            DisplayGameFinishedOptionsAsync("You resigned the game!");
         }
         else
         {
-            DisplayGameFinishedOptions("Your opponent resigned the game!");
+            DisplayGameFinishedOptionsAsync("Your opponent resigned the game!");
         }
     }
 
@@ -514,7 +513,7 @@
     {
         PlaySound("notify");
         _gameFinished = true;
-        DisplayGameFinishedOptions("The game finished in a draw!");
+        DisplayGameFinishedOptionsAsync("The game finished in a draw!");
         StateHasChanged();
     }
 
@@ -533,5 +532,4 @@
         var options = new DialogOptions { CloseOnEscapeKey = true };
         DialogService.Show<InformDialogComponent>(message, options);
     }
-
 }

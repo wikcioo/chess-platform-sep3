@@ -1,6 +1,5 @@
 @page "/SpectateGame"
 @using HttpClients.ClientInterfaces
-@using Domain.DTOs.Chat
 @using Domain.DTOs
 @inject IGameService GameService
 @inject ISnackbar Snackbar
@@ -8,7 +7,7 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-10">
     <div class="d-flex justify-end">
         <MudIconButton Icon="@Icons.Filled.Refresh"
-                       @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshSpectateableGames(); })"/>
+                       @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshSpectateableGamesAsync(); })"/>
     </div>
     <SpectateableGameListComponent SpectateableGames="@_spectateableGames"/>
 </MudContainer>
@@ -18,10 +17,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await RefreshSpectateableGames();
+        await RefreshSpectateableGamesAsync();
     }
 
-    private async Task RefreshSpectateableGames()
+    private async Task RefreshSpectateableGamesAsync()
     {
         try
         {
@@ -35,5 +34,4 @@
             Snackbar.Add(e.Message, Severity.Error);
         }
     }
-
 }

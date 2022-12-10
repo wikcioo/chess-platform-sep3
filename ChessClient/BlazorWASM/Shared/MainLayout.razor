@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+
 <MudThemeProvider Theme="CustomTheme" IsDarkMode="false"/>
 <MudAppBar Elevation="_themeManager.AppBarElevation"></MudAppBar>
 <MudDrawer @bind-Open="_themeManagerOpen" ClipMode="_themeManager.DrawerClipMode" Elevation="_themeManager.DrawerElevation"></MudDrawer>
@@ -7,7 +8,9 @@
     <MudThemeManagerButton OnClick="@((e) => OpenThemeManager(true))"/>
     <MudThemeManager Open="_themeManagerOpen" OpenChanged="OpenThemeManager" Theme="_themeManager" ThemeChanged="UpdateTheme"/>
     <AppBar/>
-    <div class="bg" style=""><img src="backgrounds/bg-outlined.svg"/></div>
+    <div class="bg" style="">
+        <img src="backgrounds/bg-outlined.svg"/>
+    </div>
     <MudMainContent>
         @Body
     </MudMainContent>
@@ -17,11 +20,9 @@
 <MudSnackbarProvider/>
 <UserNotificationComponent/>
 
-
 @code {
-
     private ThemeManagerTheme _themeManager = new ThemeManagerTheme();
-    public bool _themeManagerOpen = false;
+    private bool _themeManagerOpen = false;
 
     void OpenThemeManager(bool value)
     {
@@ -41,24 +42,24 @@
 
     MudTheme CustomTheme = new MudTheme()
     {
-        // Palette = new Palette()
-        // {
-        //     Primary = Colors.LightGreen.Darken3,
-        //     Secondary = Colors.Teal.Darken2,
-        //     Tertiary = Colors.Grey.Darken4,
-        //     AppbarBackground = Colors.BlueGrey.Darken4,
-        //     Background = Colors.Grey.Darken4,
-        //     TextPrimary = Colors.Grey.Lighten4,
-        //     BackgroundGrey = Colors.Grey.Default,
-        //     Surface = Colors.Grey.Darken3,
-        //     TextSecondary = Colors.Grey.Lighten3,
-        //     DrawerText = Colors.Grey.Lighten3,
-        //     AppbarText = Colors.Grey.Lighten3,
-        //     LinesDefault = Colors.Grey.Lighten3,
-        //     LinesInputs = Colors.Grey.Lighten5,
-        //     TextDisabled = Colors.Grey.Lighten5,
-        //     PrimaryContrastText = Colors.Grey.Lighten5,
-        // },
+    // Palette = new Palette()
+    // {
+    //     Primary = Colors.LightGreen.Darken3,
+    //     Secondary = Colors.Teal.Darken2,
+    //     Tertiary = Colors.Grey.Darken4,
+    //     AppbarBackground = Colors.BlueGrey.Darken4,
+    //     Background = Colors.Grey.Darken4,
+    //     TextPrimary = Colors.Grey.Lighten4,
+    //     BackgroundGrey = Colors.Grey.Default,
+    //     Surface = Colors.Grey.Darken3,
+    //     TextSecondary = Colors.Grey.Lighten3,
+    //     DrawerText = Colors.Grey.Lighten3,
+    //     AppbarText = Colors.Grey.Lighten3,
+    //     LinesDefault = Colors.Grey.Lighten3,
+    //     LinesInputs = Colors.Grey.Lighten5,
+    //     TextDisabled = Colors.Grey.Lighten5,
+    //     PrimaryContrastText = Colors.Grey.Lighten5,
+    // },
         
         Palette = new Palette()
         {
@@ -66,5 +67,4 @@
             Primary = "#0E5E6F"
         },
     };
-
 }

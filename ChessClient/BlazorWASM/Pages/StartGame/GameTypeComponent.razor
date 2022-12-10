@@ -1,21 +1,19 @@
 @using System.Reflection.Metadata.Ecma335
-<MudTabs @bind-ActivePanelIndex="TabIndex" Elevation="4" Rounded="true" Centered="true"  ApplyEffectsToContainer="true" >
+
+<MudTabs @bind-ActivePanelIndex="TabIndex" Elevation="4" Rounded="true" Centered="true" ApplyEffectsToContainer="true">
     <MudTabPanel Text="Computer" ID='"tab_one"'/>
     <MudTabPanel Text="Friend" ID='"tab_two"'/>
     <MudTabPanel Text="Random" ID='"tab_three"'/>
 </MudTabs>
 
 @code {
-    
-    private int _tabIndex= 0;
-    
     [Parameter]
     public int TabIndex
     {
         get => _tabIndex;
         set
         {
-            if (_tabIndex == value ) return;
+            if (_tabIndex == value) return;
             _tabIndex = value;
             TabIndexChanged.InvokeAsync(value);
         }
@@ -24,4 +22,5 @@
     [Parameter]
     public EventCallback<int> TabIndexChanged { get; set; }
 
+    private int _tabIndex = 0;
 }
