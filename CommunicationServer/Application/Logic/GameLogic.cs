@@ -43,7 +43,7 @@ public class GameLogic : IGameLogic
     private void FireGameRoomEvent(GameRoomEventDto dto)
     {
         if (dto.GameEventDto?.Event == GameStreamEvents.ReachedEndOfTheGame ||
-            dto.GameEventDto is { Event: GameStreamEvents.TimeUpdate, GameEndType: (int)GameEndTypes.TimeIsUp })
+            dto.GameEventDto is {Event: GameStreamEvents.TimeUpdate, GameEndType: (int)GameEndTypes.TimeIsUp})
         {
             _tempGameRoomsData.Add(dto.GameRoomId, GetGameRoom(dto.GameRoomId, _gameRooms));
             _gameRooms.Remove(dto.GameRoomId);
@@ -248,36 +248,45 @@ public class GameLogic : IGameLogic
         var gameRoom = GetGameRoom(dto.GameRoom, _gameRooms);
 
         // Allow rejoining
-        if (!string.IsNullOrEmpty(gameRoom.PlayerWhite) && gameRoom.PlayerWhite.Equals(dto.Username) ||
-            !string.IsNullOrEmpty(gameRoom.PlayerBlack) && gameRoom.PlayerBlack.Equals(dto.Username))
+        if (gameRoom.PlayerWhite != null && gameRoom.PlayerWhiteJoined && gameRoom.PlayerWhite.Equals(dto.Username) ||
+            gameRoom.PlayerBlack != null && gameRoom.PlayerBlackJoined && gameRoom.PlayerBlack.Equals(dto.Username))
         {
-            if (gameRoom.NumPlayersJoined != 0)
-            {
-                return AckTypes.Success;
-            }
-        }
-
-        if (gameRoom.IsJoinable && gameRoom.CanUsernameJoin(dto.Username))
-        {
-            if (string.IsNullOrEmpty(gameRoom.PlayerWhite) && !dto.Username.Equals(gameRoom.PlayerBlack))
-            {
-                gameRoom.PlayerWhite = dto.Username;
-            }
-            else if (string.IsNullOrEmpty(gameRoom.PlayerBlack) && !dto.Username.Equals(gameRoom.PlayerWhite))
-            {
-                gameRoom.PlayerBlack = dto.Username;
-            }
-
-            if (++gameRoom.NumPlayersJoined == 2)
-            {
-                gameRoom.IsJoinable = false;
-                gameRoom.PlayerJoined();
-            }
-
             return AckTypes.Success;
         }
 
-        throw new ArgumentException("Cannot join the game!");
+        if (!gameRoom.IsJoinable || !gameRoom.CanUsernameJoin(dto.Username))
+            throw new ArgumentException("Cannot join the game!");
+
+
+        if (string.IsNullOrEmpty(gameRoom.PlayerWhite) && !dto.Username.Equals(gameRoom.PlayerBlack))
+        {
+            gameRoom.PlayerWhite = dto.Username;
+        }
+        else if (string.IsNullOrEmpty(gameRoom.PlayerBlack) && !dto.Username.Equals(gameRoom.PlayerWhite))
+        {
+            gameRoom.PlayerBlack = dto.Username;
+        }
+
+        if (gameRoom.PlayerWhite != null && gameRoom.PlayerWhite.Equals(dto.Username) &&
+            gameRoom.PlayerWhiteJoined == false)
+        {
+            gameRoom.NumPlayersJoined++;
+            gameRoom.PlayerWhiteJoined = true;
+        }
+
+        if (gameRoom.PlayerBlack != null && gameRoom.PlayerBlack.Equals(dto.Username) &&
+            gameRoom.PlayerBlackJoined == false)
+        {
+            gameRoom.NumPlayersJoined++;
+            gameRoom.PlayerBlackJoined = true;
+        }
+
+        if (gameRoom.NumPlayersJoined != 2) return AckTypes.Success;
+
+        gameRoom.IsJoinable = false;
+        gameRoom.PlayerJoined();
+
+        return AckTypes.Success;
     }
 
     public AckTypes SpectateGame(RequestJoinGameDto dto)
@@ -458,8 +467,10 @@ public class GameLogic : IGameLogic
         if (parameters.Spectateable)
         {
             rooms = rooms.Where(room => room.IsSpectateable &&
-                               (room.PlayerWhite != null && !room.PlayerWhite.Equals(parameters.RequesterName)) &&
-                               (room.PlayerBlack != null && !room.PlayerBlack.Equals(parameters.RequesterName)));
+                                        (room.PlayerWhite != null &&
+                                         !room.PlayerWhite.Equals(parameters.RequesterName)) &&
+                                        (room.PlayerBlack != null &&
+                                         !room.PlayerBlack.Equals(parameters.RequesterName)));
         }
         else if (parameters.Joinable)
         {

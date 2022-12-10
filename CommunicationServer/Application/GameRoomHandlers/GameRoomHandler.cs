@@ -59,7 +59,6 @@ public class GameRoomHandler
     public GameOutcome GameOutcome;
 
 
-
     public GameSides GameSide => _gameRoom.GameSide;
 
     private OpponentTypes GameType => _gameRoom.GameType;
@@ -73,6 +72,9 @@ public class GameRoomHandler
     public string? CurrentPlayer => _game.CurrentPlayer() == Player.White ? PlayerWhite : PlayerBlack;
     public uint GetInitialTimeControlSeconds => _gameRoom.TimeControlDurationSeconds;
     public uint GetInitialTimeControlIncrement => _gameRoom.TimeControlIncrementSeconds;
+
+    public bool PlayerWhiteJoined { get; set; }
+    public bool PlayerBlackJoined { get; set; }
 
     public GameRoomHandler(IGame game, GameRoom gameRoom, IChessTimer chessTimer, string? fen = null)
     {
@@ -171,7 +173,7 @@ public class GameRoomHandler
         _chessTimer.UpdateTimers(_whitePlaying);
 
         var gameEndType = IsEndGame();
-       
+
         _whitePlaying = _game.CurrentPlayer().IsWhite;
 
         if (gameEndType != GameEndTypes.None)
@@ -184,6 +186,7 @@ public class GameRoomHandler
             {
                 GameOutcome = PlayerWhite!.Equals(dto.Username) ? GameOutcome.White : GameOutcome.Black;
             }
+
             FinishGame();
             var streamDto = new GameEventDto()
             {
@@ -198,7 +201,7 @@ public class GameRoomHandler
                 GameRoomId = Id,
                 GameEventDto = streamDto
             });
-            
+
             return AckTypes.Success;
         }
 
@@ -253,7 +256,6 @@ public class GameRoomHandler
             TimeControlIncrementSeconds = GetInitialTimeControlIncrement,
             GameOutcome = GameOutcome
         });
-        
     }
 
     public FenData GetFen()
@@ -401,7 +403,7 @@ public class GameRoomHandler
         });
 
         _rematchResponseWithinTimespan = await _rematchCountDownTimer.StartTimer(15);
-        
+
         if (!_rematchResponseWithinTimespan)
         {
             GameEvent?.Invoke(new GameRoomEventDto
