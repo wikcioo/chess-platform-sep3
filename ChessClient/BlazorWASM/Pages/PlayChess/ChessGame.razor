@@ -293,16 +293,18 @@
             {
                 case AckTypes.Success:
                     Notify("Draw Offer Successful!", Severity.Info);
-                    return;
+                    break;
                 case AckTypes.DrawOfferDeclined:
                     Notify("Draw Offer Declined!", Severity.Info);
+                    break;
+                default:
+                    Notify("Failed to offer draw!", Severity.Error);
                     break;
             }
         }
         catch (InvalidOperationException e)
         {
             Notify(e.Message, Severity.Warning);
-            return;
         }
         catch (HttpRequestException e)
         {
@@ -532,4 +534,5 @@
         var options = new DialogOptions { CloseOnEscapeKey = true };
         DialogService.Show<InformDialogComponent>(message, options);
     }
+
 }
