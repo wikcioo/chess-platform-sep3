@@ -5,7 +5,7 @@
 @inject IGameService GameService
 @inject NavigationManager NavMgr
 
-<MudTable Items="@JoinableGames" Hover="true">
+<MudTable Items="@JoinableGames" Hover="true" RowStyleFunc="RowStyleFunc">
     <HeaderContent>
         <MudTh>Game Id</MudTh>
         <MudTh>Player White</MudTh>
@@ -42,4 +42,18 @@
         });
         NavMgr.NavigateTo("/ChessGame");
     }
+
+    private string RowStyleFunc(GameRoomDto arg1, int arg2)
+    {
+        var authState = AuthState.Result;
+        var username = authState.User.Identity!.Name;
+        
+        if (arg1.UsernameWhite.Equals(username) || arg1.UsernameBlack.Equals(username))
+        {
+            return "background-color: #d8bfa6";
+        }
+        
+        return string.Empty;
+    }
+
 }
