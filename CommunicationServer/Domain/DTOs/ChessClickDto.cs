@@ -6,7 +6,7 @@ public class ChessClickDto
 {
     public Pieces? PieceType { get; set; }
     public Squares SquareType { get; set; }
-    
+
     public bool HasMoveTo { get; set; }
 
     public ChessClickDto(Pieces? pieceType, Squares squareType, bool hasMoveTo)
@@ -18,6 +18,7 @@ public class ChessClickDto
 
     public override string ToString()
     {
-        return $"{nameof(PieceType)}: {PieceType}, {nameof(SquareType)}: {SquareType}, {nameof(HasMoveTo)}: {HasMoveTo}";
+        return
+            $"{nameof(PieceType)}: {PieceType}, {nameof(SquareType)}: {SquareType}, {nameof(HasMoveTo)}: {HasMoveTo}";
     }
 }
