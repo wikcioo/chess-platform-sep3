@@ -243,7 +243,6 @@ public class GameLogic : IGameLogic
         return existing != null;
     }
 
-//TODO Allow rejoining, 
     public AckTypes JoinGame(RequestJoinGameDto dto)
     {
         var gameRoom = GetGameRoom(dto.GameRoom, _gameRooms);
@@ -267,6 +266,11 @@ public class GameLogic : IGameLogic
 
             return AckTypes.Success;
         }
+
+        // Allow rejoining
+        if (gameRoom.PlayerWhite != null && gameRoom.PlayerWhite.Equals(dto.Username) ||
+            gameRoom.PlayerBlack != null && gameRoom.PlayerBlack.Equals(dto.Username))
+            return AckTypes.Success;
 
         throw new ArgumentException("Cannot join the game!");
     }
