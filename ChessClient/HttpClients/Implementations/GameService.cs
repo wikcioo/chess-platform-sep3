@@ -35,6 +35,7 @@ public class GameService : IGameService
     public event Action<GameEventDto>? RematchOfferAccepted;
     public event Action<GameEventDto>? EndOfTheGameReached;
     public event Action<GameEventDto>? JoinRematchedGame;
+    public event Action<GameEventDto>? GameAborted;
     public event Action? GameFirstJoined;
 
     public event Action<CurrentGameStateDto>? StateReceived;
@@ -185,8 +186,16 @@ public class GameService : IGameService
             case GameStreamEvents.PlayerJoined:
                 PlayerJoined(response);
                 break;
+            case GameStreamEvents.GameAborted:
+                AbortGame(response);
+                break;
             default: throw new ArgumentOutOfRangeException();
         }
+    }
+
+    private void AbortGame(GameEventDto dto)
+    {
+        GameAborted?.Invoke(dto);
     }
 
     private void TimeUpdate(GameEventDto dto)

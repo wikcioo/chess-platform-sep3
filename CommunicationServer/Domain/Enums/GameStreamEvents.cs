@@ -13,5 +13,6 @@ public enum GameStreamEvents
     RematchOffer = 8,
     RematchOfferTimeout = 9,
     RematchOfferAcceptation = 10,
-    RematchInvitation = 11
+    RematchInvitation = 11,
+    GameAborted = 12
 }

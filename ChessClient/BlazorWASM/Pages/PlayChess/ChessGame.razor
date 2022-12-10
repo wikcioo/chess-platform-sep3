@@ -117,6 +117,7 @@
         GameService.StateReceived -= OnGameStateReceived;
         GameService.JoinRematchedGame -= OnJoinRematchGame;
         GameService.RematchOffered -= OnRematchOffered;
+        GameService.GameAborted -= OnGameAborted;
         GameService.LeaveRoomAsync();
         GameService.GameRoomId = null;
     }
@@ -151,6 +152,7 @@
         GameService.StateReceived += OnGameStateReceived;
         GameService.JoinRematchedGame += OnJoinRematchGame;
         GameService.RematchOffered += OnRematchOffered;
+        GameService.GameAborted += OnGameAborted;
     }
 
     private void OnGameStateReceived(CurrentGameStateDto dto)
@@ -196,6 +198,11 @@
         DisplayRematchButton = false;
         _isGameFinishedOptionsDialogRef?.Close();
         await GameService.GetCurrentGameStateAsync();
+    }
+
+    private void OnGameAborted(GameEventDto dto)
+    {
+        DisplayDefaultDialog("The game was aborted!");
     }
 
     private async void DisplayGameFinishedOptions(string title)

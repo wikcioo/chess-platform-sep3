@@ -24,7 +24,7 @@
             <ChooseSideComponent @bind-IsWhiteSide="_isWhiteSide"/>
         }
         <MudElement Class="d-flex justify-between">
-            <TimeControlComponent @bind-TimeControlBase="_timeControlBase" @bind-TimeControlIncrement="_timeControlIncrement"/>
+            <TimeControlComponent @bind-TimeControlBaseSeconds="_timeControlBaseSeconds" @bind-TimeControlBaseMinutes="_timeControlBaseMinutes" @bind-TimeControlIncrement="_timeControlIncrement"/>
             <IsPublicGameComponent @bind-IsPublic="_isGamePublic"/>
         </MudElement>
         <CreateGameButtonComponent OnCreateGame="CreateGame" IsCreatingGame="_isCreatingGame"/>
@@ -36,7 +36,8 @@
     private OpponentTypes _opponentType;
     private GameSides _isWhiteSide = GameSides.White;
     private string _opponentName = "";
-    private uint _timeControlBase = 120;
+    private uint _timeControlBaseSeconds = 0;
+    private uint _timeControlBaseMinutes = 5;
     private uint _timeControlIncrement;
     private bool _isGamePublic = false;
     private bool _isCreatingGame;
@@ -84,7 +85,7 @@
             IncrementSeconds = _timeControlIncrement,
             Side = _isWhiteSide,
             OpponentName = opponentName,
-            DurationSeconds = _timeControlBase,
+            DurationSeconds = _timeControlBaseSeconds + _timeControlBaseMinutes * 60,
             IsVisible = _isGamePublic
         };
 

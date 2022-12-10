@@ -29,6 +29,7 @@ public interface IGameService
     event Action<GameEventDto>? RematchOfferAccepted;
     event Action<GameEventDto>? EndOfTheGameReached;
     event Action<GameEventDto>? JoinRematchedGame;
+    event Action<GameEventDto>? GameAborted;
     event Action? GameFirstJoined;
 
 
