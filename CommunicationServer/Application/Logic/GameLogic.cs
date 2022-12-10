@@ -248,13 +248,16 @@ public class GameLogic : IGameLogic
         var gameRoomHandler = GetGameRoom(dto.GameRoom, _gameRooms);
 
         // Allow rejoining
-        if (gameRoomHandler.GameRoom.PlayerWhite != null && gameRoomHandler.PlayerWhiteJoined && gameRoomHandler.GameRoom.PlayerWhite.Equals(dto.Username) ||
-            gameRoomHandler.GameRoom.PlayerBlack != null && gameRoomHandler.PlayerBlackJoined && gameRoomHandler.GameRoom.PlayerBlack.Equals(dto.Username))
+        if (gameRoomHandler.GameRoom.PlayerWhite != null && gameRoomHandler.PlayerWhiteJoined &&
+            gameRoomHandler.GameRoom.PlayerWhite.Equals(dto.Username) ||
+            gameRoomHandler.GameRoom.PlayerBlack != null && gameRoomHandler.PlayerBlackJoined &&
+            gameRoomHandler.GameRoom.PlayerBlack.Equals(dto.Username))
         {
             return AckTypes.Success;
         }
 
-        if (string.IsNullOrEmpty(gameRoomHandler.GameRoom.PlayerWhite) && !dto.Username.Equals(gameRoomHandler.GameRoom.PlayerBlack))
+        if (string.IsNullOrEmpty(gameRoomHandler.GameRoom.PlayerWhite) &&
+            !dto.Username.Equals(gameRoomHandler.GameRoom.PlayerBlack))
         {
             gameRoomHandler.GameRoom.PlayerWhite = dto.Username;
         }
@@ -268,11 +271,13 @@ public class GameLogic : IGameLogic
             throw new ArgumentException("Cannot join the game!");
 
 
-        if (string.IsNullOrEmpty(gameRoomHandler.GameRoom.PlayerWhite) && !dto.Username.Equals(gameRoomHandler.GameRoom.PlayerBlack))
+        if (string.IsNullOrEmpty(gameRoomHandler.GameRoom.PlayerWhite) &&
+            !dto.Username.Equals(gameRoomHandler.GameRoom.PlayerBlack))
         {
             gameRoomHandler.GameRoom.PlayerWhite = dto.Username;
         }
-        else if (string.IsNullOrEmpty(gameRoomHandler.GameRoom.PlayerBlack) && !dto.Username.Equals(gameRoomHandler.GameRoom.PlayerWhite))
+        else if (string.IsNullOrEmpty(gameRoomHandler.GameRoom.PlayerBlack) &&
+                 !dto.Username.Equals(gameRoomHandler.GameRoom.PlayerWhite))
         {
             gameRoomHandler.GameRoom.PlayerBlack = dto.Username;
         }
@@ -476,18 +481,21 @@ public class GameLogic : IGameLogic
 
         if (parameters.Spectateable)
         {
-            roomsHandlers = roomsHandlers.Where(roomHandler => roomHandler.IsSpectateable &&
-                                                        (roomHandler.GameRoom.PlayerWhite != null &&
-                                                         !roomHandler.GameRoom.PlayerWhite.Equals(parameters.RequesterName)) &&
-                                                        (roomHandler.GameRoom.PlayerBlack != null &&
-                                                         !roomHandler.GameRoom.PlayerBlack.Equals(parameters.RequesterName)));
+            roomsHandlers = roomsHandlers.Where(roomHandler =>
+                roomHandler.IsSpectateable &&
+                (roomHandler.GameRoom.PlayerWhite != null &&
+                 !roomHandler.GameRoom.PlayerWhite.Equals(parameters.RequesterName)) &&
+                (roomHandler.GameRoom.PlayerBlack != null &&
+                 !roomHandler.GameRoom.PlayerBlack.Equals(parameters.RequesterName)));
         }
         else if (parameters.Joinable)
         {
             roomsHandlers = roomsHandlers.Where(roomHandler =>
                 (roomHandler.IsJoinable && roomHandler.CanUsernameJoin(parameters.RequesterName)) ||
-                 (roomHandler.GameRoom.PlayerWhite != null && roomHandler.GameRoom.PlayerWhite.Equals(parameters.RequesterName) ||
-                  (roomHandler.GameRoom.PlayerBlack != null && roomHandler.GameRoom.PlayerBlack.Equals(parameters.RequesterName))));
+                (roomHandler.GameRoom.PlayerWhite != null &&
+                 roomHandler.GameRoom.PlayerWhite.Equals(parameters.RequesterName) ||
+                 (roomHandler.GameRoom.PlayerBlack != null &&
+                  roomHandler.GameRoom.PlayerBlack.Equals(parameters.RequesterName))));
         }
 
         return roomsHandlers.Select(roomHandler => roomHandler.GetGameRoomData());
