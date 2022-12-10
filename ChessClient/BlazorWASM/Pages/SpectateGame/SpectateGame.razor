@@ -8,7 +8,7 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-10">
     <div class="d-flex justify-end">
         <MudIconButton Icon="@Icons.Filled.Refresh"
-                       @onclick="@(async () => { await RefreshSpectateableGames(); })"/>
+                       @onclick="@(async () => { Snackbar.Add("Refreshed", Severity.Success); await RefreshSpectateableGames(); })"/>
     </div>
     <SpectateableGameListComponent SpectateableGames="@_spectateableGames"/>
 </MudContainer>
@@ -29,12 +29,11 @@
             {
                 Spectateable = true
             });
-            Snackbar.Add("Refreshed", Severity.Success);
         }
-        catch(HttpRequestException e)
+        catch (HttpRequestException e)
         {
             Snackbar.Add(e.Message, Severity.Error);
         }
-        
     }
+
 }

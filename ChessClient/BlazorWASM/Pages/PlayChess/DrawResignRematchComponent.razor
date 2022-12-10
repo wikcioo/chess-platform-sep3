@@ -1,3 +1,7 @@
+@using HttpClients.Implementations
+@using HttpClients.ClientInterfaces
+@inject IGameService GameService
+
 @if (IsDrawOfferPending)
 {
     <MudItem Style="text-align: center" xs="12">
@@ -16,6 +20,14 @@
         </MudPaper>
     </MudItem>
 }
+@if (DisplayRematchBtn)
+{
+    <MudItem xs="12">
+        <MudButton @onclick="OnRematchOffered" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
+            Rematch <MudIcon Icon="@Icons.Filled.Repeat" Size="Size.Small"></MudIcon>
+        </MudButton>
+    </MudItem>
+}
 <MudItem xs="6">
     <MudButton @onclick="OnResigned" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
         Resign <MudIcon Icon="@Icons.Filled.OutlinedFlag" Size="Size.Small"></MudIcon>
@@ -29,12 +41,18 @@
 
     [Parameter]
     public bool IsDrawOfferPending { get; set; }
+    
+    [Parameter]
+    public bool DisplayRematchBtn { get; set; }
 
     [Parameter]
     public EventCallback OnOfferDraw { get; set; }
 
     [Parameter]
     public EventCallback OnResign { get; set; }
+    
+    [Parameter]
+    public EventCallback OnRematch { get; set; }
 
     [Parameter]
     public EventCallback<bool> OnSendDrawResponse { get; set; }
@@ -47,6 +65,11 @@
     private async void OnResigned()
     {
         await OnResign.InvokeAsync();
+    }
+
+    private async void OnRematchOffered()
+    {
+        await OnRematch.InvokeAsync();
     }
 
     private async void OnDrawResponseSent(bool response)
