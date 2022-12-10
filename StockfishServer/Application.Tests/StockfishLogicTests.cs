@@ -42,10 +42,31 @@ public class StockfishLogicTests
     }
 
     [Fact]
+    public async void GetBestMoveAsyncThrowsArgumentExceptionWhenEmptyFen()
+    {
+        var dto = new StockfishBestMoveDto("", "StockfishAi1");
+
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => _stockfishLogic.GetBestMoveAsync(dto));
+
+        Assert.Equal("Invalid fen.", ex.Message);
+    }
+
+    [Fact]
     public async void GetBestMoveAsyncThrowsArgumentExceptionWhenInvalidStockfishPlayer()
     {
         var dto = new StockfishBestMoveDto("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
             "This is not a valid stockfish player");
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => _stockfishLogic.GetBestMoveAsync(dto));
+
+        Assert.Equal("Invalid stockfish player.", ex.Message);
+    }
+
+    [Fact]
+    public async void GetBestMoveAsyncThrowsArgumentExceptionWhenEmptyStockfishPlayer()
+    {
+        var dto = new StockfishBestMoveDto("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "");
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(() => _stockfishLogic.GetBestMoveAsync(dto));
 
