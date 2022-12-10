@@ -28,7 +28,8 @@ public class GameLogic : IGameLogic
     public event Action<GameRoomEventDto>? GameEvent;
     public event Action<AuthorizedUserEventDto>? AuthUserEvent;
 
-    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService, IGameService gameService,
+    public GameLogic(IStockfishService stockfishService, IChatLogic chatLogic, IUserService userService,
+        IGameService gameService,
         IGameRoomHandlerFactory gameRoomHandlerFactory)
     {
         _stockfishService = stockfishService;
@@ -37,7 +38,7 @@ public class GameLogic : IGameLogic
         _gameRoomHandlerFactory = gameRoomHandlerFactory;
         _gameService = gameService;
     }
-    
+
 
     private void FireGameRoomEvent(GameRoomEventDto dto)
     {
@@ -60,6 +61,7 @@ public class GameLogic : IGameLogic
     {
         await _gameService.CreateAsync(dto);
     }
+
     public async Task<ResponseGameDto> StartGame(RequestGameDto dto)
     {
         try
@@ -151,6 +153,26 @@ public class GameLogic : IGameLogic
             IsWhite = requesterIsWhite,
         };
 
+        _ = Task.Run((async () =>
+        {
+            await Task.Delay(3 * 60000);
+
+            if (!GetGameRoom(id, _gameRooms).FirstMovePlayed ||
+                string.IsNullOrEmpty(GetGameRoom(id, _gameRooms).PlayerBlack) ||
+                string.IsNullOrEmpty(GetGameRoom(id, _gameRooms).PlayerWhite))
+            {
+                _gameRooms.Remove(id);
+                FireGameRoomEvent(new GameRoomEventDto()
+                {
+                    GameRoomId = id,
+                    GameEventDto = new GameEventDto()
+                    {
+                        Event = GameStreamEvents.GameAborted
+                    }
+                });
+            }
+        }));
+
         return responseDto;
     }
 
@@ -220,6 +242,7 @@ public class GameLogic : IGameLogic
 
         return existing != null;
     }
+
 //TODO Allow rejoining, 
     public AckTypes JoinGame(RequestJoinGameDto dto)
     {
@@ -312,8 +335,8 @@ public class GameLogic : IGameLogic
             Username = room.CurrentPlayer!,
             FromSquare = move.FromSquare().ToString(),
             ToSquare = move.ToSquare().ToString(),
-            MoveType = (uint) move.MoveType(),
-            Promotion = (uint) move.PromotedPieceType()
+            MoveType = (uint)move.MoveType(),
+            Promotion = (uint)move.PromotedPieceType()
         };
         await MakeMove(dto);
     }
