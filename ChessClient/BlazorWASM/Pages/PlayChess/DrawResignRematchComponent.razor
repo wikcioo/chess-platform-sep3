@@ -11,10 +11,10 @@
                     <MudText Class="flex-1" Typo="Typo.subtitle1" Align="Align.Center">You have a draw offer!</MudText>
                 </MudItem>
                 <MudItem xs="6" sm="3" md="6">
-                    <MudButton @onclick="() => OnDrawResponseSent(true)" Variant="Variant.Filled" FullWidth="true" Color="Color.Tertiary">Accept</MudButton>
+                    <MudButton @onclick="() => OnDrawResponseSentAsync(true)" Variant="Variant.Filled" FullWidth="true" Color="Color.Tertiary">Accept</MudButton>
                 </MudItem>
                 <MudItem xs="6" sm="3" md="6">
-                    <MudButton @onclick="() => OnDrawResponseSent(false)" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Decline</MudButton>
+                    <MudButton @onclick="() => OnDrawResponseSentAsync(false)" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Decline</MudButton>
                 </MudItem>
             </MudGrid>
         </MudPaper>
@@ -23,25 +23,24 @@
 @if (DisplayRematchBtn)
 {
     <MudItem xs="12">
-        <MudButton @onclick="OnRematchOffered" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
+        <MudButton @onclick="OnRematchOfferedAsync" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
             Rematch <MudIcon Icon="@Icons.Filled.Repeat" Size="Size.Small"></MudIcon>
         </MudButton>
     </MudItem>
 }
 <MudItem xs="6">
-    <MudButton @onclick="OnResigned" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
+    <MudButton @onclick="OnResignedAsync" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">
         Resign <MudIcon Icon="@Icons.Filled.OutlinedFlag" Size="Size.Small"></MudIcon>
     </MudButton>
 </MudItem>
 <MudItem xs="6">
-    <MudButton @onclick="OnDrawOffered" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Offer Draw</MudButton>
+    <MudButton @onclick="OnDrawOfferedAsync" Variant="Variant.Filled" FullWidth="true" Color="Color.Dark">Offer Draw</MudButton>
 </MudItem>
 
 @code {
-
     [Parameter]
     public bool IsDrawOfferPending { get; set; }
-    
+
     [Parameter]
     public bool DisplayRematchBtn { get; set; }
 
@@ -50,31 +49,30 @@
 
     [Parameter]
     public EventCallback OnResign { get; set; }
-    
+
     [Parameter]
     public EventCallback OnRematch { get; set; }
 
     [Parameter]
     public EventCallback<bool> OnSendDrawResponse { get; set; }
 
-    private async void OnDrawOffered()
+    private async void OnDrawOfferedAsync()
     {
         await OnOfferDraw.InvokeAsync();
     }
 
-    private async void OnResigned()
+    private async void OnResignedAsync()
     {
         await OnResign.InvokeAsync();
     }
 
-    private async void OnRematchOffered()
+    private async void OnRematchOfferedAsync()
     {
         await OnRematch.InvokeAsync();
     }
 
-    private async void OnDrawResponseSent(bool response)
+    private async void OnDrawResponseSentAsync(bool response)
     {
         await OnSendDrawResponse.InvokeAsync(response);
     }
-
 }

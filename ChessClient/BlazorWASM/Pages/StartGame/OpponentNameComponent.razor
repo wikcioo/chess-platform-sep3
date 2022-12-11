@@ -4,29 +4,30 @@
 @inject IUserService UserService;
 @inject ISnackbar Snackbar
 
-
-<MudAutocomplete T="string" Label="Available opponents" @bind-Value="OpponentName" SearchFunc="@Search" Variant="Variant.Filled" ShowProgressIndicator="true" ProgressIndicatorColor="Color.Primary" />
+<MudAutocomplete T="string" Label="Available opponents" @bind-Value="OpponentName" SearchFunc="@SearchAsync" Variant="Variant.Filled" ShowProgressIndicator="true" ProgressIndicatorColor="Color.Primary"/>
 
 @code {
-
-    private string _opponentName = "";
-    
     [Parameter]
-    public string OpponentName {
+    public string OpponentName
+    {
         get => _opponentName;
         set
         {
-            if (_opponentName == value ) return;
+            if (_opponentName == value) return;
             _opponentName = value;
             OpponentNameChanged.InvokeAsync(value);
         }
     }
-    
-    private async Task<IEnumerable<string>> Search(string username)
+
+    [Parameter]
+    public EventCallback<string> OpponentNameChanged { get; set; }
+
+    private string _opponentName = "";
+
+    private async Task<IEnumerable<string>> SearchAsync(string username)
     {
         List<string> usernameList = new();
 
-        
         if (!string.IsNullOrEmpty(username))
         {
             try
@@ -42,12 +43,9 @@
 
         return usernameList;
     }
-    
+
     private void Notify(string message, Severity severity)
     {
         Snackbar.Add(message, severity);
     }
-    
-    [Parameter]
-    public EventCallback<string> OpponentNameChanged { get; set; }
 }

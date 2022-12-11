@@ -6,13 +6,13 @@ namespace StockfishWrapper;
 public interface IStockfishUci
 {
     void Uci();
-    Task<bool> IsReady();
+    Task<bool> IsReadyAsync();
     void SetOption(string name, string? value = null);
     void UciNewGame();
     void Position(string position, PositionType type);
-    Task<string?> Go(StockfishGoDto goDto);
-    Task<string?> Stop();
+    Task<string?> GoAsync(StockfishGoDto goDto);
+    Task<string?> StopAsync();
     void PonderHit();
-    Task<bool> SetOptions(StockfishSettingsDto settings);
+    Task<bool> SetOptionsAsync(StockfishSettingsDto settings);
     void Quit();
 }

@@ -28,5 +28,4 @@ public class ChatHub : IChatHub
             await _hubConnectionHandler.HubConnection.SendAsync("SendMessage", dto);
         }
     }
-
 }

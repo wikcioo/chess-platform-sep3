@@ -56,7 +56,7 @@ public class UserHttpClient : IUserService
 
     private static string ConstructQuery(string? userName)
     {
-        string query = "";
+        var query = "";
         if (!string.IsNullOrEmpty(userName))
         {
             query += $"?username={userName}";

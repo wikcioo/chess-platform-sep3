@@ -5,9 +5,10 @@
 @inject NavigationManager NavMgr
 @inject IAuthService AuthService
 @inject IHubConnectionHandler HubConnectionHandler
+
 <AuthorizeView>
     <Authorized>
-        <MudIconButton Icon="@Icons.Filled.Logout" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Logout())"/>
+        <MudIconButton Icon="@Icons.Filled.Logout" Title="Logout" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => LogoutAsync())"/>
     </Authorized>
     <NotAuthorized>
         <MudIconButton Icon="@Icons.Filled.Login" Title="Login" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Login())"/>
@@ -15,18 +16,16 @@
 </AuthorizeView>
 
 @code {
-
     private void Login()
     {
         NavMgr.NavigateTo("/Login");
     }
 
-    private async Task Logout()
+    private async Task LogoutAsync()
     {
         await AuthService.LogoutAsync();
         await HubConnectionHandler.StopHubConnectionAsync();
 
         NavMgr.NavigateTo("/");
     }
-
 }

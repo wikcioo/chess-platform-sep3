@@ -6,7 +6,6 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavMgr
 
-
 <AuthorizeView>
     <NotAuthorized>
         <MudContainer MaxWidth="MaxWidth.Small">
@@ -58,5 +57,4 @@
     {
         Snackbar.Add(message, severity, options => options.CloseAfterNavigation = true);
     }
-
 }

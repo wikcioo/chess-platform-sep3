@@ -8,7 +8,6 @@
 @namespace BlazorWASM.Pages.ChessComponents
 
 <div class="chess-board @(!IsWhiteSide ? "black-side" : "")">
-
     @{
         var index = 0;
         var isBlackSquare = _isFirstSquareBlack;
@@ -36,14 +35,9 @@
             isBlackSquare = !isBlackSquare;
         }
     }
-
 </div>
 
 @code {
-
-    private IPosition? _position;
-    private List<ExtMove> _legalMoves = new();
-
     [Parameter]
     public IPosition? Position
     {
@@ -60,10 +54,13 @@
 
     [Parameter]
     public bool IsWhiteSide { get; set; }
-
+    
+    private IPosition? _position;
+    private bool _isFirstSquareBlack = true;
+    
+    private List<ExtMove> _legalMoves = new();
     private List<Piece> _currentPieces = EmptyList<Piece>();
     private List<Move> _currentMoves = EmptyList<Move>();
-    private bool _isFirstSquareBlack = true;
 
     // Lists need to have values initialized to null to avoid Index out of bounds exception while rendering the chessboard. 
     private static List<T> EmptyList<T>(int initialSize = 64)
@@ -78,7 +75,6 @@
 
         return Square.None;
     }
-
 
     private List<Piece> ParsePositionToPieces()
     {
@@ -146,11 +142,9 @@
     private void MockMove(Move move)
     {
         if (!move.IsType(MoveTypes.Normal)) return;
-        if (Position != null)
-        {
-            Position.Board.MovePiece(move.FromSquare(), move.ToSquare());
-            StateHasChanged();
-        }
+        if (Position == null) return;
+        
+        Position.Board.MovePiece(move.FromSquare(), move.ToSquare());
+        StateHasChanged();
     }
-
 }

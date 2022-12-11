@@ -17,7 +17,7 @@
         <MudTd DataLabel="Black Player">@context.UsernameBlack</MudTd>
         <MudTd DataLabel="Time Control">@(context.DurationSeconds + "+" + context.IncrementSeconds)</MudTd>
         <MudTd DataLabel="Spectate">
-            <MudButton @onclick="() => SpectateGame(context.GameRoom)">Spectate</MudButton>
+            <MudButton @onclick="() => SpectateGameAsync(context.GameRoom)">Spectate</MudButton>
         </MudTd>
     </RowTemplate>
     <PagerContent>
@@ -29,9 +29,7 @@
     [Parameter]
     public IList<GameRoomDto>? SpectateableGames { get; set; }
 
-    
-    
-    private async void SpectateGame(ulong i)
+    private async void SpectateGameAsync(ulong i)
     {
         await GameService.SpectateGameAsync(new RequestJoinGameDto
         {

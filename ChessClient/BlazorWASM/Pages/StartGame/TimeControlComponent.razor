@@ -12,10 +12,6 @@
 </MudGrid>
 
 @code {
-    private uint _timeControlBaseSeconds = 0;
-    private uint _timeControlBaseMinutes = 5;
-    private uint _timeControlIncrement = 0;
-
     [Parameter]
     public uint TimeControlBaseSeconds
     {
@@ -61,4 +57,7 @@
     [Parameter]
     public EventCallback<uint> TimeControlIncrementChanged { get; set; }
 
+    private uint _timeControlBaseSeconds = 0;
+    private uint _timeControlBaseMinutes = 5;
+    private uint _timeControlIncrement = 0;
 }

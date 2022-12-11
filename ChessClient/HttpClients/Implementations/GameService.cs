@@ -37,7 +37,6 @@ public class GameService : IGameService
     public event Action<GameEventDto>? JoinRematchedGame;
     public event Action<GameEventDto>? GameAborted;
     public event Action? GameFirstJoined;
-
     public event Action<CurrentGameStateDto>? StateReceived;
 
     private readonly IGameHub _gameHub;
@@ -163,7 +162,7 @@ public class GameService : IGameService
                 ResignationReceived?.Invoke(response);
                 break;
             case GameStreamEvents.DrawOffer:
-                DrawOffer(response);
+                DrawOfferAsync(response);
                 break;
             case GameStreamEvents.DrawOfferTimeout:
                 DrawOfferTimeout(response);
@@ -172,7 +171,7 @@ public class GameService : IGameService
                 DrawOfferAcceptation(response);
                 break;
             case GameStreamEvents.RematchOffer:
-                RematchOffer(response);
+                RematchOfferAsync(response);
                 break;
             case GameStreamEvents.RematchOfferTimeout:
                 RematchOfferTimeout(response);
@@ -181,7 +180,7 @@ public class GameService : IGameService
                 RematchOfferAcceptation(response);
                 break;
             case GameStreamEvents.RematchInvitation:
-                JoinRematchGame(response);
+                JoinRematchGameAsync(response);
                 break;
             case GameStreamEvents.PlayerJoined:
                 PlayerJoined(response);
@@ -260,7 +259,7 @@ public class GameService : IGameService
         _gameHub.LeaveRoomAsync(GameRoomId);
     }
 
-    private async void DrawOffer(GameEventDto dto)
+    private async void DrawOfferAsync(GameEventDto dto)
     {
         var user = await _authService.GetAuthAsync();
         if (dto.UsernameWhite.Equals(user.Identity!.Name) || dto.UsernameBlack.Equals(user.Identity!.Name))
@@ -281,7 +280,7 @@ public class GameService : IGameService
         DrawOfferAccepted?.Invoke(dto);
     }
 
-    private async void RematchOffer(GameEventDto dto)
+    private async void RematchOfferAsync(GameEventDto dto)
     {
         var user = await _authService.GetAuthAsync();
 
@@ -318,7 +317,7 @@ public class GameService : IGameService
         RematchOfferAccepted?.Invoke(dto);
     }
 
-    private async void JoinRematchGame(GameEventDto dto)
+    private async void JoinRematchGameAsync(GameEventDto dto)
     {
         if (Spectating) return;
         await JoinGameAsync(new RequestJoinGameDto()

@@ -26,11 +26,11 @@ public class StockfishUciImpl : IStockfishUci
         RunCmd("uci");
     }
 
-    public async Task<bool> IsReady()
+    public async Task<bool> IsReadyAsync()
     {
         RunCmd("isready");
 
-        var result = await WaitForStringOrToken("readyok");
+        var result = await WaitForStringOrTokenAsync("readyok");
         return !string.IsNullOrEmpty(result) && result == "readyok";
     }
 
@@ -53,7 +53,7 @@ public class StockfishUciImpl : IStockfishUci
         RunCmd($"position {type.ToString().ToLower()} {position}");
     }
 
-    public async Task<string?> Go(StockfishGoDto dto)
+    public async Task<string?> GoAsync(StockfishGoDto dto)
     {
         var commands = new StringBuilder();
         if (dto.SearchMoves != null) commands.Append($"moves {dto.SearchMoves} ");
@@ -67,15 +67,15 @@ public class StockfishUciImpl : IStockfishUci
         if (dto.Nodes != null) commands.Append($"nodes {dto.Nodes} ");
         if (dto.Mate != null) commands.Append($"mate {dto.Mate} ");
         if (dto.MoveTime != null) commands.Append($"movetime {dto.MoveTime} ");
-        
+
         RunCmd("go " + commands);
-        return await WaitForBestMoveToken();
+        return await WaitForBestMoveTokenAsync();
     }
 
-    public async Task<string?> Stop()
+    public async Task<string?> StopAsync()
     {
         RunCmd("stop");
-        return await WaitForBestMoveToken();
+        return await WaitForBestMoveTokenAsync();
     }
 
     public void PonderHit()
@@ -83,7 +83,7 @@ public class StockfishUciImpl : IStockfishUci
         RunCmd("ponderhit");
     }
 
-    public async Task<bool> SetOptions(StockfishSettingsDto settings)
+    public async Task<bool> SetOptionsAsync(StockfishSettingsDto settings)
     {
         SetOption("Threads", settings.Threads.ToString());
         SetOption("Hash", settings.Hash.ToString());
@@ -91,7 +91,7 @@ public class StockfishUciImpl : IStockfishUci
         SetOption("MultiPV", settings.MultiPv.ToString());
         SetOption("Skill Level", settings.SkillLevel.ToString());
 
-        return await IsReady();
+        return await IsReadyAsync();
     }
 
     public void Quit()
@@ -104,18 +104,18 @@ public class StockfishUciImpl : IStockfishUci
         _process.StandardInput.WriteLine(command);
     }
 
-    private async Task<string?> WaitForBestMoveToken()
+    private async Task<string?> WaitForBestMoveTokenAsync()
     {
-        var result = await WaitForStringOrToken("bestmove", 0);
+        var result = await WaitForStringOrTokenAsync("bestmove", 0);
         return string.IsNullOrEmpty(result) ? null : result.Split(' ')[1];
     }
 
-    private async Task<string?> WaitForStringOrToken(string s, int tokenIndex = -1)
+    private async Task<string?> WaitForStringOrTokenAsync(string s, int tokenIndex = -1)
     {
         var val = await Task.Run(() =>
         {
             if (_process.StandardOutput == null) throw new Exception("Standard Output of the process is null!");
-            
+
             while (!_process.StandardOutput.EndOfStream)
             {
                 var str = _process.StandardOutput.ReadLine()!;
@@ -145,7 +145,7 @@ public class StockfishUciImpl : IStockfishUci
         {
             return "..\\StockfishBinaries\\Windows\\stockfish_15_x64_avx2.exe";
         }
-        
+
         if (System.OperatingSystem.IsLinux())
         {
             return "../../../../StockfishBinaries/Linux/stockfish_15_x64_avx2";

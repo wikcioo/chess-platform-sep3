@@ -18,9 +18,6 @@
 </MudRadioGroup>
 
 @code {
-
-    private GameSides _isWhiteSide = GameSides.White;
-
     [Parameter]
     public GameSides IsWhiteSide
     {
@@ -33,9 +30,8 @@
         }
     }
 
-
     [Parameter]
     public EventCallback<GameSides> IsWhiteSideChanged { get; set; }
-
-
+    
+    private GameSides _isWhiteSide = GameSides.White;
 }

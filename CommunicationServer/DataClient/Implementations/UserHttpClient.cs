@@ -23,6 +23,7 @@ public class UserHttpClient : IUserService
         {
             throw new Exception(result);
         }
+
         var existing = JsonSerializer.Deserialize<User>(result, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
@@ -49,8 +50,8 @@ public class UserHttpClient : IUserService
     public async Task<IEnumerable<User>> GetAsync(UserSearchParamsDto paramsDto)
     {
         var query = ConstructQuery(paramsDto.Username);
-        
-        HttpResponseMessage response = await _client.GetAsync("/users"+query);
+
+        HttpResponseMessage response = await _client.GetAsync("/users" + query);
         string result = await response.Content.ReadAsStringAsync();
         if (!response.IsSuccessStatusCode)
         {
@@ -63,14 +64,14 @@ public class UserHttpClient : IUserService
         })!;
         return users;
     }
-    
+
     public async Task<User?> GetByUsernameAsync(string username)
     {
         if (username == string.Empty)
         {
             return null;
         }
-        
+
         HttpResponseMessage response = await _client.GetAsync($"/users/{username}");
         string result = await response.Content.ReadAsStringAsync();
         if (!response.IsSuccessStatusCode)
@@ -84,7 +85,7 @@ public class UserHttpClient : IUserService
         })!;
         return users;
     }
-    
+
     private static string ConstructQuery(string? userName)
     {
         string query = "";
@@ -92,7 +93,7 @@ public class UserHttpClient : IUserService
         {
             query += $"?username={userName}";
         }
-        
+
         return query;
     }
 }

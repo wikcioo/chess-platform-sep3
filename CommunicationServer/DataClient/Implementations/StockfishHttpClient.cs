@@ -9,7 +9,7 @@ namespace DatabaseClient.Implementations;
 public class StockfishHttpClient : IStockfishService
 {
     private readonly StockfishService.StockfishServiceClient _client;
-    private Empty _empty = new();
+    private readonly Empty _empty = new();
 
     public StockfishHttpClient(GrpcChannel channel)
     {

@@ -1,22 +1,20 @@
 @using System.Text
 @namespace BlazorWASM.Pages.ChessComponents
 
-<MudPaper Style="@("background-color:"+(Active ? "var(--mud-palette-tertiary)" : "var(--mud-palette-primary)"))">
+<MudPaper Style="@("background-color:" + (Active ? "var(--mud-palette-tertiary)" : "var(--mud-palette-primary)"))">
     <MudText Align="Align.Center" Typo="Typo.h5" Style="color: white">
         @PrintFormattedTime(Seconds)
     </MudText>
 </MudPaper>
 
 @code {
-
-    private bool _active;
-
     [Parameter]
-    public bool Active {
+    public bool Active
+    {
         get => _active;
         set
         {
-            if (_active == value ) return;
+            if (_active == value) return;
             _active = value;
             StateHasChanged();
         }
@@ -25,10 +23,11 @@
     [Parameter]
     public double Seconds { get; set; }
 
+    private bool _active;
+    
     private string PrintFormattedTime(double secs)
     {
         var sb = new StringBuilder();
-
         var timespan = TimeSpan.FromSeconds(secs);
 
         if (timespan.Hours > 0)
@@ -39,9 +38,7 @@
         {
             sb.Append($"{TimeSpan.FromSeconds(secs).ToString(@"mm\:ss")}");
         }
-        
 
         return sb.ToString();
     }
-
 }

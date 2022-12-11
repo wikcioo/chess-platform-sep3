@@ -8,7 +8,6 @@
 @inject NavigationManager NavMgr
 
 @code {
-
     protected override void OnInitialized()
     {
         HubConnectionHandler.NewGameOffer += OnNewGameOffer;
@@ -30,7 +29,7 @@
                         GameRoom = dto.GameRoomId
                     });
                     await GameService.GetCurrentGameStateAsync();
-                    
+
                     GameService.RequestedGameDto = null;
                     NavMgr.NavigateTo("/ChessGame");
                 };
@@ -39,5 +38,4 @@
                 config.ShowCloseIcon = true;
             });
     }
-
 }

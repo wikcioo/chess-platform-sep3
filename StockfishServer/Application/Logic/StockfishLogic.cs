@@ -17,7 +17,6 @@ public class StockfishLogic : IStockfishLogic
         _stockfish = stockfish;
     }
 
-
     public async Task<IFenData> GetBestMoveAsync(StockfishBestMoveDto dto)
     {
         try
@@ -34,19 +33,19 @@ public class StockfishLogic : IStockfishLogic
         {
             throw new ArgumentException("Invalid stockfish player.");
         }
-        
+
         _stockfish.UciNewGame();
         _stockfish.Position(dto.Fen, PositionType.Fen);
 
         var levels = StockfishLevels.LevelOf[dto.StockfishPlayer];
 
-        if (!await _stockfish.SetOptions(new StockfishSettingsDto() { SkillLevel = (int)levels.Skill }))
+        if (!await _stockfish.SetOptionsAsync(new StockfishSettingsDto() { SkillLevel = (int)levels.Skill }))
         {
             Console.WriteLine("[StockfishService]: Failed to set options!");
             throw new InvalidOperationException("Options failed to set.");
         }
 
-        return new FenData(await _stockfish.Go(new StockfishGoDto()
+        return new FenData(await _stockfish.GoAsync(new StockfishGoDto()
         {
             Depth = (int)levels.Depth,
             MoveTime = (int)levels.Time
@@ -55,6 +54,6 @@ public class StockfishLogic : IStockfishLogic
 
     public async Task<bool> IsReadyAsync()
     {
-        return await _stockfish.IsReady();
+        return await _stockfish.IsReadyAsync();
     }
 }
