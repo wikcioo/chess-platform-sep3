@@ -297,6 +297,8 @@
                 case AckTypes.DrawOfferDeclined:
                     Notify("Draw Offer Declined!", Severity.Info);
                     break;
+                case AckTypes.DrawOfferExpired:
+                    break;
                 default:
                     Notify("Failed to offer draw!", Severity.Error);
                     break;
