@@ -14,8 +14,8 @@ public class StockfishLogicTests
     public StockfishLogicTests()
     {
         var mock = new Mock<IStockfishUci>();
-        mock.Setup(p => p.SetOptions(It.IsAny<StockfishSettingsDto>())).ReturnsAsync(true);
-        mock.Setup(p => p.Go(new StockfishGoDto())).ReturnsAsync("");
+        mock.Setup(p => p.SetOptionsAsync(It.IsAny<StockfishSettingsDto>())).ReturnsAsync(true);
+        mock.Setup(p => p.GoAsync(new StockfishGoDto())).ReturnsAsync("");
         _stockfishLogic = new StockfishLogic(mock.Object);
     }
 
