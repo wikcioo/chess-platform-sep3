@@ -1,7 +1,7 @@
 ﻿using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
-using Domain.DTOs;
+using Domain.DTOs.User;
 using HttpClients.ClientInterfaces;
 
 namespace HttpClients.Implementations;

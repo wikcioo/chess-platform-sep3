@@ -1,6 +1,6 @@
 ﻿using System.Net.Http.Json;
 using Application.ClientInterfaces;
-using Domain.DTOs;
+using Domain.DTOs.Game;
 
 namespace DatabaseClient.Implementations;
 

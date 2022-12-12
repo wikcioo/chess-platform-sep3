@@ -2,7 +2,7 @@
 using System.Security.Claims;
 using System.Text;
 using Application.LogicInterfaces;
-using Domain.DTOs;
+using Domain.DTOs.User;
 using Domain.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;

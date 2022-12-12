@@ -1,5 +1,9 @@
-using Domain.DTOs;
+using Domain.DTOs.Draw;
+using Domain.DTOs.Game;
 using Domain.DTOs.GameEvents;
+using Domain.DTOs.GameRoom;
+using Domain.DTOs.Rematch;
+using Domain.DTOs.Resignation;
 using Domain.Enums;
 using Domain.Models;
 using Rudzoft.ChessLib.Fen;

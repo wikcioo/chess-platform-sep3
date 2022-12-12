@@ -1,6 +1,6 @@
-namespace Domain.DTOs;
+namespace Domain.DTOs.Resignation;
 
-public class RequestDrawDto
+public class RequestResignDto
 {
     public ulong GameRoom { get; set; }
     public string Username { get; set; } = string.Empty;

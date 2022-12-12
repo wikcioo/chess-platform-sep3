@@ -1,6 +1,6 @@
-namespace Domain.DTOs;
+namespace Domain.DTOs.Rematch;
 
-public class ResponseDrawDto
+public class ResponseRematchDto
 {
     public ulong GameRoom { get; set; }
     public string Username { get; set; } = string.Empty;

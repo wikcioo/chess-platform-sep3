@@ -1,5 +1,4 @@
-﻿using Domain.DTOs;
-using Rudzoft.ChessLib;
+﻿using Domain.DTOs.Game;
 
 namespace Application.ClientInterfaces;
 

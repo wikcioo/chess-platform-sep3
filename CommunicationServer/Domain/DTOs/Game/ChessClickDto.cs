@@ -1,6 +1,6 @@
 using Rudzoft.ChessLib.Types;
 
-namespace Domain.DTOs;
+namespace Domain.DTOs.Game;
 
 public class ChessClickDto
 {

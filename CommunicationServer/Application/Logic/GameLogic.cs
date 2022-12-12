@@ -1,9 +1,14 @@
 using Application.ClientInterfaces;
 using Application.GameRoomHandlers;
 using Application.LogicInterfaces;
-using Domain.DTOs;
 using Domain.DTOs.AuthorizedUserEvents;
+using Domain.DTOs.Draw;
+using Domain.DTOs.Game;
 using Domain.DTOs.GameEvents;
+using Domain.DTOs.GameRoom;
+using Domain.DTOs.Rematch;
+using Domain.DTOs.Resignation;
+using Domain.DTOs.StartGame;
 using Domain.DTOs.Stockfish;
 using Domain.Enums;
 using Domain.Models;

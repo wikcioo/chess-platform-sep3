@@ -1,5 +1,7 @@
-using Domain.DTOs;
+using Domain.DTOs.Game;
 using Domain.DTOs.GameEvents;
+using Domain.DTOs.GameRoom;
+using Domain.DTOs.StartGame;
 using Domain.Enums;
 using Rudzoft.ChessLib.Types;
 

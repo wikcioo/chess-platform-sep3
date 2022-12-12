@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.GameRoomHandlers;
-using Domain.DTOs;
+using Domain.DTOs.Draw;
+using Domain.DTOs.Game;
 using Domain.DTOs.GameEvents;
+using Domain.DTOs.Resignation;
 using Domain.Enums;
 using Rudzoft.ChessLib.Types;
 using Xunit;

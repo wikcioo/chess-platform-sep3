@@ -3,7 +3,7 @@ using System.Text.Json;
 using Domain.Models;
 using HttpClients.ClientInterfaces;
 using System.Net.Http.Headers;
-using Domain.DTOs;
+using Domain.DTOs.User;
 
 namespace HttpClients.Implementations;
 

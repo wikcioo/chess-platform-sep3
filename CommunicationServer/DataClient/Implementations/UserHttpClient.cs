@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Application.ClientInterfaces;
-using Domain.DTOs;
+using Domain.DTOs.User;
 using Domain.Models;
 
 namespace DatabaseClient.Implementations;

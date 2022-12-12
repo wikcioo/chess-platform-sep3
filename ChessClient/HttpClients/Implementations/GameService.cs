@@ -1,7 +1,11 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using Domain.DTOs;
+using Domain.DTOs.Draw;
+using Domain.DTOs.Game;
 using Domain.DTOs.GameEvents;
+using Domain.DTOs.GameRoom;
+using Domain.DTOs.Rematch;
+using Domain.DTOs.StartGame;
 using Domain.Enums;
 using HttpClients.ClientInterfaces;
 using HttpClients.ClientInterfaces.Signalr;

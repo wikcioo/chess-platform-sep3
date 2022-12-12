@@ -1,6 +1,6 @@
 using Domain.Enums;
 
-namespace Domain.DTOs;
+namespace Domain.DTOs.StartGame;
 
 public class RequestGameDto
 {

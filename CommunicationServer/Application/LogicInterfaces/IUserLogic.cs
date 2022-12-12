@@ -1,4 +1,4 @@
-using Domain.DTOs;
+using Domain.DTOs.User;
 using Domain.Models;
 
 namespace Application.LogicInterfaces;
