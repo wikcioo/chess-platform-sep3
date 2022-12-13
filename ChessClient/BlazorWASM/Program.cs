@@ -15,7 +15,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(
+builder.Services.AddSingleton(
     _ =>
         new HttpClient
         {
@@ -36,15 +36,15 @@ builder.Services.AddMudServices(config =>
 });
 
 AuthorizationPolicies.AddPolicies(builder.Services);
-builder.Services.AddScoped<IUserService, UserHttpClient>();
-builder.Services.AddScoped<IAuthService, JwtAuthService>();
-builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddSingleton<IUserService, UserHttpClient>();
+builder.Services.AddSingleton<IAuthService, JwtAuthService>();
+builder.Services.AddSingleton<IGameService, GameService>();
 
 builder.Services.AddSingleton<IHubConnectionHandler, HubConnectionHandler>();
 builder.Services.AddTransient<IChatHub, ChatHub>();
-builder.Services.AddScoped<IGameHub, GameHub>();
+builder.Services.AddSingleton<IGameHub, GameHub>();
 
-builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthProvider>();
+builder.Services.AddSingleton<AuthenticationStateProvider, CustomAuthProvider>();
 
 builder.Services.AddAuthorizationCore();
 
