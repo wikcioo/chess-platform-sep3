@@ -151,6 +151,60 @@ public class GameLogicUnitTests
         var ack = _gameLogic.DrawOfferResponse(new ResponseDrawDto());
         Assert.True(ack.Result == AckTypes.GameNotFound);
     }
+
+    //Spectate game
+    [Fact]
+    public async void SpectatingGameWhenVisibleReturnsSuccess()
+    {
+        var response = await _gameLogic.StartGame(new RequestGameDto()
+        {
+            Username = "Jeff",
+            OpponentType = OpponentTypes.Friend,
+            DurationSeconds = 60,
+            IncrementSeconds = 0,
+            Side = GameSides.Black,
+            OpponentName = "Alice",
+            IsVisible = true
+        });
+        var requestDto = new RequestJoinGameDto
+        {
+            GameRoom = response.GameRoom,
+            Username = "Jeff"
+        };
+        _gameLogic.JoinGame(requestDto);
+        requestDto.Username = "Alice";
+        _gameLogic.JoinGame(requestDto);
+        requestDto.Username = "Bob";
+        var ackResponse = _gameLogic.SpectateGame(requestDto);
+
+        Assert.Equal(AckTypes.Success, ackResponse);
+    }
+
+    [Fact]
+    public async void SpectatingGameWhenNotVisibleThrowsArgumentException()
+    {
+        var response = await _gameLogic.StartGame(new RequestGameDto()
+        {
+            Username = "Jeff",
+            OpponentType = OpponentTypes.Friend,
+            DurationSeconds = 60,
+            IncrementSeconds = 0,
+            Side = GameSides.Black,
+            OpponentName = "Alice",
+            IsVisible = false
+        });
+        var requestDto = new RequestJoinGameDto
+        {
+            GameRoom = response.GameRoom,
+            Username = "Jeff"
+        };
+        _gameLogic.JoinGame(requestDto);
+        requestDto.Username = "Alice";
+        _gameLogic.JoinGame(requestDto);
+        requestDto.Username = "Bob";
+
+        Assert.Throws<ArgumentException>(() => _gameLogic.SpectateGame(requestDto));
+    }
     //Join game
 
     [Fact]
