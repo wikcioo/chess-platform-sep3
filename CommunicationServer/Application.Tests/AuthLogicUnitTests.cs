@@ -18,19 +18,19 @@ public class AuthLogicUnitTests
     [Fact]
     public void ValidateUserThrowsExceptionWhenUserNotFound()
     {
-        Assert.ThrowsAsync<Exception>(() => _authLogic.ValidateUser("wrongEmail", "wrongPassword"));
+        Assert.ThrowsAsync<Exception>(() => _authLogic.LoginAsync("wrongEmail", "wrongPassword"));
     }
 
     [Fact]
     public void ValidateUserThrowsExceptionWhenWrongPassword()
     {
-        Assert.ThrowsAsync<Exception>(() => _authLogic.ValidateUser("email", "wrongPassword"));
+        Assert.ThrowsAsync<Exception>(() => _authLogic.LoginAsync("email", "wrongPassword"));
     }
 
     [Fact]
     public async void ValidateUserReturnsCorrectUserWhenValidCredentials()
     {
-        var foundUser = await _authLogic.ValidateUser("email", "password");
+        var foundUser = await _authLogic.LoginAsync("email", "password");
         Assert.Equal("email", foundUser.Email);
         Assert.Equal("password", foundUser.Password);
     }

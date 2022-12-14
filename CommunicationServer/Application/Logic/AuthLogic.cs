@@ -14,7 +14,7 @@ public class AuthLogic : IAuthLogic
         _userService = userService;
     }
 
-    public async Task<User> ValidateUser(string email, string password)
+    public async Task<User> LoginAsync(string email, string password)
     {
         var existingUser = await _userService.LoginAsync(new UserLoginDto {Email = email, Password = password});
 

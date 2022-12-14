@@ -60,11 +60,11 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost, Route("login")]
-    public async Task<ActionResult> Login([FromBody] UserLoginDto userLoginDto)
+    public async Task<ActionResult> LoginAsync([FromBody] UserLoginDto userLoginDto)
     {
         try
         {
-            User user = await _authLogic.ValidateUser(userLoginDto.Email, userLoginDto.Password);
+            User user = await _authLogic.LoginAsync(userLoginDto.Email, userLoginDto.Password);
             string token = GenerateJwt(user);
 
             return Ok(token);
