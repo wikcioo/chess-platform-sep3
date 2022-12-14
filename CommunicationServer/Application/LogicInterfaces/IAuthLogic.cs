@@ -4,5 +4,5 @@ namespace Application.LogicInterfaces;
 
 public interface IAuthLogic
 {
-    Task<User> ValidateUser(string username, string password);
+    Task<User> ValidateUser(string email, string password);
 }
