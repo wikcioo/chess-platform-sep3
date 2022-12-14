@@ -66,9 +66,9 @@ public class GameLogicUnitTests
     [Theory]
     [InlineData(PlayerTwo, OpponentTypes.Friend)]
     [InlineData("StockfishAi1", OpponentTypes.Ai)]
-    public void StartingGameReturnsCorrectResponseDto(string? opponent, OpponentTypes opponentType)
+    public async void StartingGameReturnsCorrectResponseDto(string? opponent, OpponentTypes opponentType)
     {
-        var response = _gameLogic.StartGame(new RequestGameDto()
+        var response = await _gameLogic.StartGame(new RequestGameDto()
         {
             Username = PlayerOne,
             OpponentType = opponentType,
@@ -78,18 +78,18 @@ public class GameLogicUnitTests
             DurationSeconds = 600
         });
 
-        Assert.True(response.Result.Success);
-        Assert.Equal(opponent, response.Result.Opponent);
-        Assert.Equal(Fen.StartPositionFen, response.Result.Fen);
+        Assert.True(response.Success);
+        Assert.Equal(opponent, response.Opponent);
+        Assert.Equal(Fen.StartPositionFen, response.Fen);
     }
 
 
     [Theory]
     [InlineData(0, 86_401)]
     [InlineData(61, 30)]
-    public void StartingGameWithInvalidTimeControlFails(uint increment, uint duration)
+    public async void StartingGameWithInvalidTimeControlFails(uint increment, uint duration)
     {
-        var response = _gameLogic.StartGame(new RequestGameDto()
+        var response = await _gameLogic.StartGame(new RequestGameDto()
         {
             Username = PlayerOne,
             OpponentType = OpponentTypes.Friend,
@@ -99,14 +99,14 @@ public class GameLogicUnitTests
             OpponentName = PlayerTwo
         });
 
-        Assert.False(response.Result.Success);
+        Assert.False(response.Success);
     }
     [Theory]
     [InlineData(0, 86_400)]
     [InlineData(60, 30)]
-    public void StartingGameWithValidTimeControlReturnsTrue(uint increment, uint duration)
+    public async void StartingGameWithValidTimeControlReturnsTrue(uint increment, uint duration)
     {
-        var response = _gameLogic.StartGame(new RequestGameDto()
+        var response = await _gameLogic.StartGame(new RequestGameDto()
         {
             Username = PlayerOne,
             OpponentType = OpponentTypes.Friend,
@@ -116,16 +116,16 @@ public class GameLogicUnitTests
             OpponentName = PlayerTwo
         });
 
-        Assert.True(response.Result.Success);
+        Assert.True(response.Success);
     }
 
     [Theory]
     [InlineData(PlayerTwo, OpponentTypes.Friend)]
     [InlineData("Bob", OpponentTypes.Friend)]
-    public void StartingGameReturnsFalseWhenUserNotFound(string? opponent, OpponentTypes opponentType)
+    public async void StartingGameReturnsFalseWhenUserNotFound(string? opponent, OpponentTypes opponentType)
     {
         _userServiceMock.Setup(p => p.GetByUsernameAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
-        var response = _gameLogic.StartGame(new RequestGameDto()
+        var response = await _gameLogic.StartGame(new RequestGameDto()
         {
             Username = PlayerOne,
             OpponentType = opponentType,
@@ -135,15 +135,15 @@ public class GameLogicUnitTests
             DurationSeconds = 600
         });
 
-        Assert.False(response.Result.Success);
+        Assert.False(response.Success);
     }
 
     [Theory]
     [InlineData(PlayerTwo, OpponentTypes.Random)]
     [InlineData("StockfishAi1", OpponentTypes.Random)]
-    public void StartingGameAgainstRandomWithOpponentSetFails(string opponent, OpponentTypes opponentType)
+    public async void StartingGameAgainstRandomWithOpponentSetFails(string opponent, OpponentTypes opponentType)
     {
-        var response = _gameLogic.StartGame(new RequestGameDto()
+        var response = await _gameLogic.StartGame(new RequestGameDto()
         {
             Username = PlayerOne,
             OpponentType = opponentType,
@@ -153,15 +153,15 @@ public class GameLogicUnitTests
             DurationSeconds = 600
         });
 
-        Assert.False(response.Result.Success);
-        Assert.Equal("Opponent cannot be chosen for a random game.", response.Result.ErrorMessage);
+        Assert.False(response.Success);
+        Assert.Equal("Opponent cannot be chosen for a random game.", response.ErrorMessage);
     }
 
     [Theory]
     [InlineData("StockfishAi1", OpponentTypes.Friend)]
-    public void StartingGameAgainstFriendWithStockfishOpponentFails(string opponent, OpponentTypes opponentType)
+    public async void StartingGameAgainstFriendWithStockfishOpponentFails(string opponent, OpponentTypes opponentType)
     {
-        var response = _gameLogic.StartGame(new RequestGameDto()
+        var response = await _gameLogic.StartGame(new RequestGameDto()
         {
             Username = PlayerOne,
             OpponentType = opponentType,
@@ -170,17 +170,17 @@ public class GameLogicUnitTests
             OpponentName = opponent,
             DurationSeconds = 600
         });
-        Assert.False(response.Result.Success);
-        Assert.Equal("Opponent is an AI in the not ai game.", response.Result.ErrorMessage);
+        Assert.False(response.Success);
+        Assert.Equal("Opponent is an AI in the not ai game.", response.ErrorMessage);
     }
 
 
     //Make move
     [Fact]
-    public void MakeMoveReturnsGameNotFoundWhenNoRoomFound()
+    public async void MakeMoveReturnsGameNotFoundWhenNoRoomFound()
     {
-        var ack = _gameLogic.MakeMove(new MakeMoveDto());
-        Assert.Equal(AckTypes.GameNotFound, ack.Result);
+        var ack = await _gameLogic.MakeMove(new MakeMoveDto());
+        Assert.Equal(AckTypes.GameNotFound, ack);
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public class GameLogicUnitTests
     {
         var gameRoomId = await StartGameAndMakeActive(false);
 
-        var ack = _gameLogic.MakeMove(new MakeMoveDto
+        var ack = await _gameLogic.MakeMove(new MakeMoveDto
         {
             GameRoom = gameRoomId,
             FromSquare = "e2",
@@ -197,15 +197,15 @@ public class GameLogicUnitTests
             Promotion = 0,
             Username = PlayerOne
         });
-        Assert.Equal(AckTypes.Success, ack.Result);
+        Assert.Equal(AckTypes.Success, ack);
     }
-    
+
     [Fact]
     public async void MakeMoveReturnsInvalidMoveWhenMoveInvalid()
     {
         var gameRoomId = await StartGameAndMakeActive(false);
 
-        var ack = _gameLogic.MakeMove(new MakeMoveDto
+        var ack = await _gameLogic.MakeMove(new MakeMoveDto
         {
             GameRoom = gameRoomId,
             FromSquare = "e2",
@@ -214,15 +214,15 @@ public class GameLogicUnitTests
             Promotion = 0,
             Username = PlayerOne
         });
-        Assert.Equal(AckTypes.InvalidMove, ack.Result);
+        Assert.Equal(AckTypes.InvalidMove, ack);
     }
-    
+
     [Fact]
     public async void MakeMoveReturnsNotUserTurnWhenIncorrectUserMakesMove()
     {
         var gameRoomId = await StartGameAndMakeActive(false);
 
-        var ack = _gameLogic.MakeMove(new MakeMoveDto
+        var ack = await _gameLogic.MakeMove(new MakeMoveDto
         {
             GameRoom = gameRoomId,
             FromSquare = "e2",
@@ -231,41 +231,69 @@ public class GameLogicUnitTests
             Promotion = 0,
             Username = "WrongUsername"
         });
-        Assert.Equal(AckTypes.NotUserTurn, ack.Result);
+        Assert.Equal(AckTypes.NotUserTurn, ack);
     }
 
     //Resign
     [Fact]
-    public void ResignReturnsGameNotFoundWhenNoRoomFound()
+    public async void ResignReturnsGameNotFoundWhenNoRoomFound()
     {
-        var ack = _gameLogic.Resign(new RequestResignDto());
-        Assert.Equal(AckTypes.GameNotFound, ack.Result);
+        var ack = await _gameLogic.Resign(new RequestResignDto());
+        Assert.Equal(AckTypes.GameNotFound, ack);
     }
 
     [Fact]
     public async void ResignReturnsSuccessWhenValid()
     {
         var gameRoomId = await StartGameAndMakeActive(false);
-        var ack = _gameLogic.Resign(new RequestResignDto
+        var ack = await _gameLogic.Resign(new RequestResignDto
         {
             Username = PlayerTwo,
             GameRoom = gameRoomId
         });
-        Assert.Equal(AckTypes.Success, ack.Result);
+        Assert.Equal(AckTypes.Success, ack);
+    }
+
+    [Fact]
+    public async void ResignReturnsNotUserTurnWhenIncorrectUser()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+        var ack = await _gameLogic.Resign(new RequestResignDto
+        {
+            Username = "WrongUsername",
+            GameRoom = gameRoomId
+        });
+        Assert.Equal(AckTypes.NotUserTurn, ack);
+    }
+    [Fact]
+    public async void ResignReturnsGameHasEndedWhenResigningAfterGameEnd()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+        await _gameLogic.Resign(new RequestResignDto
+        {
+            Username = "WrongUsername",
+            GameRoom = gameRoomId
+        });
+        var ack = await _gameLogic.Resign(new RequestResignDto
+        {
+            Username = "WrongUsername",
+            GameRoom = gameRoomId
+        });
+        Assert.Equal(AckTypes.NotUserTurn, ack);
     }
     //Offer Draw
     [Fact]
-    public void OfferDrawReturnsGameNotFoundWhenNoRoomFound()
+    public async void OfferDrawReturnsGameNotFoundWhenNoRoomFound()
     {
-        var ack = _gameLogic.OfferDraw(new RequestDrawDto());
-        Assert.True(ack.Result == AckTypes.GameNotFound);
+        var ack = await _gameLogic.OfferDraw(new RequestDrawDto());
+        Assert.Equal(AckTypes.GameNotFound, ack);
     }
     //Draw offer response
     [Fact]
-    public void DrawOfferResponseReturnsGameNotFoundWhenNoRoomFound()
+    public async void DrawOfferResponseReturnsGameNotFoundWhenNoRoomFound()
     {
-        var ack = _gameLogic.DrawOfferResponse(new ResponseDrawDto());
-        Assert.True(ack.Result == AckTypes.GameNotFound);
+        var ack = await _gameLogic.DrawOfferResponse(new ResponseDrawDto());
+        Assert.Equal(AckTypes.GameNotFound, ack);
     }
 
     //Spectate game
