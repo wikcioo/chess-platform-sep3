@@ -16,7 +16,6 @@ using Domain.Models;
 using GameRoomHandlers;
 using Moq;
 using System;
-using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 
 
@@ -47,7 +46,7 @@ public class GameLogicUnitTests
             OpponentType = OpponentTypes.Friend,
             DurationSeconds = 60,
             IncrementSeconds = 0,
-            Side = GameSides.Black,
+            Side = GameSides.White,
             OpponentName = PlayerTwo,
             IsVisible = isVisible
         });
@@ -140,7 +139,7 @@ public class GameLogicUnitTests
     }
 
     [Theory]
-    [InlineData(PlayerTwo, OpponentTypes.Friend)]
+    [InlineData(PlayerTwo, OpponentTypes.Random)]
     [InlineData("StockfishAi1", OpponentTypes.Random)]
     public void StartingGameAgainstRandomWithOpponentSetFails(string opponent, OpponentTypes opponentType)
     {
@@ -181,7 +180,58 @@ public class GameLogicUnitTests
     public void MakeMoveReturnsGameNotFoundWhenNoRoomFound()
     {
         var ack = _gameLogic.MakeMove(new MakeMoveDto());
-        Assert.True(ack.Result == AckTypes.GameNotFound);
+        Assert.Equal(AckTypes.GameNotFound, ack.Result);
+    }
+
+    [Fact]
+    public async void MakeMoveReturnsSuccessWhenValid()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+
+        var ack = _gameLogic.MakeMove(new MakeMoveDto
+        {
+            GameRoom = gameRoomId,
+            FromSquare = "e2",
+            ToSquare = "e4",
+            MoveType = 0,
+            Promotion = 0,
+            Username = PlayerOne
+        });
+        Assert.Equal(AckTypes.Success, ack.Result);
+    }
+    
+    [Fact]
+    public async void MakeMoveReturnsInvalidMoveWhenMoveInvalid()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+
+        var ack = _gameLogic.MakeMove(new MakeMoveDto
+        {
+            GameRoom = gameRoomId,
+            FromSquare = "e2",
+            ToSquare = "e2",
+            MoveType = 0,
+            Promotion = 0,
+            Username = PlayerOne
+        });
+        Assert.Equal(AckTypes.InvalidMove, ack.Result);
+    }
+    
+    [Fact]
+    public async void MakeMoveReturnsNotUserTurnWhenIncorrectUserMakesMove()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+
+        var ack = _gameLogic.MakeMove(new MakeMoveDto
+        {
+            GameRoom = gameRoomId,
+            FromSquare = "e2",
+            ToSquare = "e2",
+            MoveType = 0,
+            Promotion = 0,
+            Username = "WrongUsername"
+        });
+        Assert.Equal(AckTypes.NotUserTurn, ack.Result);
     }
 
     //Resign
