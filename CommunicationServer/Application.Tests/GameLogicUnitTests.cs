@@ -151,4 +151,65 @@ public class GameLogicUnitTests
         var ack = _gameLogic.DrawOfferResponse(new ResponseDrawDto());
         Assert.True(ack.Result == AckTypes.GameNotFound);
     }
+    //Join game
+
+    [Fact]
+    public async void JoiningGameWhenValidReturnsSuccess()
+    {
+        var response = await _gameLogic.StartGame(new RequestGameDto()
+        {
+            Username = "Jeff",
+            OpponentType = OpponentTypes.Friend,
+            DurationSeconds = 60,
+            IncrementSeconds = 0,
+            Side = GameSides.Black,
+            OpponentName = "Alice",
+            IsVisible = false
+        });
+        var requestDto = new RequestJoinGameDto
+        {
+            GameRoom = response.GameRoom,
+            Username = "Jeff"
+        };
+        var ackResponse = _gameLogic.JoinGame(requestDto);
+
+
+        Assert.Equal(AckTypes.Success, ackResponse);
+    }
+
+    [Fact]
+    public async void JoiningGameWhenInvalidThrowsArgumentException()
+    {
+        var response = await _gameLogic.StartGame(new RequestGameDto()
+        {
+            Username = "Jeff",
+            OpponentType = OpponentTypes.Friend,
+            DurationSeconds = 60,
+            IncrementSeconds = 0,
+            Side = GameSides.Black,
+            OpponentName = "Alice",
+            IsVisible = false
+        });
+        var requestDto = new RequestJoinGameDto
+        {
+            GameRoom = response.GameRoom,
+            Username = "Bob"
+        };
+
+
+        Assert.Throws<ArgumentException>(() => _gameLogic.JoinGame(requestDto));
+    }
+
+    [Fact]
+    public void JoinRoomThrowsArgumentExceptionWhenNoRoomFound()
+    {
+        Assert.Throws<KeyNotFoundException>(() =>
+        {
+            _gameLogic.JoinGame(new RequestJoinGameDto()
+            {
+                Username = "Jeff",
+                GameRoom = 0
+            });
+        });
+    }
 }
