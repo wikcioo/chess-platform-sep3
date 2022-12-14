@@ -1,8 +1,6 @@
 package via.sep3.DatabaseAccessServer.application.Logic;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
 import via.sep3.DatabaseAccessServer.application.LogicInterfaces.GameLogic;
 import via.sep3.DatabaseAccessServer.domain.DTOs.GameCreationDto;
 import via.sep3.DatabaseAccessServer.domain.Game;
@@ -32,7 +30,7 @@ public class GameLogicImpl implements GameLogic {
         User creator = userRepository.findByUsernameEquals(dto.getCreator()).orElseThrow(() -> new IllegalArgumentException("Creator does not exist."));
         User playerBlack = userRepository.findByUsernameEquals(dto.getPlayerBlack()).orElseThrow(() -> new IllegalArgumentException("Player Black does not exist."));
         User playerWhite = userRepository.findByUsernameEquals(dto.getPlayerWhite()).orElseThrow(() -> new IllegalArgumentException("Player White does not exist."));
-        Game game = new Game(creator, dto.getGameType(), playerWhite, playerBlack, dto.getTimeControlDurationSeconds(), dto.getTimeControlIncrementSeconds(), dto.getGameOutcome());
+        Game game = new Game(creator, playerWhite, playerBlack, dto.getGameType(), dto.getTimeControlDurationSeconds(), dto.getTimeControlIncrementSeconds(), dto.getGameOutcome());
         return gameRepository.save(game);
     }
 

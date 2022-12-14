@@ -77,7 +77,7 @@ public class UserLogicUnitTests {
 
     //Get by username
     @Test
-    void getByUsernameReturnCorrectUserWhenUserExists() {
+    void getByUsernameReturnUserWhenUserExists() {
         Optional<User> found = userLogic.getByUsername("username");
         assertTrue(found.isPresent());
     }
