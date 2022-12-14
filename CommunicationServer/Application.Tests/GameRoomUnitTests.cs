@@ -148,6 +148,7 @@ public class GameRoomUnitTests
         _gameRoom = GetNewGameRoom();
         var ack = _gameRoom.MakeMove(new MakeMoveDto()
         {
+            Username = PlayerWhite,
             FromSquare = "e2",
             ToSquare = "e2",
             MoveType = (uint) MoveTypes.Normal
