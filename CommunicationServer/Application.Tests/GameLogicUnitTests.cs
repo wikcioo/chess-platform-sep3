@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Net.Http;
 using Application.Logic;
 using Application.LogicInterfaces;
 using Domain.Enums;
@@ -21,7 +20,6 @@ using Moq;
 public class GameLogicUnitTests
 {
 
-
     private readonly IGameLogic _gameLogic;
     private readonly Mock<IUserService> _userServiceMock;
 
@@ -35,6 +33,8 @@ public class GameLogicUnitTests
         _gameLogic = new GameLogic(stockfishServiceMock.Object, new ChatLogic(), _userServiceMock.Object, gameServiceMock.Object, new GameRoomHandlerFactory());
     }
 
+
+    //Start game
     [Theory]
     [InlineData("Alice", OpponentTypes.Friend)]
     [InlineData("StockfishAi1", OpponentTypes.Ai)]
@@ -55,6 +55,41 @@ public class GameLogicUnitTests
         Assert.Equal(Fen.StartPositionFen, response.Result.Fen);
     }
 
+
+    [Theory]
+    [InlineData(0, 86_401)]
+    [InlineData(61, 30)]
+    public void StartingGameWithInvalidTimeControlFails(uint increment, uint duration)
+    {
+        var response = _gameLogic.StartGame(new RequestGameDto()
+        {
+            Username = "Jeff",
+            OpponentType = OpponentTypes.Friend,
+            DurationSeconds = duration,
+            IncrementSeconds = increment,
+            Side = GameSides.Black,
+            OpponentName = "Alice"
+        });
+
+        Assert.False(response.Result.Success);
+    }
+    [Theory]
+    [InlineData(0, 86_400)]
+    [InlineData(60, 30)]
+    public void StartingGameWithValidTimeControlReturnsTrue(uint increment, uint duration)
+    {
+        var response = _gameLogic.StartGame(new RequestGameDto()
+        {
+            Username = "Jeff",
+            OpponentType = OpponentTypes.Friend,
+            DurationSeconds = duration,
+            IncrementSeconds = increment,
+            Side = GameSides.Black,
+            OpponentName = "Alice"
+        });
+
+        Assert.True(response.Result.Success);
+    }
 
     [Theory]
     [InlineData("Alice", OpponentTypes.Friend)]
@@ -111,19 +146,8 @@ public class GameLogicUnitTests
         Assert.Equal("Opponent is an AI in the not ai game.", response.Result.ErrorMessage);
     }
 
-    [Fact]
-    public void JoinRoomThrowsArgumentExceptionWhenNoRoomFound()
-    {
-        Assert.Throws<KeyNotFoundException>(() =>
-        {
-            _gameLogic.JoinGame(new RequestJoinGameDto()
-            {
-                Username = "Jeff",
-                GameRoom = 0
-            });
-        });
-    }
 
+    //Make move
     [Fact]
     public void MakeMoveReturnsGameNotFoundWhenNoRoomFound()
     {
@@ -131,20 +155,21 @@ public class GameLogicUnitTests
         Assert.True(ack.Result == AckTypes.GameNotFound);
     }
 
+    //Resign
     [Fact]
     public void ResignReturnsGameNotFoundWhenNoRoomFound()
     {
         var ack = _gameLogic.Resign(new RequestResignDto());
         Assert.True(ack.Result == AckTypes.GameNotFound);
     }
-
+    //Offer Draw
     [Fact]
     public void OfferDrawReturnsGameNotFoundWhenNoRoomFound()
     {
         var ack = _gameLogic.OfferDraw(new RequestDrawDto());
         Assert.True(ack.Result == AckTypes.GameNotFound);
     }
-
+    //Draw offer response
     [Fact]
     public void DrawOfferResponseReturnsGameNotFoundWhenNoRoomFound()
     {
@@ -266,4 +291,7 @@ public class GameLogicUnitTests
             });
         });
     }
+    //Resign
+
+
 }
