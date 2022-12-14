@@ -16,11 +16,15 @@ using Domain.Models;
 using GameRoomHandlers;
 using Moq;
 using System;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 
 
 public class GameLogicUnitTests
 {
+
+    private const string PlayerOne = "Jeff";
+    private const string PlayerTwo = "Alice";
 
     private readonly IGameLogic _gameLogic;
     private readonly Mock<IUserService> _userServiceMock;
@@ -39,21 +43,21 @@ public class GameLogicUnitTests
     {
         var response = await _gameLogic.StartGame(new RequestGameDto()
         {
-            Username = "Jeff",
+            Username = PlayerOne,
             OpponentType = OpponentTypes.Friend,
             DurationSeconds = 60,
             IncrementSeconds = 0,
             Side = GameSides.Black,
-            OpponentName = "Alice",
+            OpponentName = PlayerTwo,
             IsVisible = isVisible
         });
         var requestDto = new RequestJoinGameDto
         {
             GameRoom = response.GameRoom,
-            Username = "Jeff"
+            Username = PlayerOne
         };
         _gameLogic.JoinGame(requestDto);
-        requestDto.Username = "Alice";
+        requestDto.Username = PlayerTwo;
         _gameLogic.JoinGame(requestDto);
         return response.GameRoom;
     }
@@ -61,13 +65,13 @@ public class GameLogicUnitTests
 
     //Start game
     [Theory]
-    [InlineData("Alice", OpponentTypes.Friend)]
+    [InlineData(PlayerTwo, OpponentTypes.Friend)]
     [InlineData("StockfishAi1", OpponentTypes.Ai)]
     public void StartingGameReturnsCorrectResponseDto(string? opponent, OpponentTypes opponentType)
     {
         var response = _gameLogic.StartGame(new RequestGameDto()
         {
-            Username = "Jeff",
+            Username = PlayerOne,
             OpponentType = opponentType,
             IncrementSeconds = 0,
             Side = GameSides.Black,
@@ -88,12 +92,12 @@ public class GameLogicUnitTests
     {
         var response = _gameLogic.StartGame(new RequestGameDto()
         {
-            Username = "Jeff",
+            Username = PlayerOne,
             OpponentType = OpponentTypes.Friend,
             DurationSeconds = duration,
             IncrementSeconds = increment,
             Side = GameSides.Black,
-            OpponentName = "Alice"
+            OpponentName = PlayerTwo
         });
 
         Assert.False(response.Result.Success);
@@ -105,26 +109,26 @@ public class GameLogicUnitTests
     {
         var response = _gameLogic.StartGame(new RequestGameDto()
         {
-            Username = "Jeff",
+            Username = PlayerOne,
             OpponentType = OpponentTypes.Friend,
             DurationSeconds = duration,
             IncrementSeconds = increment,
             Side = GameSides.Black,
-            OpponentName = "Alice"
+            OpponentName = PlayerTwo
         });
 
         Assert.True(response.Result.Success);
     }
 
     [Theory]
-    [InlineData("Alice", OpponentTypes.Friend)]
+    [InlineData(PlayerTwo, OpponentTypes.Friend)]
     [InlineData("Bob", OpponentTypes.Friend)]
     public void StartingGameReturnsFalseWhenUserNotFound(string? opponent, OpponentTypes opponentType)
     {
         _userServiceMock.Setup(p => p.GetByUsernameAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
         var response = _gameLogic.StartGame(new RequestGameDto()
         {
-            Username = "Jeff",
+            Username = PlayerOne,
             OpponentType = opponentType,
             IncrementSeconds = 0,
             Side = GameSides.Black,
@@ -136,13 +140,13 @@ public class GameLogicUnitTests
     }
 
     [Theory]
-    [InlineData("Alice", OpponentTypes.Random)]
+    [InlineData(PlayerTwo, OpponentTypes.Friend)]
     [InlineData("StockfishAi1", OpponentTypes.Random)]
     public void StartingGameAgainstRandomWithOpponentSetFails(string opponent, OpponentTypes opponentType)
     {
         var response = _gameLogic.StartGame(new RequestGameDto()
         {
-            Username = "Jeff",
+            Username = PlayerOne,
             OpponentType = opponentType,
             IncrementSeconds = 0,
             Side = GameSides.Black,
@@ -160,7 +164,7 @@ public class GameLogicUnitTests
     {
         var response = _gameLogic.StartGame(new RequestGameDto()
         {
-            Username = "Jeff",
+            Username = PlayerOne,
             OpponentType = opponentType,
             IncrementSeconds = 0,
             Side = GameSides.Black,
@@ -185,7 +189,19 @@ public class GameLogicUnitTests
     public void ResignReturnsGameNotFoundWhenNoRoomFound()
     {
         var ack = _gameLogic.Resign(new RequestResignDto());
-        Assert.True(ack.Result == AckTypes.GameNotFound);
+        Assert.Equal(AckTypes.GameNotFound, ack.Result);
+    }
+
+    [Fact]
+    public async void ResignReturnsSuccessWhenValid()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+        var ack = _gameLogic.Resign(new RequestResignDto
+        {
+            Username = PlayerTwo,
+            GameRoom = gameRoomId
+        });
+        Assert.Equal(AckTypes.Success, ack.Result);
     }
     //Offer Draw
     [Fact]
@@ -236,18 +252,18 @@ public class GameLogicUnitTests
     {
         var response = await _gameLogic.StartGame(new RequestGameDto()
         {
-            Username = "Jeff",
+            Username = PlayerOne,
             OpponentType = OpponentTypes.Friend,
             DurationSeconds = 60,
             IncrementSeconds = 0,
             Side = GameSides.Black,
-            OpponentName = "Alice",
+            OpponentName = PlayerTwo,
             IsVisible = false
         });
         var requestDto = new RequestJoinGameDto
         {
             GameRoom = response.GameRoom,
-            Username = "Jeff"
+            Username = PlayerOne
         };
         var ackResponse = _gameLogic.JoinGame(requestDto);
 
@@ -260,12 +276,12 @@ public class GameLogicUnitTests
     {
         var response = await _gameLogic.StartGame(new RequestGameDto()
         {
-            Username = "Jeff",
+            Username = PlayerOne,
             OpponentType = OpponentTypes.Friend,
             DurationSeconds = 60,
             IncrementSeconds = 0,
             Side = GameSides.Black,
-            OpponentName = "Alice",
+            OpponentName = PlayerTwo,
             IsVisible = false
         });
         var requestDto = new RequestJoinGameDto
@@ -285,12 +301,10 @@ public class GameLogicUnitTests
         {
             _gameLogic.JoinGame(new RequestJoinGameDto()
             {
-                Username = "Jeff",
+                Username = PlayerOne,
                 GameRoom = 0
             });
         });
     }
-    //Resign
-
 
 }
