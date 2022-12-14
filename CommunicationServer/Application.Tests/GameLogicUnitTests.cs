@@ -15,6 +15,8 @@ using Domain.DTOs.Stockfish;
 using Domain.Models;
 using GameRoomHandlers;
 using Moq;
+using System;
+using System.Threading.Tasks;
 
 
 public class GameLogicUnitTests
@@ -31,6 +33,29 @@ public class GameLogicUnitTests
         _userServiceMock.Setup(p => p.GetByUsernameAsync(It.IsAny<string>())).ReturnsAsync(new User());
         var gameServiceMock = new Mock<IGameService>();
         _gameLogic = new GameLogic(stockfishServiceMock.Object, new ChatLogic(), _userServiceMock.Object, gameServiceMock.Object, new GameRoomHandlerFactory());
+    }
+
+    private async Task<ulong> StartGameAndMakeActive(bool isVisible)
+    {
+        var response = await _gameLogic.StartGame(new RequestGameDto()
+        {
+            Username = "Jeff",
+            OpponentType = OpponentTypes.Friend,
+            DurationSeconds = 60,
+            IncrementSeconds = 0,
+            Side = GameSides.Black,
+            OpponentName = "Alice",
+            IsVisible = isVisible
+        });
+        var requestDto = new RequestJoinGameDto
+        {
+            GameRoom = response.GameRoom,
+            Username = "Jeff"
+        };
+        _gameLogic.JoinGame(requestDto);
+        requestDto.Username = "Alice";
+        _gameLogic.JoinGame(requestDto);
+        return response.GameRoom;
     }
 
 
@@ -181,25 +206,12 @@ public class GameLogicUnitTests
     [Fact]
     public async void SpectatingGameWhenVisibleReturnsSuccess()
     {
-        var response = await _gameLogic.StartGame(new RequestGameDto()
-        {
-            Username = "Jeff",
-            OpponentType = OpponentTypes.Friend,
-            DurationSeconds = 60,
-            IncrementSeconds = 0,
-            Side = GameSides.Black,
-            OpponentName = "Alice",
-            IsVisible = true
-        });
+        var gameRoomId = await StartGameAndMakeActive(true);
         var requestDto = new RequestJoinGameDto
         {
-            GameRoom = response.GameRoom,
-            Username = "Jeff"
+            GameRoom = gameRoomId,
+            Username = "Bob"
         };
-        _gameLogic.JoinGame(requestDto);
-        requestDto.Username = "Alice";
-        _gameLogic.JoinGame(requestDto);
-        requestDto.Username = "Bob";
         var ackResponse = _gameLogic.SpectateGame(requestDto);
 
         Assert.Equal(AckTypes.Success, ackResponse);
@@ -208,25 +220,12 @@ public class GameLogicUnitTests
     [Fact]
     public async void SpectatingGameWhenNotVisibleThrowsArgumentException()
     {
-        var response = await _gameLogic.StartGame(new RequestGameDto()
-        {
-            Username = "Jeff",
-            OpponentType = OpponentTypes.Friend,
-            DurationSeconds = 60,
-            IncrementSeconds = 0,
-            Side = GameSides.Black,
-            OpponentName = "Alice",
-            IsVisible = false
-        });
+        var gameRoomId = await StartGameAndMakeActive(false);
         var requestDto = new RequestJoinGameDto
         {
-            GameRoom = response.GameRoom,
-            Username = "Jeff"
+            GameRoom = gameRoomId,
+            Username = "Bob"
         };
-        _gameLogic.JoinGame(requestDto);
-        requestDto.Username = "Alice";
-        _gameLogic.JoinGame(requestDto);
-        requestDto.Username = "Bob";
 
         Assert.Throws<ArgumentException>(() => _gameLogic.SpectateGame(requestDto));
     }
