@@ -61,7 +61,6 @@ public class GameLogicUnitTests
         return response.GameRoom;
     }
 
-
     //Start game
     [Theory]
     [InlineData(PlayerTwo, OpponentTypes.Friend)]
@@ -174,7 +173,6 @@ public class GameLogicUnitTests
         Assert.Equal("Opponent is an AI in the not ai game.", response.ErrorMessage);
     }
 
-
     //Make move
     [Fact]
     public async void MakeMoveReturnsGameNotFoundWhenNoRoomFound()
@@ -266,21 +264,22 @@ public class GameLogicUnitTests
         Assert.Equal(AckTypes.NotUserTurn, ack);
     }
     [Fact]
-    public async void ResignReturnsGameHasEndedWhenResigningAfterGameEnd()
+    public async void ResignReturnsGameNotFoundWhenResigningAfterGameEnd()
     {
         var gameRoomId = await StartGameAndMakeActive(false);
         await _gameLogic.Resign(new RequestResignDto
         {
-            Username = "WrongUsername",
+            Username = PlayerOne,
             GameRoom = gameRoomId
         });
         var ack = await _gameLogic.Resign(new RequestResignDto
         {
-            Username = "WrongUsername",
+            Username = PlayerOne,
             GameRoom = gameRoomId
         });
-        Assert.Equal(AckTypes.NotUserTurn, ack);
+        Assert.Equal(AckTypes.GameNotFound, ack);
     }
+
     //Offer Draw
     [Fact]
     public async void OfferDrawReturnsGameNotFoundWhenNoRoomFound()
@@ -288,12 +287,82 @@ public class GameLogicUnitTests
         var ack = await _gameLogic.OfferDraw(new RequestDrawDto());
         Assert.Equal(AckTypes.GameNotFound, ack);
     }
+
+    [Fact]
+    public async void OfferDrawReturnsSuccessWhenAccepted()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+
+        var ack = _gameLogic.OfferDraw(new RequestDrawDto
+        {
+            GameRoom = gameRoomId,
+            Username = PlayerOne
+        });
+        await _gameLogic.DrawOfferResponse(new ResponseDrawDto
+        {
+            GameRoom = gameRoomId,
+            Username = PlayerTwo,
+            Accept = true
+        });
+
+        Assert.Equal(AckTypes.Success, await ack);
+    }
+
+    [Fact]
+    public async void OfferDrawReturnsNotUserTurnWhenIncorrectUser()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+
+        var ack = await _gameLogic.OfferDraw(new RequestDrawDto
+        {
+            GameRoom = gameRoomId,
+            Username = "WrongUsername"
+        });
+
+        Assert.Equal(AckTypes.NotUserTurn, ack);
+    }
+    
+    [Fact]
+    public async void OfferDrawReturnsGameNotFoundWhenOfferingAfterGameEnds()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+
+        await _gameLogic.Resign(new RequestResignDto
+        {
+            Username = PlayerOne,
+            GameRoom = gameRoomId
+        });
+        
+        var ack = await _gameLogic.OfferDraw(new RequestDrawDto
+        {
+            GameRoom = gameRoomId,
+            Username = PlayerTwo 
+        });
+
+        Assert.Equal(AckTypes.GameNotFound, ack);
+    }
+
     //Draw offer response
     [Fact]
     public async void DrawOfferResponseReturnsGameNotFoundWhenNoRoomFound()
     {
         var ack = await _gameLogic.DrawOfferResponse(new ResponseDrawDto());
         Assert.Equal(AckTypes.GameNotFound, ack);
+    }
+    
+    [Fact]
+    public async void DrawOfferResponseReturnsDrawNotOfferedWhenNoDrawOffered()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+
+        var ack = await _gameLogic.DrawOfferResponse(new ResponseDrawDto
+        {
+            GameRoom = gameRoomId,
+            Username = PlayerOne,
+            Accept = true
+        });
+
+        Assert.Equal(AckTypes.DrawNotOffered, ack);
     }
 
     //Spectate game
@@ -323,8 +392,8 @@ public class GameLogicUnitTests
 
         Assert.Throws<ArgumentException>(() => _gameLogic.SpectateGame(requestDto));
     }
-    //Join game
 
+    //Join game
     [Fact]
     public async void JoiningGameWhenValidReturnsSuccess()
     {
