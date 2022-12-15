@@ -9,6 +9,7 @@ namespace Application.Tests;
 using ClientInterfaces;
 using Domain.DTOs.Draw;
 using Domain.DTOs.Game;
+using Domain.DTOs.Rematch;
 using Domain.DTOs.Resignation;
 using Domain.DTOs.StartGame;
 using Domain.DTOs.Stockfish;
@@ -111,7 +112,7 @@ public class GameLogicUnitTests
             OpponentType = OpponentTypes.Friend,
             DurationSeconds = duration,
             IncrementSeconds = increment,
-            Side = GameSides.Black,
+            Side = GameSides.Random,
             OpponentName = PlayerTwo
         });
 
@@ -473,6 +474,127 @@ public class GameLogicUnitTests
                 GameRoom = 0
             });
         });
+    }
+
+    //Rematch offer
+    [Fact]
+    public async void OfferRematchReturnsGameNotFoundWhenNoRoomFound()
+    {
+        var ack = await _gameLogic.OfferRematch(new RequestRematchDto());
+        Assert.Equal(AckTypes.GameNotFound, ack);
+    }
+
+    [Fact]
+    public async void OfferRematchReturnsSuccessWhenOfferedAfterGameEndAndAccepted()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+        await _gameLogic.Resign(new RequestResignDto
+        {
+            Username = PlayerOne,
+            GameRoom = gameRoomId
+        });
+
+        var ack = _gameLogic.OfferRematch(new RequestRematchDto
+        {
+            GameRoom = gameRoomId,
+            Username = PlayerOne
+        });
+        await _gameLogic.RematchOfferResponse(new ResponseRematchDto
+        {
+            GameRoom = gameRoomId,
+            Username = PlayerTwo,
+            Accept = true
+        });
+
+        Assert.Equal(AckTypes.Success, await ack);
+    }
+
+    [Fact]
+    public async void OfferRematchReturnsNotUserTurnWhenIncorrectUser()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+        await _gameLogic.Resign(new RequestResignDto
+        {
+            Username = PlayerOne,
+            GameRoom = gameRoomId
+        });
+
+        var ack = await _gameLogic.OfferRematch(new RequestRematchDto
+        {
+            GameRoom = gameRoomId,
+            Username = "WrongUsername"
+        });
+
+        Assert.Equal(AckTypes.NotUserTurn, ack);
+    }
+
+    [Fact]
+    public async void OfferRematchReturnsGameNotFoundWhenOfferingBeforeGameEnds()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+        
+
+        var ack = await _gameLogic.OfferRematch(new RequestRematchDto
+        {
+            GameRoom = gameRoomId,
+            Username = PlayerTwo
+        });
+
+        Assert.Equal(AckTypes.GameNotFound, ack);
+    }
+
+    //Rematch offer response
+    [Fact]
+    public async void RematchOfferResponseReturnsGameNotFoundWhenNoRoomFound()
+    {
+        var ack = await _gameLogic.RematchOfferResponse(new ResponseRematchDto());
+        Assert.Equal(AckTypes.GameNotFound, ack);
+    }
+
+    [Fact]
+    public async void RematchOfferResponseReturnsRematchNotOfferedWhenNoRematchOffered()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+        await _gameLogic.Resign(new RequestResignDto
+        {
+            Username = PlayerOne,
+            GameRoom = gameRoomId
+        });
+
+        var ack = await _gameLogic.RematchOfferResponse(new ResponseRematchDto
+        {
+            GameRoom = gameRoomId,
+            Username = PlayerOne,
+            Accept = true
+        });
+
+        Assert.Equal(AckTypes.RematchNotOffered, ack);
+    }
+
+    [Fact]
+    public async void RematchOfferResponseReturnsSuccessWhenAcceptingIsValid()
+    {
+        var gameRoomId = await StartGameAndMakeActive(false);
+        await _gameLogic.Resign(new RequestResignDto
+        {
+            Username = PlayerOne,
+            GameRoom = gameRoomId
+        });
+
+        _gameLogic.OfferRematch(new RequestRematchDto
+        {
+            GameRoom = gameRoomId,
+            Username = PlayerOne
+        });
+        var ack = await _gameLogic.RematchOfferResponse(new ResponseRematchDto
+        {
+            GameRoom = gameRoomId,
+            Username = PlayerTwo,
+            Accept = true
+        });
+
+
+        Assert.Equal(AckTypes.Success, ack);
     }
 
 }
