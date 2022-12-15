@@ -9,7 +9,6 @@ using Domain.DTOs.GameEvents;
 using Domain.DTOs.Resignation;
 using Domain.Enums;
 using Rudzoft.ChessLib.Types;
-using Xunit;
 
 namespace Application.Tests;
 
@@ -149,6 +148,7 @@ public class GameRoomUnitTests
         _gameRoom = GetNewGameRoom();
         var ack = _gameRoom.MakeMove(new MakeMoveDto()
         {
+            Username = PlayerWhite,
             FromSquare = "e2",
             ToSquare = "e2",
             MoveType = (uint) MoveTypes.Normal

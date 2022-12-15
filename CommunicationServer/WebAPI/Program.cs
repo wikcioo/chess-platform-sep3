@@ -51,7 +51,6 @@ builder.Services.AddHttpClient<IGameService, GameHttpClient>(client =>
 
 builder.Services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
 
-builder.Services.AddSingleton<IStockfishLogic, StockfishLogic>();
 builder.Services.AddSingleton<IStockfishService, StockfishHttpClient>();
 
 builder.Services.AddSingleton(_ => GrpcChannel.ForAddress("https://localhost:7007"));

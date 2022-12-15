@@ -17,20 +17,6 @@ public class UsersController : ControllerBase
         _userLogic = userLogic;
     }
 
-    [HttpPost("/login")]
-    public async Task<ActionResult<bool>> LoginAsync([FromBody] UserLoginDto dto)
-    {
-        try
-        {
-            var isCorrect = await _userLogic.LoginAsync(dto);
-            return Ok(isCorrect);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return StatusCode(500, e.Message);
-        }
-    }
 
     [HttpPost]
     [Authorize(Roles = "admin")]

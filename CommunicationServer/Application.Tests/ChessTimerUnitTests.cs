@@ -1,9 +1,7 @@
 using System.Threading;
 using Application.ChessTimers;
-using Domain.DTOs;
 using Domain.DTOs.GameEvents;
 using Rudzoft.ChessLib.Enums;
-using Xunit;
 
 namespace Application.Tests;
 

@@ -4,6 +4,7 @@ import via.sep3.DatabaseAccessServer.domain.enums.GameOutcome;
 import via.sep3.DatabaseAccessServer.domain.enums.GameType;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 @Entity
 @Table(name = "games")
@@ -31,7 +32,7 @@ public class Game {
     public Game(){};
 
 
-    public Game(User creator,  GameType gameType, User playerWhite, User playerBlack, int timeControlDurationSeconds, int timeControlIncrementSeconds, GameOutcome gameOutcome){
+    public Game(User creator, User playerWhite, User playerBlack, GameType gameType, int timeControlDurationSeconds, int timeControlIncrementSeconds, GameOutcome gameOutcome){
         this.creator = creator;
         this.gameType = gameType;
         this.playerWhite = playerWhite;

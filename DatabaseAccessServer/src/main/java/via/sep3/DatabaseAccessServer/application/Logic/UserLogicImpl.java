@@ -1,8 +1,6 @@
 package via.sep3.DatabaseAccessServer.application.Logic;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
 import via.sep3.DatabaseAccessServer.application.LogicInterfaces.UserLogic;
 import via.sep3.DatabaseAccessServer.domain.DTOs.UserLoginDto;
 import via.sep3.DatabaseAccessServer.domain.User;
