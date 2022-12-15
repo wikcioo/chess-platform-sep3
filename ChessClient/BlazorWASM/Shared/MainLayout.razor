@@ -5,8 +5,8 @@
 <MudDrawer @bind-Open="_themeManagerOpen" ClipMode="_themeManager.DrawerClipMode" Elevation="_themeManager.DrawerElevation"></MudDrawer>
 
 <MudLayout>
-    <MudThemeManagerButton OnClick="@((e) => OpenThemeManager(true))"/>
-    <MudThemeManager Open="_themeManagerOpen" OpenChanged="OpenThemeManager" Theme="_themeManager" ThemeChanged="UpdateTheme"/>
+    @* <MudThemeManagerButton OnClick="@((e) => OpenThemeManager(true))"/> *@
+    @* <MudThemeManager Open="_themeManagerOpen" OpenChanged="OpenThemeManager" Theme="_themeManager" ThemeChanged="UpdateTheme"/> *@
     <AppBar/>
     <div class="bg" style="">
         <img src="backgrounds/bg-outlined.svg"/>
