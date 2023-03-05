@@ -1,7 +1,7 @@
 # Distributed Chess Application
 ![Application screenshot](Docs/Screenshots/GamePlay.png?raw=true)
 
-## Intruduction
+## Introduction
 This project aims to provide students at a university with the opportunity to connect and
 participate in chess tournaments, regardless of their location. To fulfill the client’s
 request, the system ended up consisting of a Blazor Server providing access to GUI
